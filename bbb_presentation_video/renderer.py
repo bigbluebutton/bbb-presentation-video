@@ -14,6 +14,7 @@ from pkg_resources import resource_filename
 import queue
 import threading
 import functools
+from typing import Protocol
 
 import gi
 

@@ -1,56 +1,52 @@
+from attrs import define
 from lxml import etree
 from collections import deque
 from fractions import Fraction
 from enum import Enum
 from distutils.version import StrictVersion
-import attr
+from typing import NamedTuple, Optional, TypeVar
 import json
 
 MAGIC_MYSTERY_NUMBER = 2.0
 DEFAULT_PRESENTATION_POD = "DEFAULT_PRESENTATION_POD"
 
 
-@attr.s
-class Position(object):
-    x = attr.ib()
-    y = attr.ib()
-
-    def __iter__(self):
-        yield self.x
-        yield self.y
+@define
+class Position:
+    x: float
+    y: float
 
     def __str__(self):
         return f"[{self.x:.3f},{self.y:.3f}]"
 
-    def __mul__(self, other):
+    def __mul__(self, other: float):
         return Position(self.x * other, self.y * other)
 
 
-@attr.s
-class Size(object):
-    width = attr.ib()
-    height = attr.ib()
-
-    def __iter__(self):
-        yield self.width
-        yield self.height
+@define
+class Size:
+    width: float
+    height: float
 
     def __str__(self):
         return f"{self.width:.3f}x{self.height:.3f}"
 
-    def __mul__(self, other):
+    def __mul__(self, other: float):
         return Size(self.width * other, self.height * other)
 
 
-@attr.s
-class Color(object):
-    r = attr.ib()
-    g = attr.ib()
-    b = attr.ib()
-    a = attr.ib(default=None)
+ColorSelf = TypeVar("ColorSelf", bound="Color")
+
+
+@define
+class Color:
+    r: float
+    g: float
+    b: float
+    a: Optional[float] = None
 
     @classmethod
-    def from_int(cls, i, a=None):
+    def from_int(cls: type[ColorSelf], i: int, a: Optional[float] = None) -> ColorSelf:
         return cls(
             r=((i & 0xFF0000) >> 16) / 255.0,
             g=((i & 0x00FF00) >> 8) / 255.0,
@@ -83,52 +79,64 @@ class PencilCommand(Enum):
 
 
 class EventParsingError(Exception):
-    def __init__(self, event):
+    event: dict
+
+    def __init__(self, event: dict):
         self.event = event
 
     def __str__(self):
-        return "Failed to parse event {self.event}"
+        return f"Failed to parse event {self.event}"
 
 
 class UnknownEventError(EventParsingError):
     def __str__(self):
-        return "Unknown event {self.event}"
+        return f"Unknown event {self.event}"
 
 
 class UnknownShapeError(EventParsingError):
-    def __init__(self, event, shape):
-        self.event = event
+    shape: str
+
+    def __init__(self, event: dict, shape: str):
+        super().__init__(event)
         self.shape = shape
 
     def __str__(self):
-        return "Unknown shape {self.shape} in {self.event}"
+        return f"Unknown shape '{self.shape}' in {self.event}"
 
 
 class InvalidShapeError(EventParsingError):
-    def __init__(self, event, shape, status, reason):
-        self.event = event
+    shape: str
+    status: str
+    reason: str
+
+    def __init__(self, event: dict, shape: str, status: str, reason: str):
+        super().__init__(event)
         self.shape = shape
         self.status = status
         self.reason = reason
 
     def __str__(self):
-        return "Shape {self.shape} in {self.event} with status {self.status} is invalid: {self.reason}"
+        return f"Shape {self.shape} in {self.event} with status {self.status} is invalid: {self.reason}"
 
 
 class ShapeNoDataPointsError(InvalidShapeError):
-    def __init__(self, event, shape, status):
-        self.event = event
-        self.shape = shape
-        self.status = status
-        self.reason = "no dataPoints"
+    def __init__(self, event: dict, shape: str, status: str):
+        super().__init__(event, shape, status, "no dataPoints")
 
 
-def parse_cursor(event, element):
+def parse_cursor(event: dict, element: etree._Element):
     x_offset = element.find("xOffset")
     y_offset = element.find("yOffset")
-    cursor = Position(float(x_offset.text), float(y_offset.text))
-    if cursor.x < 0 or cursor.x > 1 or cursor.y < 0 or cursor.y > 1:
+    if x_offset is None or y_offset is None:
+        raise EventParsingError(event)
+
+    x = float(x_offset.text or 0)
+    y = float(y_offset.text or 0)
+    if x < 0 or x > 1 or y < 0 or y > 1:
         cursor = None
+    else:
+        cursor = Position(x, y)
+
     event["cursor"] = cursor
     event["name"] = "cursor"
 
@@ -390,7 +398,7 @@ def parse_pod_presenter(event, element):
     next_presenter_id = element.find("nextPresenterId")
     pod_id = element.find("podId")
     event["user_id"] = next_presenter_id.text
-    event["pod_id"] = DEFAULT_PRESENTATION_POD
+    event["pod_id"] = pod_id.text
     event["name"] = "presenter"
 
 
