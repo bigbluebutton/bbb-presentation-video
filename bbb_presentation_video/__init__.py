@@ -1,12 +1,13 @@
 from fractions import Fraction
+from typing import cast, Any
+
 import argparse
+import sys
 
 __all__ = ["events", "renderer"]
 
-from .events import parse_events, DEFAULT_PRESENTATION_POD
-from .renderer import Renderer
-import os
-import sys
+from bbb_presentation_video.events import parse_events, DEFAULT_PRESENTATION_POD
+from bbb_presentation_video.renderer import Renderer
 
 
 DEFAULT_WIDTH = 960
@@ -16,20 +17,21 @@ DEFAULT_INPUT = "."
 DEFAULT_OUTPUT = "presentation.mkv"
 
 
-def main():
+def main() -> None:
     # Make stdout unbuffered so we get progress reporting
     class Unbuffered:
-        def __init__(self, stream):
+        def __init__(self, stream: Any):
             self.stream = stream
 
-        def write(self, data):
-            self.stream.write(data)
+        def write(self, data: str) -> Any:
+            ret = self.stream.write(data)
             self.stream.flush()
+            return ret
 
-        def __getattr__(self, attr):
+        def __getattr__(self, attr: str) -> Any:
             return getattr(self.stream, attr)
 
-    sys.stdout = Unbuffered(sys.stdout)
+    sys.stdout = cast(Any, Unbuffered(sys.stdout))
 
     parser = argparse.ArgumentParser(
         description="Render BigBlueButton events to video", add_help=False
@@ -106,11 +108,12 @@ def main():
 
     print("Parsing events XML...")
     events, length, hide_logo = parse_events(args.input)
+    if length is None:
+        print(f"Could not determine recording length - cannot generate video.")
+        exit(1)
+
     print(
-        f"Parsed {len(events)} events, recording length is {float(length)} seconds, the bbb logo will be "
-        + "{logo_view_status} for blank frames".format(
-            logo_view_status="hidden" if hide_logo else "shown"
-        )
+        f"Parsed {len(events)} events, recording length is {float(length):.3f} seconds, the bbb logo will be {'hidden' if hide_logo else 'shown'} for blank frames"
     )
     if args.start is not None:
         print(f"Recording section starting at {args.start} seconds")
