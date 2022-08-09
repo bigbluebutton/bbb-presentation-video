@@ -1,5 +1,7 @@
 attrs
+cattrs
 lxml
 packaging
 pycairo
 pygobject
+sortedcollections

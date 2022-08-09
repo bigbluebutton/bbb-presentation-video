@@ -70,6 +70,9 @@ def apply_shapes_transform(ctx: cairo.Context, t: Transform) -> Size:
     return t.shapes_size
 
 
+apply_tldraw_transform = apply_shapes_transform
+
+
 class PresentationRenderer:
     ctx: cairo.Context
     directory: str

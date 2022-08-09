@@ -107,7 +107,7 @@ def main() -> None:
     print(f'Outputting video to "{args.output}"')
 
     print("Parsing events XML...")
-    events, length, hide_logo = parse_events(args.input)
+    events, length, hide_logo, tldraw_whiteboard = parse_events(args.input)
     if length is None:
         print(f"Could not determine recording length - cannot generate video.")
         exit(1)
@@ -133,6 +133,7 @@ def main() -> None:
         args.end,
         args.pod,
         hide_logo,
+        tldraw_whiteboard,
     )
 
     renderer.render()

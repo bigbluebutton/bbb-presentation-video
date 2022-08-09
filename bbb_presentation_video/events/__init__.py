@@ -58,8 +58,16 @@ class PencilCommand(Enum):
     C_CURVE_TO = 4
 
 
-class CursorEvent(TypedDict):
+class Event(TypedDict):
     name: str
+    timestamp: Fraction
+
+
+class PerPodEvent(Event):
+    pod_id: str
+
+
+class CursorEvent(Event):
     cursor: Optional[Position]
 
 
@@ -76,8 +84,7 @@ def parse_cursor(event: CursorEvent, element: etree._Element) -> None:
     event["name"] = "cursor"
 
 
-class WhiteboardCursorEvent(TypedDict):
-    name: str
+class WhiteboardCursorEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
     cursor: Optional[Position]
@@ -113,11 +120,9 @@ def parse_whiteboard_cursor(
     event["name"] = "cursor_v2"
 
 
-class PanZoomEvent(TypedDict):
-    name: str
+class PanZoomEvent(PerPodEvent):
     pan: Position
     zoom: Size
-    pod_id: Optional[str]
 
 
 def parse_pan_zoom(event: PanZoomEvent, element: etree._Element) -> None:
@@ -152,10 +157,8 @@ def parse_pan_zoom(event: PanZoomEvent, element: etree._Element) -> None:
     event["name"] = "pan_zoom"
 
 
-class SlideEvent(TypedDict):
-    name: str
+class SlideEvent(PerPodEvent):
     slide: int
-    pod_id: Optional[str]
 
 
 def parse_slide(event: SlideEvent, element: etree._Element) -> None:
@@ -167,10 +170,8 @@ def parse_slide(event: SlideEvent, element: etree._Element) -> None:
     event["name"] = "slide"
 
 
-class PresentationEvent(TypedDict):
-    name: str
+class PresentationEvent(PerPodEvent):
     presentation: str
-    pod_id: Optional[str]
 
 
 def parse_presentation(event: PresentationEvent, element: etree._Element) -> None:
@@ -182,8 +183,7 @@ def parse_presentation(event: PresentationEvent, element: etree._Element) -> Non
     event["name"] = "presentation"
 
 
-class ShapeEvent(TypedDict):
-    name: str
+class ShapeEvent(Event):
     shape_type: str
     shape_id: Optional[str]
     shape_status: Optional[ShapeStatus]
@@ -312,8 +312,7 @@ def parse_shape(
     event["name"] = "shape"
 
 
-class UndoEvent(TypedDict):
-    name: str
+class UndoEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
     user_id: Optional[str]
@@ -330,8 +329,7 @@ def parse_undo(
     event["name"] = "undo"
 
 
-class ClearEvent(TypedDict):
-    name: str
+class ClearEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
     user_id: Optional[str]
@@ -350,8 +348,7 @@ def parse_clear(
     event["name"] = "clear"
 
 
-class RecordEvent(TypedDict):
-    name: str
+class RecordEvent(Event):
     status: bool
 
 
@@ -360,10 +357,8 @@ def parse_record(event: RecordEvent, element: etree._Element) -> None:
     event["name"] = "record"
 
 
-class PresenterEvent(TypedDict):
-    name: str
+class PresenterEvent(PerPodEvent):
     user_id: str
-    pod_id: str
 
 
 def parse_presenter(event: PresenterEvent, element: etree._Element) -> None:
@@ -379,8 +374,7 @@ def parse_pod_presenter(event: PresenterEvent, element: etree._Element) -> None:
     event["name"] = "presenter"
 
 
-class JoinEvent(TypedDict):
-    name: str
+class JoinEvent(Event):
     user_id: str
     user_name: str
 
@@ -392,8 +386,7 @@ def parse_join(event: JoinEvent, element: etree._Element) -> None:
     event["name"] = "join"
 
 
-class LeftEvent(TypedDict):
-    name: str
+class LeftEvent(Event):
     user_id: str
 
 
@@ -404,11 +397,11 @@ def parse_left(event: LeftEvent, element: etree._Element) -> None:
 
 def parse_events(
     directory: str = ".",
-) -> Tuple[Deque[Dict[str, Any]], Optional[Fraction], bool]:
+) -> Tuple[Deque[Event], Optional[Fraction], bool, bool]:
     start_time = None
     last_timestamp = None
     have_record_events = False
-    events: Deque[Dict[str, Any]] = deque()
+    events: Deque[Event] = deque()
 
     root = etree.parse(f"{directory}/events.xml")
     root_e = root.getroot()
@@ -438,7 +431,6 @@ def parse_events(
 
     for element in root.iter("event"):
         try:
-            event: Dict[str, Any] = {}
 
             # Convert timestamps to be in seconds from recording start
             ts_i = int(element.attrib["timestamp"])
@@ -459,8 +451,11 @@ def parse_events(
             ]:
                 continue
 
-            event["name"] = name = element.attrib["eventname"]
-            event["timestamp"] = timestamp
+            name = str(element.attrib["eventname"])
+            event: Event = {
+                "name": name,
+                "timestamp": timestamp,
+            }
 
             if module == "PARTICIPANT":
                 if name == "AssignPresenterEvent":
@@ -557,7 +552,11 @@ def parse_events(
 
     if not have_record_events:
         # Add a fake record start event to the events list
-        event = {"name": "record", "timestamp": Fraction(0, 1000), "status": True}
-        events.appendleft(event)
+        start_record: RecordEvent = {
+            "name": "record",
+            "timestamp": Fraction(0, 1000),
+            "status": True,
+        }
+        events.appendleft(start_record)
 
-    return events, last_timestamp, hide_logo
+    return events, last_timestamp, hide_logo, tldraw_whiteboard

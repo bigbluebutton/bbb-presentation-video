@@ -10,10 +10,11 @@ import threading
 
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events import Size, RecordEvent
+from bbb_presentation_video.events import Event, PerPodEvent, Size, RecordEvent
 from bbb_presentation_video.events.helpers import Color
 from bbb_presentation_video.renderer.cursor import CursorRenderer
 from bbb_presentation_video.renderer.presentation import PresentationRenderer
+from bbb_presentation_video.renderer.tldraw import TldrawRenderer
 from bbb_presentation_video.renderer.whiteboard import ShapesRenderer
 
 
@@ -109,7 +110,7 @@ class Encoder:
 
 
 class Renderer:
-    events: Deque[Dict[str, Any]]
+    events: Deque[Event]
     length: Fraction
     input: str
     output: str
@@ -118,6 +119,7 @@ class Renderer:
     framerate: Fraction
     pod_id: str
     hide_logo: bool
+    tldraw_whiteboard: bool
 
     frame: int
     framestep: Fraction
@@ -126,7 +128,7 @@ class Renderer:
 
     def __init__(
         self,
-        events: Iterable[Dict[str, Any]],
+        events: Iterable[Event],
         length: Fraction,
         input: str,
         output: str,
@@ -137,6 +139,7 @@ class Renderer:
         end_time: Fraction,
         pod_id: str,
         hide_logo: bool,
+        tldraw_whiteboard: bool,
     ):
         # The events get modified, so make a copy of the queue
         self.events = deque(events)
@@ -148,6 +151,7 @@ class Renderer:
         self.framerate = framerate
         self.pod_id = pod_id
         self.hide_logo = hide_logo
+        self.tldraw_whiteboard = tldraw_whiteboard
 
         # Current video position state
         self.frame = 1
@@ -180,11 +184,16 @@ class Renderer:
             print(f"\tRenderer: recording: {self.recording}")
 
     def render(self) -> None:
-        cursor = CursorRenderer(self.ctx, Size(self.width, self.height))
+        cursor = CursorRenderer(
+            self.ctx,
+            Size(self.width, self.height),
+            tldraw_whiteboard=self.tldraw_whiteboard,
+        )
         presentation = PresentationRenderer(
             self.ctx, self.input, Size(self.width, self.height), self.hide_logo
         )
         shapes = ShapesRenderer(self.ctx, presentation.transform)
+        tldraw = TldrawRenderer(self.ctx, presentation.transform)
 
         encoder = Encoder(self.output, self.width, self.height, self.framerate)
 
@@ -194,7 +203,7 @@ class Renderer:
         recording_changed = False
         while self.pts < self.length:
 
-            event_ts = 0
+            event_ts = Fraction(0)
             while True:
                 if len(self.events) == 0:
                     break
@@ -211,9 +220,12 @@ class Renderer:
 
                 # Skip events that are for a different pod
                 if name in ["pan_zoom", "presentation", "slide", "presenter"]:
-                    if event["pod_id"] != self.pod_id:
-                        print(f"\tskipping event for pod {event['pod_id']}")
+                    pod_event = cast(PerPodEvent, event)
+                    if pod_event["pod_id"] != self.pod_id:
+                        print(f"\tskipping event for pod {pod_event['pod_id']}")
                         continue
+
+                tldraw.update(event)
 
                 if name == "cursor":
                     cursor.update_cursor(cast(events.CursorEvent, event))
@@ -248,15 +260,27 @@ class Renderer:
                     cursor.update_join(cast(events.JoinEvent, event))
                 elif name == "left":
                     cursor.update_left(cast(events.LeftEvent, event))
+                elif (
+                    name == "tldraw.add_shape"
+                    or name == "tldraw.delete_shape"
+                    or name == "tldraw.camera"
+                ):
+                    pass
                 else:
                     print("\tdon't know how to handle this event")
 
             if self.recording and self.pts >= self.start_time:
                 presentation_changed = presentation.finalize_frame()
                 shapes_changed = shapes.finalize_frame(presentation.transform)
+                tldraw_changed = tldraw.finalize_frame(presentation.transform)
                 cursor_changed = cursor.finalize_frame(presentation.transform)
 
-                if presentation_changed or shapes_changed or cursor_changed:
+                if (
+                    presentation_changed
+                    or shapes_changed
+                    or tldraw_changed
+                    or cursor_changed
+                ):
                     # Composite the frame
 
                     # Base background color
@@ -271,6 +295,7 @@ class Renderer:
 
                     # Shapes
                     shapes.render()
+                    tldraw.render()
 
                     # Cursor
                     cursor.render()

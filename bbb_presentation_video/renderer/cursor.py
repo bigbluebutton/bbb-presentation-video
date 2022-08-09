@@ -20,6 +20,7 @@ from bbb_presentation_video.events import (
 from bbb_presentation_video.renderer.presentation import (
     Transform,
     apply_shapes_transform,
+    apply_slide_transform,
 )
 
 
@@ -52,6 +53,7 @@ class CursorRenderer:
     cursors_changed: bool
     presenter: Optional[str]
     transform: Optional[Transform]
+    tldraw_whiteboard: bool
 
     presentation: Optional[str]
     presentation_slide: Dict[str, int]
@@ -60,13 +62,14 @@ class CursorRenderer:
     pattern: Optional[cairo.Pattern]
     radius: float
 
-    def __init__(self, ctx: cairo.Context, size: Size):
+    def __init__(self, ctx: cairo.Context, size: Size, *, tldraw_whiteboard: bool):
         self.ctx = ctx
         self.cursors = {}
         self.legacy_cursor = Cursor(label=None)
         self.cursors_changed = False
         self.presenter = None
         self.transform = None
+        self.tldraw_whiteboard = tldraw_whiteboard
 
         # Multi-pod cursors need to track presentation/slide
         self.presentation = None
@@ -164,7 +167,10 @@ class CursorRenderer:
 
         cursor.position = event["cursor"]
         if cursor.position is not None:
-            print(f"\tCursor: user_id {user_id}: position: {cursor.position * 100}")
+            if self.tldraw_whiteboard:
+                print(f"\tCursor: user_id: {user_id}, position: {cursor.position}")
+            else:
+                print(f"\tCursor: user_id {user_id}: position: {cursor.position * 100}")
         else:
             print(f"\tCursor: user_id {user_id}: offscreen")
         self.cursors_changed = True
@@ -230,11 +236,15 @@ class CursorRenderer:
                 continue
 
             ctx.save()
-            apply_shapes_transform(ctx, transform)
-            pos = Position(
-                cursor.position.x * transform.shapes_size.width,
-                cursor.position.y * transform.shapes_size.height,
-            )
+            if self.tldraw_whiteboard:
+                apply_slide_transform(ctx, transform)
+                pos = cursor.position
+            else:
+                apply_shapes_transform(ctx, transform)
+                pos = Position(
+                    cursor.position.x * transform.shapes_size.width,
+                    cursor.position.y * transform.shapes_size.height,
+                )
             print(f"\tCursor: user_id: {user_id}: slide position: {pos}")
 
             ctx.translate(*pos)
