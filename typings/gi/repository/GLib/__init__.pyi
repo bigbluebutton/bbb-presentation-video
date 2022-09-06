@@ -1,0 +1,3 @@
+class Error(Exception): ...
+
+GError = Error
