@@ -1,14 +1,14 @@
-from attrs import define
 from enum import Enum
-import cairo
 from math import ceil, floor
 from os.path import abspath, exists
-from pkg_resources import resource_filename
 from typing import Dict, Optional, Union
-from urllib.parse import urlunsplit
 from urllib.parse import quote as urlquote
+from urllib.parse import urlunsplit
 
+import cairo
 import gi
+from attrs import define
+from pkg_resources import resource_filename
 
 gi.require_version("Gdk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")

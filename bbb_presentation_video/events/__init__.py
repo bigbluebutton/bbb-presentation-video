@@ -1,30 +1,22 @@
+import json
+from collections import deque
+from enum import Enum
+from fractions import Fraction
+from typing import Any, Deque, Dict, List, Optional, Tuple, TypedDict, cast
+
 from attrs import define
 from lxml import etree
-from collections import deque
-from fractions import Fraction
-from enum import Enum
-from typing import (
-    Any,
-    Deque,
-    Dict,
-    Optional,
-    TypedDict,
-    List,
-    Tuple,
-    cast,
-)
-import json
 from packaging.version import Version
 
+from bbb_presentation_video.events import tldraw
+from bbb_presentation_video.events.errors import *
 from bbb_presentation_video.events.helpers import (
     Color,
+    Position,
     xml_subelement,
     xml_subelement_opt,
     xml_subelement_shape_slide,
 )
-from bbb_presentation_video.events import tldraw
-from bbb_presentation_video.events.errors import *
-from bbb_presentation_video.events.helpers import Position
 
 MAGIC_MYSTERY_NUMBER = 2.0
 DEFAULT_PRESENTATION_POD = "DEFAULT_PRESENTATION_POD"
@@ -423,6 +415,7 @@ def parse_events(
 
     print(f"Events: shape_thickness_percent: {shape_thickness_percent}")
     print(f"Events: shape_slide_off_by_one: {shape_slide_off_by_one}")
+    print(f"Events: tldraw_whiteboard: {tldraw_whiteboard}")
 
     metadata = root.find("metadata")
     if metadata is None:

@@ -1,22 +1,20 @@
-from fractions import Fraction
+import threading
 from collections import deque
-from subprocess import Popen, PIPE, CalledProcessError
-from typing import Any, Deque, Dict, Iterable, Optional, cast
-from attrs import define
+from fractions import Fraction
 from queue import Queue
+from subprocess import PIPE, CalledProcessError, Popen
+from typing import Any, Deque, Dict, Iterable, Optional, cast
 
 import cairo
-import threading
-
+from attrs import define
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events import Event, PerPodEvent, Size, RecordEvent
+from bbb_presentation_video.events import Event, PerPodEvent, RecordEvent, Size
 from bbb_presentation_video.events.helpers import Color
 from bbb_presentation_video.renderer.cursor import CursorRenderer
 from bbb_presentation_video.renderer.presentation import PresentationRenderer
 from bbb_presentation_video.renderer.tldraw import TldrawRenderer
 from bbb_presentation_video.renderer.whiteboard import ShapesRenderer
-
 
 DRAWING_BG = Color.from_int(0xE2E8ED)
 

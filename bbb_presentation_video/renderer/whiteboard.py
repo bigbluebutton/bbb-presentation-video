@@ -24,7 +24,6 @@ from bbb_presentation_video.renderer.presentation import (
     apply_shapes_transform,
 )
 
-
 BEZIER_CIRCLE_MAGIC = 0.551915024494
 
 FONT_FAMILY = "Arial"

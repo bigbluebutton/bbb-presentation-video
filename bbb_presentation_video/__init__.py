@@ -1,14 +1,12 @@
-from fractions import Fraction
-from typing import cast, Any
-
 import argparse
 import sys
+from fractions import Fraction
+from typing import Any, cast
 
 __all__ = ["events", "renderer"]
 
-from bbb_presentation_video.events import parse_events, DEFAULT_PRESENTATION_POD
+from bbb_presentation_video.events import DEFAULT_PRESENTATION_POD, parse_events
 from bbb_presentation_video.renderer import Renderer
-
 
 DEFAULT_WIDTH = 960
 DEFAULT_HEIGHT = 720

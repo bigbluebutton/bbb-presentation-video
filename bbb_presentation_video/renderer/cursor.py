@@ -1,10 +1,9 @@
-from attrs import define
 from math import pi, sqrt
 from typing import Dict, Optional
 
 import cairo
+from attrs import define
 
-from bbb_presentation_video.events.helpers import Color, Position
 from bbb_presentation_video.events import (
     CursorEvent,
     JoinEvent,
@@ -12,17 +11,17 @@ from bbb_presentation_video.events import (
     PresentationEvent,
     PresenterEvent,
     ShapeEvent,
-    Size,
     ShapeStatus,
+    Size,
     SlideEvent,
     WhiteboardCursorEvent,
 )
+from bbb_presentation_video.events.helpers import Color, Position
 from bbb_presentation_video.renderer.presentation import (
     Transform,
     apply_shapes_transform,
     apply_slide_transform,
 )
-
 
 CURSOR_OPACITY = 0.6
 CURSOR_PRESENTER = Color.from_int(0xFF0000, CURSOR_OPACITY)

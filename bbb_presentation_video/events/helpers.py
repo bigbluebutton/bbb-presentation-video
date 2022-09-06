@@ -1,6 +1,8 @@
-from attrs import define
 from typing import Iterator, Optional, Type, TypeVar
+
+from attrs import define
 from lxml import etree
+
 from bbb_presentation_video.events.errors import EventParsingError
 
 _ColorSelf = TypeVar("_ColorSelf", bound="Color")
@@ -30,6 +32,14 @@ class Color:
         yield self.b
         if self.a is not None:
             yield self.a
+
+
+def color_blend(a: Color, b: Color, t: float) -> Color:
+    return Color(
+        r=(a.r + t * (b.r - a.r)),
+        g=(a.g + t * (b.g - a.g)),
+        b=(a.b + t * (b.b - a.b)),
+    )
 
 
 @define

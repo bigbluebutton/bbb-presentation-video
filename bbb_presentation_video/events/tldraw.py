@@ -1,9 +1,9 @@
-from typing import TypedDict, Dict, Any
+import json
+from typing import Any, Dict, TypedDict
+
 from lxml import etree
 
-import json
-
-from bbb_presentation_video.events.helpers import xml_subelement, Position
+from bbb_presentation_video.events.helpers import Position, xml_subelement
 
 
 class AddShapeEvent(TypedDict):

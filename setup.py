@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-from setuptools import setup, find_packages
 from sys import version
+
+from setuptools import find_packages, setup
 
 if version < "3":
     print("This package requires python3")
