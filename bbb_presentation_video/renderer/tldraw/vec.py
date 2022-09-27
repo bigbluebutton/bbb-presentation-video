@@ -15,9 +15,34 @@ def sub(a: S, b: S) -> V:
     return (a[0] - b[0], a[1] - b[1])
 
 
+def vec(a: S, b: S) -> V:
+    """Get the vector from vectors A to B."""
+    return (b[0] - a[0], b[1] - a[1])
+
+
 def mul(a: S, n: float) -> V:
     """Vector multiplication by a scalar."""
     return (a[0] * n, a[1] * n)
+
+
+def div(a: S, n: float) -> V:
+    """Vector division by a scalar."""
+    return (a[0] / n, a[1] / n)
+
+
+def per(a: S) -> V:
+    """Perpendicular rotation of a vector A."""
+    return (a[1], -a[0])
+
+
+def vlen(a: S) -> float:
+    """Length of the vector."""
+    return hypot(a[0], a[1])
+
+
+def uni(a: S) -> V:
+    """Get normalized / unit vector."""
+    return div(a, vlen(a))
 
 
 def dist(a: S, b: S) -> float:

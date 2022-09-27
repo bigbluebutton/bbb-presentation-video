@@ -18,7 +18,7 @@ from typing import (
 import cairo
 import gi
 import perfect_freehand
-from attrs import define
+from attrs import define, astuple
 from cattrs import Converter, structure_attrs_fromdict
 from pkg_resources import resource_filename
 from sortedcollections import ValueSortedDict
@@ -248,12 +248,41 @@ class TriangleShape(BaseShape):
 
 
 @define
+class ArrowHandle:
+    point: Position
+
+
+@define
+class ArrowHandles:
+    start: ArrowHandle
+    end: ArrowHandle
+    bend: ArrowHandle
+
+
+@define
 class ArrowShape(BaseShape):
     label: Optional[str]
     labelPoint: Position
     bend: float
+    handles: ArrowHandles
     size: Size
     rotation: float
+
+    def bend_point(self) -> Tuple[float, float]:
+        start_point = astuple(self.handles.start.point)
+        end_point = astuple(self.handles.end.point)
+
+        dist = vec.dist(start_point, end_point)
+        mid_point = vec.med(start_point, end_point)
+        bend_dist = (dist / 2) * self.bend
+        u = vec.uni(vec.vec(start_point, end_point))
+
+        point: Tuple[float, float]
+        if bend_dist < 10:
+            point = mid_point
+        else:
+            point = vec.add(mid_point, vec.mul(vec.per(u), bend_dist))
+        return point
 
 
 @define
@@ -315,7 +344,7 @@ def shape_structure_hook(o: Any, cl: Shape) -> Shape:
         raise Exception(f"Unhandled Tldraw shape type: {type}")
 
 
-converter.register_structure_hook(Shape, shape_structure_hook)
+converter.register_structure_hook(Shape, shape_structure_hook)  # type: ignore
 
 
 def get_bounds_from_points(
@@ -694,7 +723,7 @@ class TldrawRenderer:
 
         print(repr(data))
 
-        shape: Shape = converter.structure(data, Shape)
+        shape: Shape = converter.structure(data, Shape)  # type: ignore
         print(repr(shape))
 
         self.ensure_shape_structure(presentation, slide)
