@@ -1,7 +1,7 @@
 import argparse
 import sys
 from fractions import Fraction
-from typing import Any, cast
+from typing import IO, Any, cast
 
 __all__ = ["events", "renderer"]
 
@@ -18,10 +18,12 @@ DEFAULT_OUTPUT = "presentation.mkv"
 def main() -> None:
     # Make stdout unbuffered so we get progress reporting
     class Unbuffered:
-        def __init__(self, stream: Any):
+        stream: IO[str]
+
+        def __init__(self, stream: IO[str]):
             self.stream = stream
 
-        def write(self, data: str) -> Any:
+        def write(self, data: str) -> int:
             ret = self.stream.write(data)
             self.stream.flush()
             return ret
