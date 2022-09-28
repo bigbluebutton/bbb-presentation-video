@@ -88,6 +88,7 @@ class PresentationRenderer:
     presentation_changed: bool
     slide_changed: bool
     pan_zoom_changed: bool
+    tldraw_whiteboard: bool
 
     filename: Optional[str]
     filetype: ImageType
@@ -96,11 +97,19 @@ class PresentationRenderer:
     page_size: Optional[Size]
     pattern: Optional[cairo.Pattern]
 
-    def __init__(self, ctx: cairo.Context, directory: str, size: Size, hide_logo: bool):
+    def __init__(
+        self,
+        ctx: cairo.Context,
+        directory: str,
+        size: Size,
+        hide_logo: bool,
+        tldraw_whiteboard: bool,
+    ):
         self.ctx = ctx
         self.directory = directory
         self.size = size
         self.hide_logo = hide_logo
+        self.tldraw_whiteboard = tldraw_whiteboard
 
         self.presentation = None
         self.presentation_slide = {}
@@ -254,9 +263,13 @@ class PresentationRenderer:
             if self.page_size is None:
                 self.page_size = Size(float(self.size.width), float(self.size.height))
 
-            pos = Position(
-                self.page_size.width * -self.pan.x, self.page_size.height * -self.pan.y
-            )
+            if self.tldraw_whiteboard:
+                pos = Position(-self.pan.x, -self.pan.y)
+            else:
+                pos = Position(
+                    self.page_size.width * -self.pan.x,
+                    self.page_size.height * -self.pan.y,
+                )
             size = Size(
                 self.page_size.width * self.zoom.width,
                 self.page_size.height * self.zoom.height,

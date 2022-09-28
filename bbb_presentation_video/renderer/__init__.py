@@ -188,7 +188,11 @@ class Renderer:
             tldraw_whiteboard=self.tldraw_whiteboard,
         )
         presentation = PresentationRenderer(
-            self.ctx, self.input, Size(self.width, self.height), self.hide_logo
+            self.ctx,
+            self.input,
+            Size(self.width, self.height),
+            self.hide_logo,
+            tldraw_whiteboard=self.tldraw_whiteboard,
         )
         shapes = ShapesRenderer(self.ctx, presentation.transform)
         tldraw = TldrawRenderer(self.ctx, presentation.transform)

@@ -117,7 +117,9 @@ class PanZoomEvent(PerPodEvent):
     zoom: Size
 
 
-def parse_pan_zoom(event: PanZoomEvent, element: etree._Element) -> None:
+def parse_pan_zoom(
+    event: PanZoomEvent, element: etree._Element, *, tldraw_whiteboard: bool
+) -> None:
     name = event["name"]
 
     x_offset = xml_subelement(element, name, "xOffset")
@@ -126,10 +128,13 @@ def parse_pan_zoom(event: PanZoomEvent, element: etree._Element) -> None:
     if x_offset == "NaN" or y_offset == "NaN":
         event["pan"] = Position(0.0, 0.0)
     else:
-        event["pan"] = Position(
-            float(x_offset) * MAGIC_MYSTERY_NUMBER / 100,
-            float(y_offset) * MAGIC_MYSTERY_NUMBER / 100,
-        )
+        if tldraw_whiteboard:
+            event["pan"] = Position(float(x_offset), float(y_offset))
+        else:
+            event["pan"] = Position(
+                float(x_offset) * MAGIC_MYSTERY_NUMBER / 100,
+                float(y_offset) * MAGIC_MYSTERY_NUMBER / 100,
+            )
 
     width_ratio = xml_subelement(element, name, "widthRatio")
     height_ratio = xml_subelement(element, name, "heightRatio")
@@ -475,7 +480,11 @@ def parse_events(
                 elif name == "GotoSlideEvent":
                     parse_slide(cast(SlideEvent, event), element)
                 elif name == "ResizeAndMoveSlideEvent":
-                    parse_pan_zoom(cast(PanZoomEvent, event), element)
+                    parse_pan_zoom(
+                        cast(PanZoomEvent, event),
+                        element,
+                        tldraw_whiteboard=tldraw_whiteboard,
+                    )
                 elif name == "SetPresenterInPodEvent":
                     parse_pod_presenter(cast(PresenterEvent, event), element)
                 elif name == "SharePresentationEvent":
