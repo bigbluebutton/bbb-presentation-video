@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 1999 Red Hat Software
+#
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
 from enum import Enum
 from typing import Tuple
 

@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2004 Red Hat, Inc
+# SPDX-FileCopyrightText: 2021 André Guerreiro <aguerreiro1985@gmail.com>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 from typing import Optional, Tuple
 
 import cairo

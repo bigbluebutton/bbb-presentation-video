@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2021 Stephen Ruiz Ltd
+# SPDX-FileCopyrightText: 2022 Calvin Walton
+#
+# SPDX-License-Identifier: MIT
+
 from math import hypot
 from typing import List, Sequence, Tuple
 

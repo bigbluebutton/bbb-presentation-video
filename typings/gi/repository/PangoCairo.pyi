@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 1999, 2004 Red Hat, Inc
+#
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
 import cairo
 from gi.repository import Pango
 

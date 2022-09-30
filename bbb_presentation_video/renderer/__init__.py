@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import threading
 from collections import deque
 from fractions import Fraction

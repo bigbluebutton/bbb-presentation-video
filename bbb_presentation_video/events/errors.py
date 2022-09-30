@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from typing import Optional
 
 

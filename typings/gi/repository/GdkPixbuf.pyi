@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 1999 The Free Software Foundation
+#
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
 from typing import Union
 
 class Pixbuf:

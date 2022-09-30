@@ -1,0 +1,9 @@
+# Code formatting
+black
+isort
+
+# Type checking/linting
+# PyGObject-stubs - maybe later, current release version is too incomplete
+lxml-stubs
+mypy
+types-setuptools

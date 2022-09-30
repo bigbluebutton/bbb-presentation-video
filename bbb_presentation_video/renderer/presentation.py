@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from enum import Enum
 from math import ceil, floor
 from os.path import abspath, exists
@@ -215,7 +219,7 @@ class PresentationRenderer:
                 assert self.filename is not None
                 try:
                     self.source = GdkPixbuf.Pixbuf.new_from_file(self.filename)
-                except GLib.GError as error:
+                except GLib.Error as error:
                     print(f"Failed to read image: {error}")
                     self.presentation = None
                     self.filetype = ImageType.MISSING
@@ -226,7 +230,7 @@ class PresentationRenderer:
                         ("file", "", urlquote(abspath(self.filename)), "", "")
                     )
                     self.source = Poppler.Document.new_from_file(self.filename, None)
-                except GLib.GError as error:
+                except GLib.Error as error:
                     print(f"Failed to read pdf: {error}")
                     self.presentation = None
                     self.filetype = ImageType.MISSING
