@@ -9,10 +9,10 @@ jobs:
   ubuntu:
     strategy:
       matrix:
-        UBUNTU_VERSION: [ "18.04" ]
+        UBUNTU_VERSION: [ "20.04" ]
         include:
-          - UBUNTU_VERSION: "18.04"
-            UBUNTU_CODENAME: bionic
+          - UBUNTU_VERSION: "20.04"
+            UBUNTU_CODENAME: focal
     runs-on: ubuntu-latest
     container: ubuntu:${{ matrix.UBUNTU_VERSION }}
     defaults:
