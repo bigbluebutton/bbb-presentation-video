@@ -1,3 +1,9 @@
+bbb-presentation-video (4.0.0) UNRELEASED; urgency=medium
+
+  * Add support for tldraw whiteboard
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 04 Oct 2022 16:25:28 -0400
+
 bbb-presentation-video (3.0.4.1) bionic; urgency=medium
 
   * Initial open-source release
