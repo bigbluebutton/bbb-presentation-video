@@ -6,8 +6,8 @@
 name = "bbb-presentation-video"
 description = "Render BigBlueButton recording events.xml file to a video"
 requires-python = ">= 3.8"
-license = { file = LICENSES/GPL-3.0-or-later.txt }
-authors = [ { name = "BigBlueButton Inc. } ]
+license = { file = "LICENSES/GPL-3.0-or-later.txt" }
+authors = [ { name = "BigBlueButton Inc." } ]
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
