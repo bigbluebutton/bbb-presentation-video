@@ -2,34 +2,9 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-[project]
-name = "bbb-presentation-video"
-description = "Render BigBlueButton recording events.xml file to a video"
-requires-python = ">= 3.8"
-license = { file = "LICENSES/GPL-3.0-or-later.txt" }
-authors = [ { name = "BigBlueButton Inc." } ]
-classifiers = [
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3",
-    "Topic :: Communications :: Conferencing",
-    "Topic :: Multimedia :: Video :: Conversion",
-    "Private :: Do Not Upload"
-]
-version = "4.0.0"
-
-[project.urls]
-"Homepage" = "https://github.com/bigbluebutton/bbb-presentation-video"
-"Bug Tracker" = "https://github.com/bigbluebutton/bbb-presentation-video/issues"
-
 [build-system]
 requires = ["setuptools >= 42"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools.package-data]
-"*" = ["*.pdf"]
 
 [tool.mypy]
 python_version = "3.8"

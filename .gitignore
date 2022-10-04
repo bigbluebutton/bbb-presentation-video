@@ -1,4 +1,6 @@
+/dist
 events.xml
+*.egg-info
 *.pyc
 presentation-video
 presentation
