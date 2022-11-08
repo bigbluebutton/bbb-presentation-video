@@ -10,7 +10,7 @@ from attrs import define
 from bbb_presentation_video.events import Size
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.events.tldraw import ShapeData
-from bbb_presentation_video.renderer.tldraw.utils import Bounds, Style
+from bbb_presentation_video.renderer.tldraw.utils import Bounds, DrawPoints, Style
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 
@@ -76,9 +76,6 @@ class LabelledShapeProto(Protocol):
 
 def shape_sort_key(shape: BaseShape) -> float:
     return shape.childIndex
-
-
-DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
 
 
 @define

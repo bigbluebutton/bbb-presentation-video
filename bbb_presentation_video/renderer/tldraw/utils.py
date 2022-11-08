@@ -13,7 +13,9 @@ from attrs import define
 from bbb_presentation_video.events.helpers import Color, color_blend
 from bbb_presentation_video.events.tldraw import StyleData
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import DrawPoints
+
+
+DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
 
 
 @define
