@@ -11,7 +11,9 @@ import perfect_freehand
 from attrs import define
 
 from bbb_presentation_video.events.helpers import Color, color_blend
+from bbb_presentation_video.events.tldraw import StyleData
 from bbb_presentation_video.renderer.tldraw import vec
+from bbb_presentation_video.renderer.tldraw.shape import DrawPoints
 
 
 @define
@@ -130,6 +132,22 @@ class Style:
     font: FontStyle = FontStyle.SCRIPT
     textAlign: AlignStyle = AlignStyle.MIDDLE
 
+    @classmethod
+    def from_data(cls, data: StyleData) -> "Style":
+        font = FontStyle(data["font"]) if "font" in data else FontStyle.SCRIPT
+        textAlign = (
+            AlignStyle(data["textAlign"]) if "textAlign" in data else AlignStyle.MIDDLE
+        )
+        return Style(
+            color=ColorStyle(data["color"]),
+            size=SizeStyle(data["size"]),
+            dash=DashStyle(data["dash"]),
+            isFilled=data["isFilled"],
+            scale=data["scale"],
+            font=font,
+            textAlign=textAlign,
+        )
+
 
 def get_bounds_from_points(
     points: Sequence[Union[Tuple[float, float], Tuple[float, float, float]]]
@@ -158,7 +176,7 @@ def perimeter_of_ellipse(rx: float, ry: float) -> float:
 
 
 def draw_stroke_points(
-    points: Sequence[Tuple[float, float]], stroke_width: float, is_complete: bool
+    points: DrawPoints, stroke_width: float, is_complete: bool
 ) -> List[perfect_freehand.types.StrokePoint]:
     return perfect_freehand.get_stroke_points(
         points,

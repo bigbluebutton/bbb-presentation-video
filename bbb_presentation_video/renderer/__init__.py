@@ -7,10 +7,9 @@ from collections import deque
 from fractions import Fraction
 from queue import Queue
 from subprocess import PIPE, CalledProcessError, Popen
-from typing import Any, Deque, Dict, Iterable, Optional, cast
+from typing import Deque, Iterable, Optional, cast
 
 import cairo
-from attrs import define
 
 from bbb_presentation_video import events
 from bbb_presentation_video.events import Event, PerPodEvent, RecordEvent, Size

@@ -1,3 +1,12 @@
+# Install requires (keep in sync with setup.cfg)
+attrs
+lxml
+packaging
+pycairo
+pygobject
+sortedcollections
+perfect-freehand
+
 # Code formatting
 black
 isort

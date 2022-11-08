@@ -6,7 +6,7 @@ import json
 from collections import deque
 from enum import Enum
 from fractions import Fraction
-from typing import Any, Deque, Dict, List, Optional, Tuple, TypedDict, cast
+from typing import Any, Deque, List, Optional, Tuple, TypedDict, cast
 
 from attrs import define
 from lxml import etree

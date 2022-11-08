@@ -4,3 +4,4 @@ events.xml
 *.pyc
 presentation-video
 presentation
+__pycache__

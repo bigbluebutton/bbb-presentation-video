@@ -3,16 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import hypot
-from typing import Optional, Tuple
+from typing import Tuple
 
 import cairo
-from attr import define
 from attrs import astuple
 
-from bbb_presentation_video.events import Size
-from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import ArrowShape, BaseShape
+from bbb_presentation_video.renderer.tldraw.shape import ArrowShape
 
 
 def bend_point(shape: ArrowShape) -> Tuple[float, float]:

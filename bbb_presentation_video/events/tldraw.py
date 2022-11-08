@@ -3,11 +3,37 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from typing import Any, Dict, TypedDict
+from typing import List, TypedDict
 
 from lxml import etree
 
 from bbb_presentation_video.events.helpers import Position, xml_subelement
+
+
+class StyleData(TypedDict, total=False):
+    color: str
+    dash: str
+    font: str
+    isFilled: bool
+    scale: float
+    size: str
+    textAlign: str
+
+
+class ShapeData(TypedDict, total=False):
+    childIndex: float
+    isComplete: bool
+    label: str
+    labelPoint: List[float]
+    parentId: str
+    point: List[float]
+    points: List[List[float]]
+    radius: List[float]
+    rotation: float
+    size: List[float]
+    style: StyleData
+    text: str
+    type: str
 
 
 class AddShapeEvent(TypedDict):
@@ -16,7 +42,7 @@ class AddShapeEvent(TypedDict):
     presentation: str
     slide: int
     user_id: str
-    data: Dict[Any, Any]
+    data: ShapeData
 
 
 def parse_add_shape(event: AddShapeEvent, element: etree._Element) -> None:

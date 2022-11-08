@@ -24,7 +24,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     Shape,
     TextShape,
     TriangleShape,
-    converter,
+    parse_shape_from_data,
     shape_sort_key,
 )
 from bbb_presentation_video.renderer.tldraw.shape.arrow import finalize_arrow
@@ -50,9 +50,7 @@ class TldrawRenderer:
     presentation_slide: Dict[str, int]
     """The last shown slide on a given presentation."""
 
-    shapes: Dict[
-        str, Dict[int, ValueSortedDict]
-    ]  # should be ValueSortedDict[str, Shape]
+    shapes: Dict[str, Dict[int, "ValueSortedDict[str, Shape]"]]
     """The list of shapes, organized by presentation then slide."""
 
     shapes_changed: bool = False
@@ -73,6 +71,7 @@ class TldrawRenderer:
         fontconfig.app_font_add_dir(resource_filename(__name__, "fonts"))
 
     def ensure_shape_structure(self, presentation: str, slide: int) -> None:
+        """Create the nested dict entries for storing shapes per presentation and slide."""
         try:
             p = self.shapes[presentation]
         except KeyError:
@@ -83,6 +82,7 @@ class TldrawRenderer:
             p[slide] = ValueSortedDict(shape_sort_key)
 
     def presentation_event(self, event: events.PresentationEvent) -> None:
+        """Handler for PresentationEvent updates."""
         presentation = event["presentation"]
         if self.presentation == presentation:
             print("\tTldraw: presentation did not change")
@@ -94,6 +94,7 @@ class TldrawRenderer:
         print(f"\tTldraw: presentation: {self.presentation}, slide: {self.slide}")
 
     def slide_event(self, event: events.SlideEvent) -> None:
+        """Handler for SlideEvent updates."""
         presentation = self.presentation
         if presentation is None:
             print(
@@ -112,22 +113,28 @@ class TldrawRenderer:
         print(f"\tTldraw: presentation: {presentation}, slide: {slide}")
 
     def add_shape_event(self, event: tldraw.AddShapeEvent) -> None:
+        """Handler for tldraw AddShapeEvent updates."""
         presentation = event["presentation"]
         slide = event["slide"]
         id = event["id"]
         data = event["data"]
 
-        if data["type"] == "image":
+        if "type" in data and data["type"] == "image":
             print(f"\tTldraw: ignoring image shape type: {id}")
             return
 
         print(repr(data))
+        self.ensure_shape_structure(presentation, slide)
 
-        shape: Shape = converter.structure(data, Shape)  # type: ignore
+        if id in self.shapes[presentation][slide]:
+            shape = self.shapes[presentation][slide][id]
+            shape.update_from_data(data)
+        else:
+            shape = parse_shape_from_data(data)
+            self.shapes[presentation][slide][id] = shape
+
         print(repr(shape))
 
-        self.ensure_shape_structure(presentation, slide)
-        self.shapes[presentation][slide][id] = shape
         self.shapes_changed = True
         print(
             f"\tTldraw: added shape: {id}, presentation: {presentation}, slide: {slide}, type: {shape.__class__.__name__}"
