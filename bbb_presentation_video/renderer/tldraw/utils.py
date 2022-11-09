@@ -245,9 +245,6 @@ def draw_smooth_path(
     ctx.move_to(prev_mid[0], prev_mid[1])
     for point in points[1:]:
         mid = vec.med(prev_point, point)
-        print(
-            f"Prev Mid: {prev_mid}, Prev Point: {prev_point}, Mid: {mid}, Point: {point}"
-        )
 
         # Cairo can't render quadratic curves directly, need to convert to cubic curves.
         cp1, cp2 = bezier_quad_to_cube(prev_mid, prev_point, mid)
@@ -261,8 +258,6 @@ def draw_smooth_path(
     else:
         point = points[-1]
         mid = point
-
-    print(f"Prev Mid: {prev_mid}, Prev Point: {prev_point}, Mid: {mid}, Point: {point}")
 
     cp1, cp2 = bezier_quad_to_cube(prev_mid, prev_point, mid)
     ctx.curve_to(cp1[0], cp1[1], cp2[0], cp2[1], mid[0], mid[1])
