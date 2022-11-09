@@ -33,8 +33,6 @@ class BaseShape:
 
         if "style" in data:
             self.style = Style.from_data(data["style"])
-        if "parentId" in data:
-            self.parentId = data["parentId"]
         if "childIndex" in data:
             self.childIndex = data["childIndex"]
         if "point" in data:
