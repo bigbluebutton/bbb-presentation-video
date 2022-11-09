@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: bbb-presentation-video
+Upstream-Contact: Calvin Walton <calvin.walton@blindsidenetworks.com>
+Source: https://github.com/blindsidenetworks/bbb-presentation-video
+
+Files: debian/*
+Copyright: 2022 Calvin Walton
+License: MIT
