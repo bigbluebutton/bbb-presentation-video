@@ -1,0 +1,70 @@
+name: Package build
+on: push
+
+jobs:
+  ubuntu:
+    strategy:
+      matrix:
+        UBUNTU_VERSION: [ "18.04" ]
+        include:
+          - UBUNTU_VERSION: "18.04"
+            UBUNTU_CODENAME: bionic
+    runs-on: ubuntu-latest
+    container: ubuntu:${{ matrix.UBUNTU_VERSION }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install debian packaging tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common
+          add-apt-repository -y ppa:git-core/ppa
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends debhelper devscripts equivs git git-buildpackage pristine-tar
+
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        with:
+          path: source
+          fetch-depth: 0
+
+      - name: Set debian package version
+        env:
+          DEBFULLNAME: GitHub Actions
+          DEBEMAIL: hostmaster@blindsidenetworks.com
+          UBUNTU_CODENAME: ${{ matrix.UBUNTU_CODENAME }}
+          UBUNTU_VERSION: ${{ matrix.UBUNTU_VERSION }}
+        run: |
+          cd source
+          DPKG_VERSION=$(dpkg-parsechangelog -S version)
+          DPKG_DISTRIBUTION=$(dpkg-parsechangelog -S distribution)
+          GIT_SEPARATOR='+'
+          DCH_BACKPORT=
+          if [[ $DPKG_DISTRIBUTION == UNRELEASED ]]; then
+            GIT_SEPARATOR='~0+'
+          elif [[ $DPKG_DISTRIBUTION != $UBUNTU_CODENAME ]]; then
+            DCH_BACKPORT="~$UBUNTU_VERSION"
+          fi
+          GIT_DESCRIBE=$(git describe --tags)
+          GIT_TAG=$(git describe --tags --abbrev=0)
+          GIT_EXTRA=${GIT_DESCRIBE#${GIT_TAG}}
+          GIT_EXTRA=${GIT_EXTRA/-/$GIT_SEPARATOR}
+          GIT_EXTRA=${GIT_EXTRA//-/.}
+          DCH_VERSION="${DPKG_VERSION}${DCH_BACKPORT}${GIT_EXTRA}"
+          echo "DCH_VERSION=${DCH_VERSION}" | tee -a $GITHUB_ENV
+          dch --newversion "${DCH_VERSION}" --force-bad-version --distribution "${UBUNTU_CODENAME}" "Automatic Build"
+
+      - name: Cleanup .github directory
+        run: |
+          rm -r source/.github
+
+      - name: Install build dependencies
+        run: |
+          cd source
+          DEBIAN_FRONTEND=noninteractive mk-build-deps -i -r -t 'apt-get -y -o Debug::pkgProblemResolver=yes --no-install-recommends'
+
+      - name: Build package
+        run: |
+          cd source
+          gbp buildpackage --git-ignore-new --git-ignore-branch --no-sign
+          ls ..

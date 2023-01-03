@@ -1,0 +1,28 @@
+Source: bbb-presentation-video
+Section: web
+Priority: extra
+Maintainer: Calvin Walton <calvin.walton@kepstin.ca>
+Build-Depends: debhelper (>= 10.0.0),
+ dh-python,
+ python3 (>= 3.6),
+ python3-setuptools
+Standards-Version: 3.9.2
+X-Python3-Version: >= 3.6
+
+Package: bbb-presentation-video
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends},
+ python3-attr,
+ python3-cairo,
+ python3-gi,
+ python3-gi-cairo,
+ python3-lxml,
+ python3-pkg-resources,
+ gir1.2-glib-2.0,
+ gir1.2-poppler-0.18,
+ gir1.2-gtk-3.0,
+ gir1.2-gdkpixbuf-2.0,
+ gir1.2-pango-1.0,
+ ffmpeg (>= 7:2.5.0),
+ ttf-mscorefonts-installer
+Description: Render BigBlueButton recording events.xml to a video

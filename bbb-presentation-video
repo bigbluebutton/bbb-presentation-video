@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+import bbb_presentation_video
+
+bbb_presentation_video.main()
