@@ -77,7 +77,7 @@ def xml_subelement(element: etree._Element, eventname: str, name: str) -> str:
 def xml_subelement_shape_slide(
     element: etree._Element, shape_slide_off_by_one: bool
 ) -> Optional[int]:
-    slide = xml_subelement_opt(element, "slide")
+    slide = xml_subelement_opt(element, "pageNumber")
     if slide is not None:
         s = int(slide)
         if shape_slide_off_by_one:
