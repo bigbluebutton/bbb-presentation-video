@@ -10,7 +10,7 @@ from typing import IO, Any, cast
 __all__ = ["events", "renderer"]
 
 from bbb_presentation_video.events import DEFAULT_PRESENTATION_POD, parse_events
-from bbb_presentation_video.renderer import Renderer
+from bbb_presentation_video.renderer import Codec, Renderer
 
 DEFAULT_WIDTH = 960
 DEFAULT_HEIGHT = 720
@@ -56,6 +56,14 @@ def main() -> None:
         type=int,
         help="video height (default: %(default)s)",
         default=DEFAULT_HEIGHT,
+    )
+    parser.add_argument(
+        "-c",
+        "--codec",
+        metavar="CODEC",
+        type=Codec,
+        help="output file video codec (default: %(default)s)",
+        default="vp9",
     )
     parser.add_argument(
         "-r",
@@ -107,7 +115,9 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f'Using recording data from "{args.input}"')
-    print(f"Video size is {args.width}x{args.height}, framerate {args.framerate}")
+    print(
+        f"Video size is {args.width}x{args.height}, framerate {args.framerate}, codec {args.codec.value}"
+    )
     print(f'Outputting video to "{args.output}"')
 
     print("Parsing events XML...")
@@ -133,6 +143,7 @@ def main() -> None:
         args.width,
         args.height,
         args.framerate,
+        args.codec,
         args.start,
         args.end,
         args.pod,

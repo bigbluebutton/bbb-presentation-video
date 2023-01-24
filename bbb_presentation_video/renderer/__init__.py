@@ -4,6 +4,7 @@
 
 import threading
 from collections import deque
+from enum import Enum
 from fractions import Fraction
 from queue import Queue
 from subprocess import PIPE, CalledProcessError, Popen
@@ -22,15 +23,23 @@ from bbb_presentation_video.renderer.whiteboard import ShapesRenderer
 DRAWING_BG = Color.from_int(0xE2E8ED)
 
 
+class Codec(Enum):
+    H264 = "h264"
+    VP9 = "vp9"
+
+
 class Encoder:
     queue: "Queue[Optional[bytearray]]"
     ret_queue: "Queue[bytearray]"
 
-    def __init__(self, output: str, width: int, height: int, framerate: Fraction):
+    def __init__(
+        self, output: str, width: int, height: int, framerate: Fraction, codec: Codec
+    ):
         self.output = output
         self.width = width
         self.height = height
         self.framerate = framerate
+        self.codec = codec
 
         self.queue = Queue()
         self.ret_queue = Queue()
@@ -52,6 +61,19 @@ class Encoder:
         self.thread.join()
 
     def run(self) -> None:
+        if self.codec == Codec.H264:
+            codec_opts = ["-c:v", "libx264", "-qp", "0", "-preset", "ultrafast"]
+        elif self.codec == Codec.VP9:
+            codec_opts = [
+                "-c:v",
+                "libvpx-vp9",
+                "-deadline",
+                "realtime",
+                "-cpu-used",
+                "8",
+                "-row-mt",
+                "1",
+            ]
         # Launch the video encoder
         # Note that the hardcoded 'bgr0' here is only applicable in
         # little-endian!
@@ -75,12 +97,7 @@ class Encoder:
             "yuv420p",
             "-vf",
             f"mpdecimate=max={int(round(self.framerate)):d}:hi=1:lo=1:frac=1",
-            "-c:v",
-            "libx264",
-            "-qp",
-            "0",
-            "-preset",
-            "ultrafast",
+            *codec_opts,
             "-threads",
             "2",
             "-g",
@@ -118,6 +135,7 @@ class Renderer:
     width: int
     height: int
     framerate: Fraction
+    codec: Codec
     pod_id: str
     hide_logo: bool
     tldraw_whiteboard: bool
@@ -136,6 +154,7 @@ class Renderer:
         width: int,
         height: int,
         framerate: Fraction,
+        codec: Codec,
         start_time: Fraction,
         end_time: Fraction,
         pod_id: str,
@@ -150,6 +169,7 @@ class Renderer:
         self.width = width
         self.height = height
         self.framerate = framerate
+        self.codec = codec
         self.pod_id = pod_id
         self.hide_logo = hide_logo
         self.tldraw_whiteboard = tldraw_whiteboard
@@ -200,7 +220,9 @@ class Renderer:
         shapes = ShapesRenderer(self.ctx, presentation.transform)
         tldraw = TldrawRenderer(self.ctx, presentation.transform)
 
-        encoder = Encoder(self.output, self.width, self.height, self.framerate)
+        encoder = Encoder(
+            self.output, self.width, self.height, self.framerate, self.codec
+        )
 
         presentation_changed = True
         shapes_changed = False
