@@ -71,6 +71,8 @@ class Encoder:
                 "realtime",
                 "-cpu-used",
                 "8",
+                "-lossless",
+                "1",
                 "-row-mt",
                 "1",
             ]
