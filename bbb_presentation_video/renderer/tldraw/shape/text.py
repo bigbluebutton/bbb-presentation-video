@@ -50,8 +50,10 @@ def finalize_text(ctx: cairo.Context, id: str, shape: TextShape) -> None:
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
     layout.set_font_description(font)
-    layout.set_width(int(shape.size.width * Pango.SCALE))
-    layout.set_height(int(shape.size.height * Pango.SCALE))
+    if shape.size.width > 0:
+        layout.set_width(int(shape.size.width * Pango.SCALE))
+    if shape.size.height > 0:
+        layout.set_height(int(shape.size.height * Pango.SCALE))
     layout.set_wrap(Pango.WrapMode.WORD_CHAR)
     if style.textAlign == AlignStyle.START:
         layout.set_alignment(Pango.Alignment.LEFT)
@@ -84,8 +86,10 @@ def finalize_label(ctx: cairo.Context, shape: LabelledShapeProto) -> None:
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
     layout.set_font_description(font)
-    layout.set_width(int(shape.size.width * Pango.SCALE))
-    layout.set_height(int(shape.size.height * Pango.SCALE))
+    if shape.size.width > 0:
+        layout.set_width(int(shape.size.width * Pango.SCALE))
+    if shape.size.height > 0:
+        layout.set_height(int(shape.size.height * Pango.SCALE))
     layout.set_wrap(Pango.WrapMode.WORD_CHAR)
     layout.set_alignment(Pango.Alignment.CENTER)
 

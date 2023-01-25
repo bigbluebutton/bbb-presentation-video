@@ -21,6 +21,7 @@ class StyleData(TypedDict, total=False):
 
 
 class ShapeData(TypedDict, total=False):
+    bend: float
     childIndex: float
     isComplete: bool
     label: str

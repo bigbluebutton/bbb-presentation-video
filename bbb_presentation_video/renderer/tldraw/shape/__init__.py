@@ -55,6 +55,8 @@ class RotatableShapeProto(Protocol):
         """Update the common size and rotation fields."""
         if "size" in data:
             self.size = Size(*data["size"])
+        else:
+            self.size = Size(0, 0)
         if "rotation" in data:
             self.rotation = data["rotation"]
 
@@ -182,9 +184,6 @@ class TextShape(BaseShape):
 
         RotatableShapeProto.update_from_data(self, data)
 
-        self.cached_path = None
-        self.cached_outline_path = None
-
 
 @define
 class GroupShape(BaseShape):
@@ -233,6 +232,10 @@ class ArrowShape(BaseShape):
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
 
+        if "bend" in data:
+            self.bend = data["bend"]
+
+        LabelledShapeProto.update_from_data(self, data)
         RotatableShapeProto.update_from_data(self, data)
 
 
