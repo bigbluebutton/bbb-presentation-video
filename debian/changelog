@@ -1,6 +1,6 @@
-bbb-presentation-video (4.0.0) UNRELEASED; urgency=medium
+bbb-presentation-video (4.0.0~beta1) focal; urgency=medium
 
-  * Add support for tldraw whiteboard
+  * Initial support for tldraw whiteboard
 
  -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 04 Oct 2022 16:25:28 -0400
 

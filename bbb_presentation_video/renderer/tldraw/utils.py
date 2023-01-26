@@ -103,8 +103,8 @@ class DashStyle(Enum):
 class FontStyle(Enum):
     SCRIPT: str = "script"
     SANS: str = "sans"
-    ERIF: str = "erif"  # SIC
-    SERIF: str = "serif"  # In case they fix the spelling
+    ERIF: str = "erif"  # Old tldraw versions had this spelling mistake
+    SERIF: str = "serif"
     MONO: str = "mono"
 
 
@@ -136,19 +136,23 @@ class Style:
 
     @classmethod
     def from_data(cls, data: StyleData) -> "Style":
-        font = FontStyle(data["font"]) if "font" in data else FontStyle.SCRIPT
-        textAlign = (
-            AlignStyle(data["textAlign"]) if "textAlign" in data else AlignStyle.MIDDLE
-        )
-        return Style(
-            color=ColorStyle(data["color"]),
-            size=SizeStyle(data["size"]),
-            dash=DashStyle(data["dash"]),
-            isFilled=data["isFilled"],
-            scale=data["scale"],
-            font=font,
-            textAlign=textAlign,
-        )
+        style = Style()
+        if "color" in data:
+            style.color = ColorStyle(data["color"])
+        if "size" in data:
+            style.size = SizeStyle(data["size"])
+        if "dash" in data:
+            style.dash = DashStyle(data["dash"])
+        if "isFilled" in data:
+            style.isFilled = data["isFilled"]
+        if "scale" in data:
+            style.scale = data["scale"]
+        if "font" in data:
+            style.font = FontStyle(data["font"])
+        if "textAlign" in data:
+            style.textAlign = AlignStyle(data["textAlign"])
+        
+        return style
 
 
 def get_bounds_from_points(
