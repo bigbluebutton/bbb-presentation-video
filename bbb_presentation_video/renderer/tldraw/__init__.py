@@ -148,6 +148,8 @@ class TldrawRenderer:
             del self.shapes[presentation][slide][id]
         except KeyError:
             return
+        except ValueError:
+            return
         self.shapes_changed = True
         print(
             f"\tTldraw: deleted shape: {id}, presentation: {presentation}, slide: {slide}"
