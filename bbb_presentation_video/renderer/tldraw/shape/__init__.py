@@ -4,8 +4,8 @@
 
 from typing import List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
+import attr
 import cairo
-from attrs import define
 
 from bbb_presentation_video.events import Size
 from bbb_presentation_video.events.helpers import Position
@@ -15,7 +15,7 @@ from bbb_presentation_video.renderer.tldraw.utils import Bounds, DrawPoints, Sty
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class BaseShape:
     """The base class for all tldraw shapes."""
 
@@ -45,6 +45,7 @@ class BaseShape:
         if "point" in data:
             point = data["point"]
             self.point = Position(point[0], point[1])
+
 
 class RotatableShapeProto(Protocol):
     """The size and rotation fields that are common to many shapes."""
@@ -77,7 +78,7 @@ def shape_sort_key(shape: BaseShape) -> float:
     return shape.childIndex
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class DrawShape(BaseShape):
     points: DrawPoints
     isComplete: bool
@@ -118,7 +119,7 @@ class DrawShape(BaseShape):
         self.cached_outline_path = None
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class RectangleShape(BaseShape):
     # LabelledShapeProto
     label: Optional[str]
@@ -149,7 +150,7 @@ class RectangleShape(BaseShape):
         self.cached_outline_path = None
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class EllipseShape(BaseShape):
     radius: Tuple[float, float]
 
@@ -187,7 +188,7 @@ class EllipseShape(BaseShape):
         self.cached_outline_path = None
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class TriangleShape(BaseShape):
     # LabelledShapeProto
     label: Optional[str]
@@ -218,7 +219,7 @@ class TriangleShape(BaseShape):
         self.cached_outline_path = None
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class TextShape(BaseShape):
     text: str
 
@@ -242,17 +243,17 @@ class TextShape(BaseShape):
         RotatableShapeProto.update_from_data(self, data)
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class GroupShape(BaseShape):
     # children: List[str]
     # size: Size
     # rotation: float
-    
+
     def __init__(self, data: ShapeData) -> None:
         super().__init__(data)
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class StickyShape(BaseShape):
     text: str
 
@@ -276,12 +277,12 @@ class StickyShape(BaseShape):
         RotatableShapeProto.update_from_data(self, data)
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowHandle:
     point: Position
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowHandles:
     start: ArrowHandle
     end: ArrowHandle
@@ -294,7 +295,7 @@ class ArrowHandles:
         self.bend = ArrowHandle(Position(0, 0))
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowShape(BaseShape):
     bend: float
     handles: ArrowHandles
@@ -310,7 +311,7 @@ class ArrowShape(BaseShape):
     def __init__(self, data: ShapeData) -> None:
         self.bend = 0.0
         self.handles = ArrowHandles()
-        self.label = None,
+        self.label = (None,)
         self.labelPoint = Position(0.5, 0.5)
         self.size = Size(0.0, 0.0)
         self.rotation = 0.0
@@ -322,7 +323,7 @@ class ArrowShape(BaseShape):
 
         if "bend" in data:
             self.bend = data["bend"]
-        
+
         # TODO: parse this from data
         self.handles = ArrowHandles()
 

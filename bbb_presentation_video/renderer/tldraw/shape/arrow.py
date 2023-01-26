@@ -6,7 +6,7 @@ from math import hypot
 from typing import Tuple
 
 import cairo
-from attrs import astuple
+from attr import astuple
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import ArrowShape

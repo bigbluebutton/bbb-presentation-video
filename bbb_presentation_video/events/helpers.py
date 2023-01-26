@@ -4,7 +4,7 @@
 
 from typing import Iterator, Optional, Type, TypeVar
 
-from attrs import define
+import attr
 from lxml import etree
 
 from bbb_presentation_video.events.errors import EventParsingError
@@ -12,7 +12,7 @@ from bbb_presentation_video.events.errors import EventParsingError
 _ColorSelf = TypeVar("_ColorSelf", bound="Color")
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Color:
     r: float
     g: float
@@ -46,7 +46,7 @@ def color_blend(a: Color, b: Color, t: float) -> Color:
     )
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Position:
     x: float
     y: float

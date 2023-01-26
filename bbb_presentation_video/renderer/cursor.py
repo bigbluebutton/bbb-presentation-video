@@ -5,8 +5,8 @@
 from math import pi, sqrt
 from typing import Dict, Optional
 
+import attr
 import cairo
-from attrs import define
 
 from bbb_presentation_video.events import (
     CursorEvent,
@@ -42,7 +42,7 @@ def apply_legacy_cursor_transform(ctx: cairo.Context, t: Transform) -> None:
     ctx.clip()
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Cursor:
     label: Optional[str]
     position: Optional[Position] = None

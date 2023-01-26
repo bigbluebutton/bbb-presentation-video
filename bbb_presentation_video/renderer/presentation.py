@@ -9,9 +9,9 @@ from typing import Dict, Optional, Union
 from urllib.parse import quote as urlquote
 from urllib.parse import urlunsplit
 
+import attr
 import cairo
 import gi
-from attrs import define
 from pkg_resources import resource_filename
 
 gi.require_version("Gdk", "3.0")
@@ -50,7 +50,7 @@ LOGO_TYPE = ImageType.PDF
 DRAWING_SIZE = 1200
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Transform(object):
     padding: Size
     scale: float
