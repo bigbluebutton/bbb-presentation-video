@@ -8,7 +8,7 @@ from enum import Enum
 from fractions import Fraction
 from typing import Any, Deque, List, Optional, Tuple, TypedDict, cast
 
-from attrs import define
+import attr
 from lxml import etree
 from packaging.version import Version
 
@@ -26,7 +26,7 @@ MAGIC_MYSTERY_NUMBER = 2.0
 DEFAULT_PRESENTATION_POD = "DEFAULT_PRESENTATION_POD"
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Size:
     width: float
     height: float

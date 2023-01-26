@@ -1,5 +1,5 @@
 # Install requires (keep in sync with setup.cfg)
-attrs
+attrs == 19.3.0 # Ensure we use APIs that work on Ubuntu 20.04
 lxml
 packaging
 pycairo

@@ -6,19 +6,18 @@ from enum import Enum
 from math import floor, inf, pi, sqrt
 from typing import Dict, List, Sequence, Tuple, Union
 
+import attr
 import cairo
 import perfect_freehand
-from attrs import define
 
 from bbb_presentation_video.events.helpers import Color, color_blend
 from bbb_presentation_video.events.tldraw import StyleData
 from bbb_presentation_video.renderer.tldraw import vec
 
-
 DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Bounds:
     min_x: float
     min_y: float
@@ -124,7 +123,7 @@ class AlignStyle(Enum):
     JUSTIFY: str = "justify"
 
 
-@define
+@attr.s(order=False, slots=True, auto_attribs=True)
 class Style:
     color: ColorStyle = ColorStyle.BLACK
     size: SizeStyle = SizeStyle.SMALL
@@ -151,7 +150,7 @@ class Style:
             style.font = FontStyle(data["font"])
         if "textAlign" in data:
             style.textAlign = AlignStyle(data["textAlign"])
-        
+
         return style
 
 
