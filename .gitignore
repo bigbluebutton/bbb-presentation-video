@@ -5,3 +5,4 @@ events.xml
 presentation-video
 presentation
 __pycache__
+.venv
