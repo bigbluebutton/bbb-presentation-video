@@ -19,21 +19,20 @@ BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 class BaseShape:
     """The base class for all tldraw shapes."""
 
-    data: ShapeData
+    data: ShapeData = {}
     """A copy of the original JSON shape data from tldraw, for handling updates."""
-    style: Style
+    style: Style = Style()
     """Style related properties, such as color, line size, font."""
-    childIndex: float
+    childIndex: float = 1.0
     """Unsure: possibly z-position of this shape within a group?"""
-    point: Position
+    point: Position = Position(0.0, 0.0)
     """Position of the origin of the shape."""
 
-    def __init__(self, data: ShapeData) -> None:
-        self.style = Style()
-        self.childIndex = 1
-        self.point = Position(0, 0)
-
-        self.update_from_data(data)
+    @classmethod
+    def from_data(cls: Type[BaseShapeSelf], data: ShapeData) -> BaseShapeSelf:
+        shape = cls()
+        shape.update_from_data(data)
+        return shape
 
     def update_from_data(self, data: ShapeData) -> None:
         self.data = data
@@ -80,24 +79,16 @@ def shape_sort_key(shape: BaseShape) -> float:
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class DrawShape(BaseShape):
-    points: DrawPoints
-    isComplete: bool
+    points: DrawPoints = []
+    isComplete: bool = False
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
+    size: Size = Size(0.0, 0.0)
+    rotation: float = 0.0
 
     cached_bounds: Optional[Bounds] = None
     cached_path: Optional[cairo.Path] = None
     cached_outline_path: Optional[cairo.Path] = None
-
-    def __init__(self, data: ShapeData) -> None:
-        self.points = []
-        self.isComplete = False
-        self.size = Size(0, 0)
-        self.rotation = 0
-
-        super().__init__(data)
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -122,23 +113,15 @@ class DrawShape(BaseShape):
 @attr.s(order=False, slots=True, auto_attribs=True)
 class RectangleShape(BaseShape):
     # LabelledShapeProto
-    label: Optional[str]
-    labelPoint: Position
+    label: Optional[str] = None
+    labelPoint: Position = Position(0.5, 0.5)
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
+    size: Size = Size(1.0, 1.0)
+    rotation: float = 0.0
 
     cached_path: Optional[cairo.Path] = None
     cached_outline_path: Optional[cairo.Path] = None
-
-    def __init__(self, data: ShapeData) -> None:
-        self.label = None
-        self.labelPoint = Position(0.5, 0.5)
-        self.size = Size(1, 1)
-        self.rotation = 0
-
-        super().__init__(data)
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -152,27 +135,18 @@ class RectangleShape(BaseShape):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class EllipseShape(BaseShape):
-    radius: Tuple[float, float]
+    radius: Tuple[float, float] = (1.0, 1.0)
 
     # LabelledShapeProto
-    label: Optional[str]
-    labelPoint: Position
+    label: Optional[str] = None
+    labelPoint: Position = Position(0.5, 0.5)
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
+    size: Size = Size(1.0, 1.0)
+    rotation: float = 0.0
 
     cached_path: Optional[cairo.Path] = None
     cached_outline_path: Optional[cairo.Path] = None
-
-    def __init__(self, data: ShapeData) -> None:
-        self.radius = (1.0, 1.0)
-        self.label = None
-        self.labelPoint = Position(0.5, 0.5)
-        self.size = Size(1.0, 1.0)
-        self.rotation = 0
-
-        super().__init__(data)
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -191,23 +165,15 @@ class EllipseShape(BaseShape):
 @attr.s(order=False, slots=True, auto_attribs=True)
 class TriangleShape(BaseShape):
     # LabelledShapeProto
-    label: Optional[str]
-    labelPoint: Position
+    label: Optional[str] = None
+    labelPoint: Position = Position(0.5, 0.5)
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
+    size: Size = Size(1.0, 1.0)
+    rotation: float = 0.0
 
     cached_path: Optional[cairo.Path] = None
     cached_outline_path: Optional[cairo.Path] = None
-
-    def __init__(self, data: ShapeData) -> None:
-        self.label = None
-        self.labelPoint = Position(0.5, 0.5)
-        self.size = Size(1.0, 1.0)
-        self.rotation = 0
-
-        super().__init__(data)
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -221,18 +187,11 @@ class TriangleShape(BaseShape):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class TextShape(BaseShape):
-    text: str
+    text: str = ""
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
-
-    def __init__(self, data: ShapeData) -> None:
-        self.text = ""
-        self.size = Size(0.0, 0.0)
-        self.rotation = 0.0
-
-        super().__init__(data)
+    size: Size = Size(0.0, 0.0)
+    rotation: float = 0.0
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -249,24 +208,16 @@ class GroupShape(BaseShape):
     # size: Size
     # rotation: float
 
-    def __init__(self, data: ShapeData) -> None:
-        super().__init__(data)
+    pass
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class StickyShape(BaseShape):
-    text: str
+    text: str = ""
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
-
-    def __init__(self, data: ShapeData) -> None:
-        self.text = ""
-        self.size = Size(200.0, 200.0)
-        self.rotation = 0
-
-        super().__init__(data)
+    size: Size = Size(200.0, 200.0)
+    rotation: float = 0.0
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -279,53 +230,34 @@ class StickyShape(BaseShape):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowHandle:
-    point: Position
+    point: Position = Position(0.0, 0.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowHandles:
-    start: ArrowHandle
-    end: ArrowHandle
-    bend: ArrowHandle
-
-    def __init__(self):
-        # TODO: This is temporary so arrows don't crash the app. Needs to be replaced with proper parsing.
-        self.start = ArrowHandle(Position(0, 0))
-        self.end = ArrowHandle(Position(0, 0))
-        self.bend = ArrowHandle(Position(0, 0))
+    start: ArrowHandle = ArrowHandle()
+    end: ArrowHandle = ArrowHandle()
+    bend: ArrowHandle = ArrowHandle()
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowShape(BaseShape):
-    bend: float
-    handles: ArrowHandles
+    bend: float = 0.0
+    handles: ArrowHandles = ArrowHandles()
 
     # LabelledShapeProto
-    label: Optional[str]
-    labelPoint: Position
+    label: Optional[str] = None
+    labelPoint: Position = Position(0.5, 0.5)
 
     # RotatableShapeProto
-    size: Size
-    rotation: float
-
-    def __init__(self, data: ShapeData) -> None:
-        self.bend = 0.0
-        self.handles = ArrowHandles()
-        self.label = (None,)
-        self.labelPoint = Position(0.5, 0.5)
-        self.size = Size(0.0, 0.0)
-        self.rotation = 0.0
-
-        super().__init__(data)
+    size: Size = Size(0.0, 0.0)
+    rotation: float = 0.0
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
 
         if "bend" in data:
             self.bend = data["bend"]
-
-        # TODO: parse this from data
-        self.handles = ArrowHandles()
 
         LabelledShapeProto.update_from_data(self, data)
         RotatableShapeProto.update_from_data(self, data)
@@ -346,21 +278,21 @@ Shape = Union[
 def parse_shape_from_data(data: ShapeData) -> Shape:
     type = data["type"]
     if type == "draw":
-        return DrawShape(data)
+        return DrawShape.from_data(data)
     elif type == "rectangle":
-        return RectangleShape(data)
+        return RectangleShape.from_data(data)
     elif type == "ellipse":
-        return EllipseShape(data)
+        return EllipseShape.from_data(data)
     elif type == "triangle":
-        return TriangleShape(data)
+        return TriangleShape.from_data(data)
     elif type == "arrow":
-        return ArrowShape(data)
+        return ArrowShape.from_data(data)
     elif type == "text":
-        return TextShape(data)
+        return TextShape.from_data(data)
     elif type == "group":
-        return GroupShape(data)
+        return GroupShape.from_data(data)
     elif type == "sticky":
-        return StickyShape(data)
+        return StickyShape.from_data(data)
     else:
         raise Exception(f"Unknown shape type: {type}")
 
