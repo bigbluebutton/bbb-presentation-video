@@ -4,7 +4,7 @@
 
 from math import floor
 from random import Random
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
@@ -97,7 +97,12 @@ def rectangle_stroke_points(
     )
 
 
-def finalize_draw_rectangle(ctx: cairo.Context, id: str, shape: RectangleShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_draw_rectangle(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
+) -> None:
     style = shape.style
 
     stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
@@ -138,7 +143,9 @@ def finalize_draw_rectangle(ctx: cairo.Context, id: str, shape: RectangleShape) 
     ctx.stroke()
 
 
-def finalize_dash_rectangle(ctx: cairo.Context, shape: RectangleShape) -> None:
+def finalize_dash_rectangle(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: RectangleShape
+) -> None:
     style = shape.style
     stroke_width = STROKE_WIDTHS[style.size] * 1.618
 
@@ -175,7 +182,9 @@ def finalize_dash_rectangle(ctx: cairo.Context, shape: RectangleShape) -> None:
         ctx.stroke()
 
 
-def finalize_rectangle(ctx: cairo.Context, id: str, shape: RectangleShape) -> None:
+def finalize_rectangle(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
+) -> None:
     print(f"\tTldraw: Finalizing Rectangle: {id}")
 
     apply_shape_rotation(ctx, shape)

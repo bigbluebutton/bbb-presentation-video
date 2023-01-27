@@ -4,7 +4,7 @@
 
 from math import hypot
 from random import Random
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
@@ -74,7 +74,12 @@ def triangle_stroke_points(
     )
 
 
-def finalize_draw_triangle(ctx: cairo.Context, id: str, shape: TriangleShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_draw_triangle(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: TriangleShape
+) -> None:
     style = shape.style
 
     stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
@@ -115,7 +120,9 @@ def finalize_draw_triangle(ctx: cairo.Context, id: str, shape: TriangleShape) ->
     ctx.stroke()
 
 
-def finalize_dash_triangle(ctx: cairo.Context, shape: TriangleShape) -> None:
+def finalize_dash_triangle(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: TriangleShape
+) -> None:
     style = shape.style
     stroke_width = STROKE_WIDTHS[style.size] * 1.618
 
@@ -152,7 +159,9 @@ def finalize_dash_triangle(ctx: cairo.Context, shape: TriangleShape) -> None:
         ctx.stroke()
 
 
-def finalize_triangle(ctx: cairo.Context, id: str, shape: TriangleShape) -> None:
+def finalize_triangle(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: TriangleShape
+) -> None:
     print(f"\tTldraw: Finalizing Triangle: {id}")
 
     apply_shape_rotation(ctx, shape)

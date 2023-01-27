@@ -297,7 +297,12 @@ def parse_shape_from_data(data: ShapeData) -> Shape:
         raise Exception(f"Unknown shape type: {type}")
 
 
-def apply_shape_rotation(ctx: cairo.Context, shape: RotatableShapeProto) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def apply_shape_rotation(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: RotatableShapeProto
+) -> None:
     x = shape.size.width / 2
     y = shape.size.height / 2
     ctx.translate(x, y)

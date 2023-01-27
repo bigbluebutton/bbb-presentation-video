@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import TypeVar
+
 import cairo
 import gi
 
@@ -37,7 +39,12 @@ def set_pango_font(pctx: Pango.Context, style: Style) -> Pango.FontDescription:
     return font
 
 
-def finalize_text(ctx: cairo.Context, id: str, shape: TextShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_text(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: TextShape
+) -> None:
     print(f"\tTldraw: Finalizing Text: {id}")
 
     apply_shape_rotation(ctx, shape)
@@ -72,7 +79,9 @@ def finalize_text(ctx: cairo.Context, id: str, shape: TextShape) -> None:
     PangoCairo.show_layout(ctx, layout)
 
 
-def finalize_label(ctx: cairo.Context, shape: LabelledShapeProto) -> None:
+def finalize_label(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: LabelledShapeProto
+) -> None:
     if shape.label is None or shape.label == "":
         return
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import pi, sin
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 import cairo
 import perfect_freehand
@@ -26,7 +26,12 @@ def freehand_draw_easing(t: float) -> float:
     return sin(t * pi) / 2
 
 
-def finalize_draw(ctx: cairo.Context, id: str, shape: DrawShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_draw(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: DrawShape
+) -> None:
     print(f"\tTldraw: Finalizing Draw: {id}")
 
     apply_shape_rotation(ctx, shape)

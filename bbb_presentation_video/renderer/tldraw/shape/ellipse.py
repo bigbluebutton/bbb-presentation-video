@@ -4,7 +4,7 @@
 
 from math import cos, pi, sin
 from random import Random
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
@@ -62,7 +62,12 @@ def ellipse_stroke_points(
     )
 
 
-def finalize_draw_ellipse(ctx: cairo.Context, id: str, shape: EllipseShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_draw_ellipse(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: EllipseShape
+) -> None:
     style = shape.style
 
     stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
@@ -104,7 +109,9 @@ def finalize_draw_ellipse(ctx: cairo.Context, id: str, shape: EllipseShape) -> N
     ctx.stroke()
 
 
-def finalize_dash_ellipse(ctx: cairo.Context, shape: EllipseShape) -> None:
+def finalize_dash_ellipse(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape
+) -> None:
     style = shape.style
     stroke_width = STROKE_WIDTHS[style.size] * 1.618
     radius_x = shape.radius[0]
@@ -144,7 +151,9 @@ def finalize_dash_ellipse(ctx: cairo.Context, shape: EllipseShape) -> None:
     ctx.stroke()
 
 
-def finalize_ellipse(ctx: cairo.Context, id: str, shape: EllipseShape) -> None:
+def finalize_ellipse(
+    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: EllipseShape
+) -> None:
     print(f"\tTldraw: Finalizing Ellipse: {id}")
 
     apply_shape_rotation(ctx, shape)

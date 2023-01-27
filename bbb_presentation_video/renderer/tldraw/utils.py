@@ -4,7 +4,7 @@
 
 from enum import Enum
 from math import floor, inf, pi, sqrt
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo
@@ -232,8 +232,13 @@ def bezier_quad_to_cube(
     )
 
 
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
 def draw_smooth_path(
-    ctx: cairo.Context, points: Sequence[Tuple[float, float]], closed: bool = True
+    ctx: "cairo.Context[CairoSomeSurface]",
+    points: Sequence[Tuple[float, float]],
+    closed: bool = True,
 ) -> None:
     """Turn an array of points into a path of quadratic curves."""
 
@@ -270,7 +275,7 @@ def draw_smooth_path(
 
 
 def draw_smooth_stroke_point_path(
-    ctx: cairo.Context,
+    ctx: "cairo.Context[CairoSomeSurface]",
     points: Sequence[perfect_freehand.types.StrokePoint],
     closed: bool = True,
 ) -> None:

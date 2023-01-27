@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import pi, sqrt
-from typing import Dict, Optional
+from typing import Dict, Generic, Optional, TypeVar
 
 import attr
 import cairo
@@ -32,8 +32,12 @@ CURSOR_PRESENTER = Color.from_int(0xFF0000, CURSOR_OPACITY)
 CURSOR_OTHER = Color.from_int(0x2A992A, CURSOR_OPACITY)
 CURSOR_RADIUS = 0.005  # 6px on 960x720
 
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
-def apply_legacy_cursor_transform(ctx: cairo.Context, t: Transform) -> None:
+
+def apply_legacy_cursor_transform(
+    ctx: "cairo.Context[CairoSomeSurface]", t: Transform
+) -> None:
     ctx.translate(t.padding.width, t.padding.height)
     ctx.save()
     ctx.scale(t.scale, t.scale)
@@ -48,8 +52,8 @@ class Cursor:
     position: Optional[Position] = None
 
 
-class CursorRenderer:
-    ctx: cairo.Context
+class CursorRenderer(Generic[CairoSomeSurface]):
+    ctx: "cairo.Context[CairoSomeSurface]"
     cursors: Dict[str, Cursor]
     legacy_cursor: Cursor
 
@@ -65,7 +69,13 @@ class CursorRenderer:
     pattern: Optional[cairo.Pattern]
     radius: float
 
-    def __init__(self, ctx: cairo.Context, size: Size, *, tldraw_whiteboard: bool):
+    def __init__(
+        self,
+        ctx: "cairo.Context[CairoSomeSurface]",
+        size: Size,
+        *,
+        tldraw_whiteboard: bool,
+    ):
         self.ctx = ctx
         self.cursors = {}
         self.legacy_cursor = Cursor(label=None)

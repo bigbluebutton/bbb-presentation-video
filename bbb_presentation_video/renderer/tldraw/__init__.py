@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Dict, Optional, cast
+from typing import Dict, Generic, Optional, TypeVar, cast
 
 import cairo
 from pkg_resources import resource_filename
@@ -34,11 +34,13 @@ from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rect
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
 
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
-class TldrawRenderer:
+
+class TldrawRenderer(Generic[CairoSomeSurface]):
     """Render tldraw whiteboard shapes"""
 
-    ctx: cairo.Context
+    ctx: "cairo.Context[CairoSomeSurface]"
     """The cairo rendering context for drawing the whiteboard."""
 
     presentation: Optional[str] = None
@@ -62,7 +64,7 @@ class TldrawRenderer:
     pattern: Optional[cairo.Pattern] = None
     """Cached rendered shapes for the current transform."""
 
-    def __init__(self, ctx: cairo.Context, transform: Transform):
+    def __init__(self, ctx: "cairo.Context[CairoSomeSurface]", transform: Transform):
         self.ctx = ctx
         self.presentation_slide = {}
         self.shapes = {}

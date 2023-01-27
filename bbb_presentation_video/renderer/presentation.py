@@ -5,7 +5,7 @@
 from enum import Enum
 from math import ceil, floor
 from os.path import abspath, exists
-from typing import Dict, Optional, Union
+from typing import Dict, Generic, Optional, TypeVar, Union
 from urllib.parse import quote as urlquote
 from urllib.parse import urlunsplit
 
@@ -60,7 +60,10 @@ class Transform(object):
     shapes_size: Size
 
 
-def apply_slide_transform(ctx: cairo.Context, t: Transform) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def apply_slide_transform(ctx: "cairo.Context[CairoSomeSurface]", t: Transform) -> None:
     ctx.translate(t.padding.width, t.padding.height)
     ctx.scale(t.scale, t.scale)
     ctx.rectangle(0, 0, t.size.width, t.size.height)
@@ -68,7 +71,9 @@ def apply_slide_transform(ctx: cairo.Context, t: Transform) -> None:
     ctx.translate(-t.pos.x, -t.pos.y)
 
 
-def apply_shapes_transform(ctx: cairo.Context, t: Transform) -> Size:
+def apply_shapes_transform(
+    ctx: "cairo.Context[CairoSomeSurface]", t: Transform
+) -> Size:
     apply_slide_transform(ctx, t)
     ctx.scale(t.shapes_scale, t.shapes_scale)
     return t.shapes_size
@@ -77,8 +82,8 @@ def apply_shapes_transform(ctx: cairo.Context, t: Transform) -> Size:
 apply_tldraw_transform = apply_shapes_transform
 
 
-class PresentationRenderer:
-    ctx: cairo.Context
+class PresentationRenderer(Generic[CairoSomeSurface]):
+    ctx: "cairo.Context[CairoSomeSurface]"
     directory: str
     size: Size
     hide_logo: bool
@@ -103,7 +108,7 @@ class PresentationRenderer:
 
     def __init__(
         self,
-        ctx: cairo.Context,
+        ctx: "cairo.Context[CairoSomeSurface]",
         directory: str,
         size: Size,
         hide_logo: bool,

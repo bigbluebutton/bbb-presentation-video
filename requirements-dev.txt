@@ -1,8 +1,9 @@
 # Install requires (keep in sync with setup.cfg)
-attrs == 19.3.0 # Ensure we use APIs that work on Ubuntu 20.04
+# Specific versions are used here to match Ubuntu 20.04
+attrs == 19.3.0
 lxml
 packaging
-pycairo
+pycairo == 1.16.2
 pygobject
 sortedcollections
 perfect-freehand

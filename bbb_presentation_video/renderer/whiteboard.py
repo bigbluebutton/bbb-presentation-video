@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections import deque
-from typing import Deque, Dict, Optional
+from typing import Deque, Dict, Generic, Optional, TypeVar
 
 import cairo
 import gi
@@ -40,9 +40,11 @@ POLL_FG = Color.from_int(0x000000)
 POLL_VPADDING = 20.0
 POLL_HPADDING = 10.0
 
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
-class ShapesRenderer:
-    ctx: cairo.Context
+
+class ShapesRenderer(Generic[CairoSomeSurface]):
+    ctx: "cairo.Context[CairoSomeSurface]"
 
     presentation: Optional[str]
     presentation_slide: Dict[str, int]
@@ -55,7 +57,7 @@ class ShapesRenderer:
 
     shapes_changed: bool
 
-    def __init__(self, ctx: cairo.Context, transform: Transform):
+    def __init__(self, ctx: "cairo.Context[CairoSomeSurface]", transform: Transform):
         self.ctx = ctx
 
         self.presentation = None

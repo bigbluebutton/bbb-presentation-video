@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import hypot
-from typing import Tuple
+from typing import Tuple, TypeVar
 
 import cairo
 from attr import astuple
@@ -57,5 +57,8 @@ def circle_from_three_points(
     return (x, y, hypot(x - x1, y - y1))
 
 
-def finalize_arrow(ctx: cairo.Context, shape: ArrowShape) -> None:
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def finalize_arrow(ctx: "cairo.Context[CairoSomeSurface]", shape: ArrowShape) -> None:
     ...
