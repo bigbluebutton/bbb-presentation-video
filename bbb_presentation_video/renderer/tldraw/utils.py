@@ -9,6 +9,7 @@ from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 import attr
 import cairo
 import perfect_freehand
+from deepmerge import Merger
 
 from bbb_presentation_video.events.helpers import Color, color_blend
 from bbb_presentation_video.events.tldraw import StyleData
@@ -281,3 +282,15 @@ def draw_smooth_stroke_point_path(
 ) -> None:
     outline_points = list(map(lambda p: p["point"], points))
     draw_smooth_path(ctx, outline_points, closed)
+
+
+MY_DEFAULT_TYPE_SPECIFIC_MERGE_STRATEGIES = [
+    (list, "override"),
+    (dict, "merge"),
+    (set, "override"),
+]
+
+
+AlwaysMerger = Merger(
+    MY_DEFAULT_TYPE_SPECIFIC_MERGE_STRATEGIES, ["override"], ["override"]
+)

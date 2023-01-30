@@ -1,6 +1,7 @@
 # Install requires (keep in sync with setup.cfg)
 # Specific versions are used here to match Ubuntu 20.04
 attrs == 19.3.0
+deepmerge
 lxml
 packaging
 pycairo == 1.16.2

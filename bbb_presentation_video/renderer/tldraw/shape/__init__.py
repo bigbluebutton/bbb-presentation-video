@@ -10,7 +10,7 @@ import cairo
 from bbb_presentation_video.events import Size
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.events.tldraw import ShapeData
-from bbb_presentation_video.renderer.tldraw.utils import Bounds, DrawPoints, Style
+from bbb_presentation_video.renderer.tldraw.utils import AlwaysMerger, Bounds, DrawPoints, Style
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 
@@ -35,10 +35,10 @@ class BaseShape:
         return shape
 
     def update_from_data(self, data: ShapeData) -> None:
-        self.data = data
-
+        self.data = AlwaysMerger.merge(self.data, data)
         if "style" in data:
-            self.style = Style.from_data(data["style"])
+            # use merged style (it can come incomplete)
+            self.style = Style.from_data(self.data["style"])
         if "childIndex" in data:
             self.childIndex = data["childIndex"]
         if "point" in data:
