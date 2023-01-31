@@ -10,12 +10,14 @@ import gi
 from bbb_presentation_video.renderer.tldraw.shape import (
     LabelledShapeProto,
     TextShape,
+    TriangleShape,
     apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     FONT_FACES,
     FONT_SIZES,
     STROKES,
+    DashStyle,
     AlignStyle,
     Style,
 )
@@ -57,11 +59,8 @@ def finalize_text(
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
     layout.set_font_description(font)
-    if shape.size.width > 0:
-        layout.set_width(int(shape.size.width * Pango.SCALE))
-    if shape.size.height > 0:
-        layout.set_height(int(shape.size.height * Pango.SCALE))
-    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+    layout.set_line_spacing(0.4)
+
     if style.textAlign == AlignStyle.START:
         layout.set_alignment(Pango.Alignment.LEFT)
     elif style.textAlign == AlignStyle.MIDDLE:
@@ -95,18 +94,22 @@ def finalize_label(
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
     layout.set_font_description(font)
-    if shape.size.width > 0:
-        layout.set_width(int(shape.size.width * Pango.SCALE))
-    if shape.size.height > 0:
-        layout.set_height(int(shape.size.height * Pango.SCALE))
-    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+    layout.set_line_spacing(0.4)
     layout.set_alignment(Pango.Alignment.CENTER)
 
     layout.set_text(shape.label, -1)
 
-    (_, layout_height) = layout.get_pixel_size()
-    height_offset = (shape.size.height - layout_height) / 2
-    ctx.translate(0, height_offset)
+    (layout_width, layout_height) = layout.get_pixel_size()
+    if style.dash is DashStyle.DRAW or isinstance(shape, TriangleShape):
+        width_offset = (shape.size.width - layout_width) / 2 
+        height_offset = (shape.size.height - layout_height) / 2
+    else:
+        width_offset = (-layout_width) / 2
+        height_offset = (-layout_height) / 2
+    # label of triangle is not exactly centered   
+    if (isinstance(shape, TriangleShape)):
+        height_offset += 20
+    ctx.translate(width_offset, height_offset)
 
     ctx.set_source_rgb(*STROKES[style.color])
 

@@ -43,9 +43,9 @@ STROKE_WIDTHS: Dict[SizeStyle, float] = {
 }
 
 FONT_SIZES: Dict[SizeStyle, float] = {
-    SizeStyle.SMALL: 28,
-    SizeStyle.MEDIUM: 48,
-    SizeStyle.LARGE: 96,
+    SizeStyle.SMALL: 25.5,
+    SizeStyle.MEDIUM: 44,
+    SizeStyle.LARGE: 88.5,
 }
 
 
