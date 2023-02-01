@@ -433,7 +433,6 @@ def parse_events(
 
     for element in root.iter("event"):
         try:
-
             # Convert timestamps to be in seconds from recording start
             ts_i = int(element.attrib["timestamp"])
             if not start_time:

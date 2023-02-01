@@ -199,7 +199,6 @@ def get_perfect_dash_props(
     outset: bool = True,
     length_ratio: float = 2,
 ) -> Tuple[List[float], float]:
-
     if style is DashStyle.DASHED:
         dash_length = stroke_width * length_ratio
         ratio = 1

@@ -231,7 +231,6 @@ class Renderer:
         cursor_changed = False
         recording_changed = False
         while self.pts < self.length:
-
             event_ts = Fraction(0)
             while True:
                 if len(self.events) == 0:
