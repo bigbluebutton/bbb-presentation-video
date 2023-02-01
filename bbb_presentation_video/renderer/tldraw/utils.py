@@ -48,6 +48,8 @@ FONT_SIZES: Dict[SizeStyle, float] = {
     SizeStyle.LARGE: 96,
 }
 
+LETTER_SPACING: float = -0.03
+
 
 class ColorStyle(Enum):
     WHITE: str = "white"
@@ -280,3 +282,15 @@ def draw_smooth_stroke_point_path(
 ) -> None:
     outline_points = list(map(lambda p: p["point"], points))
     draw_smooth_path(ctx, outline_points, closed)
+
+
+def triangle_centroid(w: float, h: float) -> Tuple[float, float]:
+    points = [
+        [w / 2, 0],
+        [w, h],
+        [0, h],
+    ]
+    return (
+        (points[0][0] + points[1][0] + points[2][0]) / 3,
+        (points[0][1] + points[1][1] + points[2][1]) / 3,
+    )
