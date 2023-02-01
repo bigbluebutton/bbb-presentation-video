@@ -60,7 +60,9 @@ def finalize_text(
     font = set_pango_font(pctx, style)
 
     attrs = Pango.AttrList()
-    letter_spacing_attr = Pango.attr_letter_spacing_new(int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE))
+    letter_spacing_attr = Pango.attr_letter_spacing_new(
+        int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE)
+    )
     attrs.insert(letter_spacing_attr)
 
     layout = Pango.Layout(pctx)
@@ -100,7 +102,9 @@ def finalize_label(
     font = set_pango_font(pctx, style)
 
     attrs = Pango.AttrList()
-    letter_spacing_attr = Pango.attr_letter_spacing_new(int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE))
+    letter_spacing_attr = Pango.attr_letter_spacing_new(
+        int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE)
+    )
     attrs.insert(letter_spacing_attr)
 
     layout = Pango.Layout(pctx)
@@ -114,18 +118,18 @@ def finalize_label(
 
     (layout_width, layout_height) = layout.get_pixel_size()
     if style.dash is DashStyle.DRAW or isinstance(shape, TriangleShape):
-        width_offset = (shape.size.width - layout_width) * shape.labelPoint.x 
+        width_offset = (shape.size.width - layout_width) * shape.labelPoint.x
         height_offset = (shape.size.height - layout_height) * shape.labelPoint.y
     else:
-        width_offset = (-layout_width) * shape.labelPoint.x 
+        width_offset = (-layout_width) * shape.labelPoint.x
         height_offset = (-layout_height) * shape.labelPoint.y
 
-    if (isinstance(shape, TriangleShape)):
+    if isinstance(shape, TriangleShape):
         # label of triangle has an offset
         center = vec.div([shape.size.width, shape.size.height], 2)
         centroid = triangle_centroid(shape.size.width, shape.size.height)
         offsetY = (centroid[1] - center[1]) * 0.72
-        height_offset += offsetY   
+        height_offset += offsetY
 
     ctx.translate(width_offset, height_offset)
 

@@ -283,6 +283,7 @@ def draw_smooth_stroke_point_path(
     outline_points = list(map(lambda p: p["point"], points))
     draw_smooth_path(ctx, outline_points, closed)
 
+
 def triangle_centroid(w: float, h: float) -> Tuple[float, float]:
     points = [
         [w / 2, 0],
