@@ -7,6 +7,7 @@ from typing import TypeVar
 import cairo
 import gi
 
+from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
     LabelledShapeProto,
     TextShape,
@@ -16,10 +17,12 @@ from bbb_presentation_video.renderer.tldraw.shape import (
 from bbb_presentation_video.renderer.tldraw.utils import (
     FONT_FACES,
     FONT_SIZES,
+    LETTER_SPACING,
     STROKES,
     DashStyle,
     AlignStyle,
     Style,
+    triangle_centroid,
 )
 
 gi.require_version("Pango", "1.0")
@@ -56,8 +59,13 @@ def finalize_text(
     pctx = PangoCairo.create_context(ctx)
     font = set_pango_font(pctx, style)
 
+    attrs = Pango.AttrList()
+    letter_spacing_attr = Pango.attr_letter_spacing_new(int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE))
+    attrs.insert(letter_spacing_attr)
+
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
+    layout.set_attributes(attrs)
     layout.set_font_description(font)
     layout.set_line_spacing(0.4)
 
@@ -91,9 +99,14 @@ def finalize_label(
     pctx = PangoCairo.create_context(ctx)
     font = set_pango_font(pctx, style)
 
+    attrs = Pango.AttrList()
+    letter_spacing_attr = Pango.attr_letter_spacing_new(int(LETTER_SPACING * FONT_SIZES[style.size] * style.scale * Pango.SCALE))
+    attrs.insert(letter_spacing_attr)
+
     layout = Pango.Layout(pctx)
     layout.set_auto_dir(True)
     layout.set_font_description(font)
+    layout.set_attributes(attrs)
     layout.set_line_spacing(0.4)
     layout.set_alignment(Pango.Alignment.CENTER)
 
@@ -101,14 +114,19 @@ def finalize_label(
 
     (layout_width, layout_height) = layout.get_pixel_size()
     if style.dash is DashStyle.DRAW or isinstance(shape, TriangleShape):
-        width_offset = (shape.size.width - layout_width) / 2 
-        height_offset = (shape.size.height - layout_height) / 2
+        width_offset = (shape.size.width - layout_width) * shape.labelPoint.x 
+        height_offset = (shape.size.height - layout_height) * shape.labelPoint.y
     else:
-        width_offset = (-layout_width) / 2
-        height_offset = (-layout_height) / 2
-    # label of triangle is not exactly centered   
+        width_offset = (-layout_width) * shape.labelPoint.x 
+        height_offset = (-layout_height) * shape.labelPoint.y
+
     if (isinstance(shape, TriangleShape)):
-        height_offset += 20
+        # label of triangle has an offset
+        center = vec.div([shape.size.width, shape.size.height], 2)
+        centroid = triangle_centroid(shape.size.width, shape.size.height)
+        offsetY = (centroid[1] - center[1]) * 0.72
+        height_offset += offsetY   
+
     ctx.translate(width_offset, height_offset)
 
     ctx.set_source_rgb(*STROKES[style.color])
