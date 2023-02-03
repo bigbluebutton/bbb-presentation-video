@@ -124,7 +124,7 @@ def finalize_label(
     layout.set_font_description(font)
     layout.set_attributes(attrs)
     layout.set_line_spacing(0.4)
-    set_pango_alignment(layout, style)
+    layout.set_alignment(Pango.Alignment.CENTER)
 
     layout.set_text(shape.label, -1)
 
