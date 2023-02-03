@@ -19,8 +19,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     FONT_SIZES,
     LETTER_SPACING,
     STROKES,
-    DashStyle,
     AlignStyle,
+    DashStyle,
     Style,
     triangle_centroid,
 )

@@ -19,7 +19,7 @@ BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 class BaseShape:
     """The base class for all tldraw shapes."""
 
-    style: Style = Style()
+    style: Style = attr.Factory(Style)
     """Style related properties, such as color, line size, font."""
     childIndex: float = 1.0
     """Unsure: possibly z-position of this shape within a group?"""
