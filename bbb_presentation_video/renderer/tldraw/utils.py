@@ -29,6 +29,9 @@ class Bounds:
 
 CANVAS: Color = Color.from_int(0xFAFAFA)
 
+STICKY_TEXT_COLOR: Color = Color.from_int(0x0D0D0D)
+STICKY_PADDING: float = 16.0
+
 
 class SizeStyle(Enum):
     SMALL: str = "small"
@@ -46,6 +49,12 @@ FONT_SIZES: Dict[SizeStyle, float] = {
     SizeStyle.SMALL: 28,
     SizeStyle.MEDIUM: 48,
     SizeStyle.LARGE: 96,
+}
+
+STICKY_FONT_SIZES: Dict[SizeStyle, float] = {
+    SizeStyle.SMALL: 24,
+    SizeStyle.MEDIUM: 36,
+    SizeStyle.LARGE: 48,
 }
 
 LETTER_SPACING: float = -0.03
@@ -66,7 +75,7 @@ class ColorStyle(Enum):
     YELLOW: str = "yellow"
 
 
-STROKES: Dict[ColorStyle, Color] = {
+COLORS: Dict[ColorStyle, Color] = {
     ColorStyle.WHITE: Color.from_int(0x1D1D1D),
     ColorStyle.LIGHT_GRAY: Color.from_int(0xC6CBD1),
     ColorStyle.GRAY: Color.from_int(0x788492),
@@ -81,15 +90,36 @@ STROKES: Dict[ColorStyle, Color] = {
     ColorStyle.YELLOW: Color.from_int(0xFFC936),
 }
 
+STICKY_FILLS: Dict[ColorStyle, Color] = dict(
+    [
+        (
+            k,
+            Color.from_int(0xFFFFFF)
+            if k is ColorStyle.WHITE
+            else Color.from_int(0x3D3D3D)
+            if k is ColorStyle.BLACK
+            else color_blend(v, CANVAS, 0.45),
+        )
+        for k, v in COLORS.items()
+    ]
+)
+
+STROKES: Dict[ColorStyle, Color] = dict(
+    [
+        (k, Color.from_int(0x1D1D1D) if k is ColorStyle.WHITE else v)
+        for k, v in COLORS.items()
+    ]
+)
+
 FILLS: Dict[ColorStyle, Color] = dict(
     [
         (
             k,
-            color_blend(v, CANVAS, 0.82)
-            if k is not ColorStyle.WHITE
-            else Color.from_int(0xFEFEFE),
+            Color.from_int(0xFEFEFE)
+            if k is ColorStyle.WHITE
+            else color_blend(v, CANVAS, 0.82),
         )
-        for k, v in STROKES.items()
+        for k, v in COLORS.items()
     ]
 )
 
