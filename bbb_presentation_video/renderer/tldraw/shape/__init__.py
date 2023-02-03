@@ -19,8 +19,6 @@ BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
 class BaseShape:
     """The base class for all tldraw shapes."""
 
-    data: ShapeData = {}
-    """A copy of the original JSON shape data from tldraw, for handling updates."""
     style: Style = Style()
     """Style related properties, such as color, line size, font."""
     childIndex: float = 1.0
@@ -35,10 +33,8 @@ class BaseShape:
         return shape
 
     def update_from_data(self, data: ShapeData) -> None:
-        self.data = data
-
         if "style" in data:
-            self.style = Style.from_data(data["style"])
+            self.style.update_from_data(data["style"])
         if "childIndex" in data:
             self.childIndex = data["childIndex"]
         if "point" in data:

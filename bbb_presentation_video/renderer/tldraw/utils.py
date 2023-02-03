@@ -135,25 +135,21 @@ class Style:
     font: FontStyle = FontStyle.SCRIPT
     textAlign: AlignStyle = AlignStyle.MIDDLE
 
-    @classmethod
-    def from_data(cls, data: StyleData) -> "Style":
-        style = Style()
+    def update_from_data(self, data: StyleData) -> None:
         if "color" in data:
-            style.color = ColorStyle(data["color"])
+            self.color = ColorStyle(data["color"])
         if "size" in data:
-            style.size = SizeStyle(data["size"])
+            self.size = SizeStyle(data["size"])
         if "dash" in data:
-            style.dash = DashStyle(data["dash"])
+            self.dash = DashStyle(data["dash"])
         if "isFilled" in data:
-            style.isFilled = data["isFilled"]
+            self.isFilled = data["isFilled"]
         if "scale" in data:
-            style.scale = data["scale"]
+            self.scale = data["scale"]
         if "font" in data:
-            style.font = FontStyle(data["font"])
+            self.font = FontStyle(data["font"])
         if "textAlign" in data:
-            style.textAlign = AlignStyle(data["textAlign"])
-
-        return style
+            self.textAlign = AlignStyle(data["textAlign"])
 
 
 def get_bounds_from_points(
