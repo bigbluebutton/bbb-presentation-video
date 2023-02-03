@@ -44,3 +44,33 @@ modules and development tools:
 ```sh
 pip install -r requirements-dev.txt
 ```
+
+Testing
+-------
+
+`bbb-presentation-video` does not currently have any test suite to run, but
+we do enforce typing correctness using
+[mypy](https://mypy.readthedocs.io/en/stable/).
+
+To run the type checking, run `mypy` in the root of the project checkout with
+no additional options.
+
+Configuration is loaded from `pyproject.toml`. Type stubs for some third party
+libraries that do not provide type information is located in the `typings`
+directory.
+
+Code Style
+----------
+
+Standard code style is enforced using
+[black](https://black.readthedocs.io/en/stable/) with default options. You can
+run `black .` in the root of the project to correct all files, or run `black`
+on a specific file.
+
+Additionally, sorting of import directives is done using
+[isort](https://pycqa.github.io/isort/) using the black-compatible profile.
+You can run `isort .` in the root of the project to correct all files, or run
+`isort` on a specific file.
+
+Note that you may need to run black after running isort to correct minor style
+issues that isort sometimes introduces.
