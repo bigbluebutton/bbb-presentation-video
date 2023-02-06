@@ -268,26 +268,26 @@ def parse_shape(
         else:
             event["thickness"] = thickness
 
-    # Pencil is always rounded; other shapes use flag
-    event["rounded"] = shape_rounded or shape_type == "pencil"
+        # Pencil is always rounded; other shapes use flag
+        event["rounded"] = shape_rounded or shape_type == "pencil"
 
-    # Some extra attributes for special shapes
-    if shape_type == "rectangle":
-        square = xml_subelement_opt(element, "square")
-        if square is not None:
-            event["square"] = square == "true"
-        else:
-            event["square"] = False
-    elif shape_type == "ellipse":
-        circle = xml_subelement_opt(element, "circle")
-        if circle is not None:
-            event["circle"] = circle == "true"
-        else:
-            event["circle"] = False
-    elif shape_type == "pencil":
-        commands = xml_subelement_opt(element, "commands")
-        if commands is not None:
-            event["commands"] = [PencilCommand(int(x)) for x in commands.split(",")]
+        # Some extra attributes for special shapes
+        if shape_type == "rectangle":
+            square = xml_subelement_opt(element, "square")
+            if square is not None:
+                event["square"] = square == "true"
+            else:
+                event["square"] = False
+        elif shape_type == "ellipse":
+            circle = xml_subelement_opt(element, "circle")
+            if circle is not None:
+                event["circle"] = circle == "true"
+            else:
+                event["circle"] = False
+        elif shape_type == "pencil":
+            commands = xml_subelement_opt(element, "commands")
+            if commands is not None:
+                event["commands"] = [PencilCommand(int(x)) for x in commands.split(",")]
 
     elif shape_type == "poll_result":
         event["num_responders"] = int(xml_subelement(element, name, "num_responders"))
