@@ -142,6 +142,8 @@ def finalize_label(
     print(f"\tTldraw: Finalizing Label")
 
     style = shape.style
+    # Label text is always centered
+    style.textAlign = AlignStyle.MIDDLE
 
     font_size = FONT_SIZES[style.size]
 
