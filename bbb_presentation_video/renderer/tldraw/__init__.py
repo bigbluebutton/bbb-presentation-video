@@ -13,7 +13,7 @@ from bbb_presentation_video.bindings import fontconfig
 from bbb_presentation_video.events import Event, tldraw
 from bbb_presentation_video.renderer.presentation import (
     Transform,
-    apply_slide_transform,
+    apply_shapes_transform,
 )
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShape,
@@ -190,7 +190,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         ctx = self.ctx
         ctx.push_group()
 
-        apply_slide_transform(ctx, transform)
+        apply_shapes_transform(ctx, transform)
 
         for id, s in shapes.items():
             shape = cast(Shape, s)
