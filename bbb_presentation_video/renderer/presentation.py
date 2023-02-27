@@ -49,6 +49,10 @@ LOGO_TYPE = ImageType.PDF
 # The size of the scaled coordinate system for drawing on slides
 DRAWING_SIZE = 1200
 
+# The size of the scaled coordinate system for tldraw whiteboard
+# https://github.com/bigbluebutton/bigbluebutton/blob/v2.6.0-rc.4/bigbluebutton-html5/imports/api/slides/server/helpers.js
+TLDRAW_DRAWING_SIZE = Size(2048, 1536)
+
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class Transform(object):
@@ -77,9 +81,6 @@ def apply_shapes_transform(
     apply_slide_transform(ctx, t)
     ctx.scale(t.shapes_scale, t.shapes_scale)
     return t.shapes_size
-
-
-apply_tldraw_transform = apply_shapes_transform
 
 
 class PresentationRenderer(Generic[CairoSomeSurface]):
@@ -139,12 +140,14 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
         # Initial transform is mostly-valid, but useless
         self.trans = Transform(
-            Size(0.0, 0.0),
-            1.0,
-            self.size,
-            Position(-0.0, -0.0),
-            1.0,
-            Size(DRAWING_SIZE, DRAWING_SIZE),
+            padding=Size(0.0, 0.0),
+            scale=1.0,
+            size=self.size,
+            pos=Position(-0.0, -0.0),
+            shapes_scale=1.0,
+            shapes_size=TLDRAW_DRAWING_SIZE
+            if self.tldraw_whiteboard
+            else Size(DRAWING_SIZE, DRAWING_SIZE),
         )
 
     @property
@@ -266,50 +269,52 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             print(f"\tPresentation: page size: {self.page_size}")
 
         if self.pan_zoom_changed or needs_render:
+            # Calculate the updated slide transformation
             needs_render = True
 
-            # Calculate the updated slide transformation
+            # Fallback page size in case the slide did not load
             if self.page_size is None:
                 self.page_size = Size(float(self.size.width), float(self.size.height))
 
-            if self.tldraw_whiteboard:
-                pos = Position(-self.pan.x, -self.pan.y)
-            else:
-                pos = Position(
-                    self.page_size.width * -self.pan.x,
-                    self.page_size.height * -self.pan.y,
-                )
+            # The size of the portion of the slide that will be shown
+            # zoom is a value in the interval (0, 1]
             size = Size(
                 self.page_size.width * self.zoom.width,
                 self.page_size.height * self.zoom.height,
             )
-
-            print(f"\tPresentation: screen size: {self.size}")
-            if (size.width / size.height) > (self.size.width / self.size.height):
-                print("\tPresentation: scaling based on width")
-                scale = self.size.width / size.width
-            else:
-                print("\tPresentation: scaling based on height")
-                scale = self.size.height / size.height
-
+            # Determine the scale to make the visible portion of the slide fit the viewport
+            scale = min(self.size.width / size.width, self.size.height / size.height)
             scaled_size = Size(scale * size.width, scale * size.height)
+
+            # Area above/below or left/right of visible portion that's empty in the viewport
             padding = Size(
                 (self.size.width - scaled_size.width) / 2.0,
                 (self.size.height - scaled_size.height) / 2.0,
             )
 
-            # Calculate the updated drawing transformation
-            if self.page_size.height > self.page_size.width:
-                shapes_scale = self.page_size.height / DRAWING_SIZE
-                shapes_size = Size(
-                    DRAWING_SIZE / self.page_size.height * self.page_size.width,
-                    DRAWING_SIZE,
+            # Calculate scale for whiteboard drawing relative to page size
+            if self.tldraw_whiteboard:
+                shapes_scale = max(
+                    self.page_size.height / TLDRAW_DRAWING_SIZE.height,
+                    self.page_size.width / TLDRAW_DRAWING_SIZE.width,
                 )
             else:
-                shapes_scale = self.page_size.width / DRAWING_SIZE
-                shapes_size = Size(
-                    DRAWING_SIZE,
-                    DRAWING_SIZE / self.page_size.width * self.page_size.height,
+                shapes_scale = max(
+                    self.page_size.width / DRAWING_SIZE,
+                    self.page_size.height / DRAWING_SIZE,
+                )
+            shapes_size = Size(
+                self.page_size.width / shapes_scale,
+                self.page_size.height / shapes_scale,
+            )
+
+            # Determine pan position (where the top left of the viewport is on the slide)
+            if self.tldraw_whiteboard:
+                pos = Position(-self.pan.x * shapes_scale, -self.pan.y * shapes_scale)
+            else:
+                pos = Position(
+                    self.page_size.width * -self.pan.x,
+                    self.page_size.height * -self.pan.y,
                 )
 
             self.trans = Transform(padding, scale, size, pos, shapes_scale, shapes_size)

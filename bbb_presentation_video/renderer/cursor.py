@@ -249,11 +249,10 @@ class CursorRenderer(Generic[CairoSomeSurface]):
                 continue
 
             ctx.save()
+            apply_shapes_transform(ctx, transform)
             if self.tldraw_whiteboard:
-                apply_slide_transform(ctx, transform)
                 pos = cursor.position
             else:
-                apply_shapes_transform(ctx, transform)
                 pos = Position(
                     cursor.position.x * transform.shapes_size.width,
                     cursor.position.y * transform.shapes_size.height,
