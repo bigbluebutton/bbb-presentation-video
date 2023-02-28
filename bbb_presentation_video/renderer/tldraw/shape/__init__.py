@@ -6,24 +6,25 @@ from typing import List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
+from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events import Size
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.events.tldraw import ShapeData
-from bbb_presentation_video.renderer.tldraw.utils import Bounds, DrawPoints, Style
+from bbb_presentation_video.renderer.tldraw.utils import Decoration, DrawPoints, Style
 
-BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShape")
+BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class BaseShape:
+class BaseShapeProto(Protocol):
     """The base class for all tldraw shapes."""
 
     style: Style = attr.Factory(Style)
     """Style related properties, such as color, line size, font."""
-    childIndex: float = 1.0
+    childIndex: float = 1
     """Unsure: possibly z-position of this shape within a group?"""
-    point: Position = Position(0.0, 0.0)
+    point: Position = Position(0, 0)
     """Position of the origin of the shape."""
 
     @classmethod
@@ -42,54 +43,63 @@ class BaseShape:
             self.point = Position(point[0], point[1])
 
 
-class RotatableShapeProto(Protocol):
-    """The size and rotation fields that are common to many shapes."""
-
-    size: Size
-    rotation: float
-
-    def update_from_data(self, data: ShapeData) -> None:
-        """Update the common size and rotation fields."""
-        if "size" in data:
-            self.size = Size(*data["size"])
-        if "rotation" in data:
-            self.rotation = data["rotation"]
-
-
-class LabelledShapeProto(Protocol):
-    style: Style
-    size: Size
-    label: Optional[str]
-    labelPoint: Position
-
-    def update_from_data(self, data: ShapeData) -> None:
-        if "label" in data:
-            self.label = data["label"] if data["label"] != "" else None
-        if "labelPoint" in data:
-            self.labelPoint = Position(*data["labelPoint"])
-
-
-def shape_sort_key(shape: BaseShape) -> float:
-    return shape.childIndex
-
-
 @attr.s(order=False, slots=True, auto_attribs=True)
-class DrawShape(BaseShape):
-    points: DrawPoints = []
-    isComplete: bool = False
+class SizedShapeProto(BaseShapeProto, Protocol):
+    """The size fields that is common to many shapes."""
 
-    # RotatableShapeProto
-    size: Size = Size(0.0, 0.0)
-    rotation: float = 0.0
-
-    cached_bounds: Optional[Bounds] = None
-    cached_path: Optional[cairo.Path] = None
-    cached_outline_path: Optional[cairo.Path] = None
+    size: Size = Size(0, 0)
+    """Precalculated bounding box of the shape."""
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
 
-        RotatableShapeProto.update_from_data(self, data)
+        if "size" in data:
+            self.size = Size(*data["size"])
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class RotatableShapeProto(SizedShapeProto, Protocol):
+    rotation: float = 0
+    """Rotation of the shape, in radians clockwise."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "rotation" in data:
+            self.rotation = data["rotation"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class LabelledShapeProto(RotatableShapeProto, Protocol):
+    """Properties common to shapes that can have labels."""
+
+    label: Optional[str] = None
+    """The text of the label."""
+    labelPoint: Position = Position(0.5, 0.5)
+    """The position of the label within the shape. Ranges from 0 to 1."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "label" in data:
+            self.label = data["label"] if data["label"] != "" else None
+        if "labelPoint" in data:
+            self.labelPoint = Position(data["labelPoint"][0], data["labelPoint"][1])
+
+
+def shape_sort_key(shape: BaseShapeProto) -> float:
+    return shape.childIndex
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class DrawShape(RotatableShapeProto):
+    points: DrawPoints = []
+    """List of input points from the drawing tool."""
+    isComplete: bool = False
+    """Whether the last point in the line is present (pen lifted)."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
 
         if "points" in data:
             self.points = []
@@ -101,48 +111,20 @@ class DrawShape(BaseShape):
         if "isComplete" in data:
             self.isComplete = data["isComplete"]
 
-        self.cached_bounds = None
-        self.cached_path = None
-        self.cached_outline_path = None
-
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class RectangleShape(BaseShape):
-    # LabelledShapeProto
-    label: Optional[str] = None
-    labelPoint: Position = Position(0.5, 0.5)
-
-    # RotatableShapeProto
+class RectangleShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
-    rotation: float = 0.0
-
-    cached_path: Optional[cairo.Path] = None
-    cached_outline_path: Optional[cairo.Path] = None
-
-    def update_from_data(self, data: ShapeData) -> None:
-        super().update_from_data(data)
-
-        LabelledShapeProto.update_from_data(self, data)
-        RotatableShapeProto.update_from_data(self, data)
-
-        self.cached_path = None
-        self.cached_outline_path = None
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class EllipseShape(BaseShape):
+class EllipseShape(LabelledShapeProto):
     radius: Tuple[float, float] = (1.0, 1.0)
+    """x and y radius of the ellipse."""
 
-    # LabelledShapeProto
-    label: Optional[str] = None
-    labelPoint: Position = Position(0.5, 0.5)
-
-    # RotatableShapeProto
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
-    rotation: float = 0.0
-
-    cached_path: Optional[cairo.Path] = None
-    cached_outline_path: Optional[cairo.Path] = None
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -151,43 +133,16 @@ class EllipseShape(BaseShape):
             radius = data["radius"]
             self.radius = (radius[0], radius[1])
 
-        LabelledShapeProto.update_from_data(self, data)
-        RotatableShapeProto.update_from_data(self, data)
-
-        self.cached_path = None
-        self.cached_outline_path = None
-
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TriangleShape(BaseShape):
-    # LabelledShapeProto
-    label: Optional[str] = None
-    labelPoint: Position = Position(0.5, 0.5)
-
-    # RotatableShapeProto
+class TriangleShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
-    rotation: float = 0.0
-
-    cached_path: Optional[cairo.Path] = None
-    cached_outline_path: Optional[cairo.Path] = None
-
-    def update_from_data(self, data: ShapeData) -> None:
-        super().update_from_data(data)
-
-        LabelledShapeProto.update_from_data(self, data)
-        RotatableShapeProto.update_from_data(self, data)
-
-        self.cached_path = None
-        self.cached_outline_path = None
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TextShape(BaseShape):
+class TextShape(RotatableShapeProto):
     text: str = ""
-
-    # RotatableShapeProto
-    size: Size = Size(0.0, 0.0)
-    rotation: float = 0.0
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -195,25 +150,18 @@ class TextShape(BaseShape):
         if "text" in data:
             self.text = data["text"]
 
-        RotatableShapeProto.update_from_data(self, data)
-
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class GroupShape(BaseShape):
-    # children: List[str]
-    # size: Size
-    # rotation: float
-
+class GroupShape(BaseShapeProto):
     pass
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class StickyShape(BaseShape):
+class StickyShape(RotatableShapeProto):
     text: str = ""
 
-    # RotatableShapeProto
+    # SizedShapeProto
     size: Size = Size(200.0, 200.0)
-    rotation: float = 0.0
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -221,33 +169,29 @@ class StickyShape(BaseShape):
         if "text" in data:
             self.text = data["text"]
 
-        RotatableShapeProto.update_from_data(self, data)
-
-
-@attr.s(order=False, slots=True, auto_attribs=True)
-class ArrowHandle:
-    point: Position = Position(0.0, 0.0)
-
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowHandles:
-    start: ArrowHandle = ArrowHandle()
-    end: ArrowHandle = ArrowHandle()
-    bend: ArrowHandle = ArrowHandle()
+    start: Position = Position(0.0, 0.0)
+    end: Position = Position(1.0, 1.0)
+    bend: Position = Position(0.5, 0.5)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class ArrowShape(BaseShape):
+class ArrowDecorations:
+    start: Optional[Decoration] = None
+    end: Optional[Decoration] = Decoration.ARROW
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class ArrowShape(LabelledShapeProto):
     bend: float = 0.0
-    handles: ArrowHandles = ArrowHandles()
-
-    # LabelledShapeProto
-    label: Optional[str] = None
-    labelPoint: Position = Position(0.5, 0.5)
-
-    # RotatableShapeProto
-    size: Size = Size(0.0, 0.0)
-    rotation: float = 0.0
+    """Ratio of the bend to the distance between the start and end points.
+    Negative if the bend point is to the left, otherwise positive."""
+    handles: ArrowHandles = attr.Factory(ArrowHandles)
+    """Locations of the line start, end, and bend points."""
+    decorations: ArrowDecorations = attr.Factory(ArrowDecorations)
+    """Whether the arrow head decorations are present on start/end of the line."""
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -255,8 +199,28 @@ class ArrowShape(BaseShape):
         if "bend" in data:
             self.bend = data["bend"]
 
-        LabelledShapeProto.update_from_data(self, data)
-        RotatableShapeProto.update_from_data(self, data)
+        if "handles" in data:
+            handles = data["handles"]
+            if "start" in handles:
+                point = handles["start"]["point"]
+                self.handles.start = Position(point[0], point[1])
+            if "end" in handles:
+                point = handles["end"]["point"]
+                self.handles.end = Position(point[0], point[1])
+            if "bend" in handles:
+                point = handles["bend"]["point"]
+                self.handles.bend = Position(point[0], point[1])
+
+        if "decorations" in data:
+            decorations = data["decorations"]
+            if "start" in decorations:
+                start = decorations["start"]
+                self.decorations.start = (
+                    Decoration(start) if start is not None else None
+                )
+            if "end" in decorations:
+                end = decorations["end"]
+                self.decorations.end = Decoration(end) if end is not None else None
 
 
 Shape = Union[

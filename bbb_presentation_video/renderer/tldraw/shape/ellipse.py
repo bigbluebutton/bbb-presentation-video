@@ -4,10 +4,11 @@
 
 from math import cos, pi, sin
 from random import Random
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
+from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.renderer.tldraw import easings
 from bbb_presentation_video.renderer.tldraw.shape import (
@@ -28,9 +29,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 from bbb_presentation_video.renderer.whiteboard import BEZIER_CIRCLE_MAGIC
 
 
-def ellipse_stroke_points(
-    id: str, shape: EllipseShape
-) -> Tuple[List[perfect_freehand.types.StrokePoint], float]:
+def draw_stroke_points(id: str, shape: EllipseShape) -> Tuple[List[StrokePoint], float]:
     stroke_width = STROKE_WIDTHS[shape.style.size]
     random = Random(id)
     variation = stroke_width * 2
@@ -65,41 +64,28 @@ def ellipse_stroke_points(
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
 
-def finalize_draw_ellipse(
+def draw_ellipse(
     ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: EllipseShape
 ) -> None:
     style = shape.style
 
-    stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
-    perimeter: Optional[float]
+    stroke_points, perimeter = draw_stroke_points(id, shape)
 
-    if style.isFilled:
-        cached_path = shape.cached_path
-        if cached_path is not None:
-            ctx.append_path(cached_path)
-        else:
-            stroke_points, perimeter = ellipse_stroke_points(id, shape)
-            draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
-            shape.cached_path = ctx.copy_path()
+    if shape.style.isFilled:
+        draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
+
         ctx.set_source_rgb(*FILLS[style.color])
         ctx.fill()
 
-    cached_outline_path = shape.cached_outline_path
-    if cached_outline_path is not None:
-        ctx.append_path(cached_outline_path)
-    else:
-        if stroke_points is None or perimeter is None:
-            stroke_points, perimeter = ellipse_stroke_points(id, shape)
-        stroke_outline_points = perfect_freehand.get_stroke_outline_points(
-            stroke_points,
-            size=2 + STROKE_WIDTHS[style.size] * 2,
-            thinning=0.618,
-            taper_end=perimeter / 8,
-            taper_start=perimeter / 12,
-            simulate_pressure=True,
-        )
-        draw_smooth_path(ctx, stroke_outline_points, closed=True)
-        shape.cached_outline_path = ctx.copy_path()
+    stroke_outline_points = perfect_freehand.get_stroke_outline_points(
+        stroke_points,
+        size=2 + STROKE_WIDTHS[style.size] * 2,
+        thinning=0.618,
+        taper_end=perimeter / 8,
+        taper_start=perimeter / 12,
+        simulate_pressure=True,
+    )
+    draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
     ctx.set_source_rgb(*STROKES[style.color])
     ctx.fill_preserve()
@@ -109,7 +95,7 @@ def finalize_draw_ellipse(
     ctx.stroke()
 
 
-def finalize_dash_ellipse(
+def dash_ellipse(
     ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape
 ) -> None:
     style = shape.style
@@ -161,8 +147,8 @@ def finalize_ellipse(
     style = shape.style
 
     if style.dash is DashStyle.DRAW:
-        finalize_draw_ellipse(ctx, id, shape)
+        draw_ellipse(ctx, id, shape)
     else:
-        finalize_dash_ellipse(ctx, shape)
+        dash_ellipse(ctx, shape)
 
     finalize_label(ctx, shape)

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from math import hypot
+from random import Random
 from typing import Tuple, TypeVar
 
 import cairo
@@ -10,11 +11,12 @@ from attr import astuple
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import ArrowShape
+from bbb_presentation_video.renderer.tldraw.utils import STROKE_WIDTHS
 
 
 def bend_point(shape: ArrowShape) -> Tuple[float, float]:
-    start_point = astuple(shape.handles.start.point)
-    end_point = astuple(shape.handles.end.point)
+    start_point = astuple(shape.handles.start)
+    end_point = astuple(shape.handles.end)
 
     dist = vec.dist(start_point, end_point)
     mid_point = vec.med(start_point, end_point)
@@ -58,6 +60,12 @@ def circle_from_three_points(
 
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+
+
+def freehand_arrow_shaft_stroke_points(id: str, shape: ArrowShape) -> None:
+    random = Random(id)
+    stroke_width = STROKE_WIDTHS[shape.style.size]
+    ...
 
 
 def finalize_arrow(ctx: "cairo.Context[CairoSomeSurface]", shape: ArrowShape) -> None:

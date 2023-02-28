@@ -4,7 +4,7 @@
 
 from math import floor
 from random import Random
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
@@ -30,7 +30,6 @@ def rectangle_stroke_points(
     id: str, shape: RectangleShape
 ) -> List[perfect_freehand.types.StrokePoint]:
     random = Random(id)
-    print(f"\tRandom state: {random.random()}")
     sw = STROKE_WIDTHS[shape.style.size]
 
     # Dimensions
@@ -100,40 +99,28 @@ def rectangle_stroke_points(
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
 
-def finalize_draw_rectangle(
+def draw_rectangle(
     ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
 ) -> None:
     style = shape.style
 
-    stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
+    stroke_points = rectangle_stroke_points(id, shape)
 
     if style.isFilled:
-        cached_path = shape.cached_path
-        if cached_path is not None:
-            ctx.append_path(cached_path)
-        else:
-            stroke_points = rectangle_stroke_points(id, shape)
-            draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
-            shape.cached_path = ctx.copy_path()
+        draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
+
         ctx.set_source_rgb(*FILLS[style.color])
         ctx.fill()
 
-    cached_outline_path = shape.cached_outline_path
-    if cached_outline_path is not None:
-        ctx.append_path(cached_outline_path)
-    else:
-        if stroke_points is None:
-            stroke_points = rectangle_stroke_points(id, shape)
-        stroke_outline_points = perfect_freehand.get_stroke_outline_points(
-            stroke_points,
-            size=STROKE_WIDTHS[style.size],
-            thinning=0.65,
-            smoothing=1,
-            simulate_pressure=False,
-            last=True,
-        )
-        draw_smooth_path(ctx, stroke_outline_points, closed=True)
-        shape.cached_outline_path = ctx.copy_path()
+    stroke_outline_points = perfect_freehand.get_stroke_outline_points(
+        stroke_points,
+        size=STROKE_WIDTHS[style.size],
+        thinning=0.65,
+        smoothing=1,
+        simulate_pressure=False,
+        last=True,
+    )
+    draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
     ctx.set_source_rgb(*STROKES[style.color])
     ctx.fill_preserve()
@@ -143,7 +130,7 @@ def finalize_draw_rectangle(
     ctx.stroke()
 
 
-def finalize_dash_rectangle(
+def dash_rectangle(
     ctx: "cairo.Context[CairoSomeSurface]", shape: RectangleShape
 ) -> None:
     style = shape.style
@@ -189,11 +176,9 @@ def finalize_rectangle(
 
     apply_shape_rotation(ctx, shape)
 
-    style = shape.style
-
-    if style.dash is DashStyle.DRAW:
-        finalize_draw_rectangle(ctx, id, shape)
+    if shape.style.dash is DashStyle.DRAW:
+        draw_rectangle(ctx, id, shape)
     else:
-        finalize_dash_rectangle(ctx, shape)
+        dash_rectangle(ctx, shape)
 
     finalize_label(ctx, shape)

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from typing import List, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from lxml import etree
 
@@ -20,12 +20,24 @@ class StyleData(TypedDict, total=False):
     textAlign: str
 
 
+class HandleData(TypedDict, total=False):
+    id: str
+    index: float
+    point: List[float]
+    canBind: bool
+    bindingId: str
+
+
 class ShapeData(TypedDict, total=False):
     bend: float
     childIndex: float
+    decorations: Dict[str, Optional[str]]
+    handles: Dict[str, HandleData]
+    id: str
     isComplete: bool
     label: str
     labelPoint: List[float]
+    name: str
     parentId: str
     point: List[float]
     points: List[List[float]]
@@ -35,6 +47,7 @@ class ShapeData(TypedDict, total=False):
     style: StyleData
     text: str
     type: str
+    userId: str
 
 
 class AddShapeEvent(TypedDict):

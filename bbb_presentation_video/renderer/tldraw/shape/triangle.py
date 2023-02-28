@@ -4,10 +4,11 @@
 
 from math import hypot
 from random import Random
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Tuple, TypeVar
 
 import cairo
 import perfect_freehand
+from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
@@ -26,9 +27,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def triangle_stroke_points(
-    id: str, shape: TriangleShape
-) -> List[perfect_freehand.types.StrokePoint]:
+def triangle_stroke_points(id: str, shape: TriangleShape) -> List[StrokePoint]:
     random = Random(id)
     print(f"\tRandom state: {random.random()}")
     sw = STROKE_WIDTHS[shape.style.size]
@@ -77,40 +76,28 @@ def triangle_stroke_points(
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
 
 
-def finalize_draw_triangle(
+def draw_triangle(
     ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: TriangleShape
 ) -> None:
     style = shape.style
 
-    stroke_points: Optional[List[perfect_freehand.types.StrokePoint]] = None
+    stroke_points = triangle_stroke_points(id, shape)
 
     if style.isFilled:
-        cached_path = shape.cached_path
-        if cached_path is not None:
-            ctx.append_path(cached_path)
-        else:
-            stroke_points = triangle_stroke_points(id, shape)
-            draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
-            shape.cached_path = ctx.copy_path()
+        draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
+
         ctx.set_source_rgb(*FILLS[style.color])
         ctx.fill()
 
-    cached_outline_path = shape.cached_outline_path
-    if cached_outline_path is not None:
-        ctx.append_path(cached_outline_path)
-    else:
-        if stroke_points is None:
-            stroke_points = triangle_stroke_points(id, shape)
-        stroke_outline_points = perfect_freehand.get_stroke_outline_points(
-            stroke_points,
-            size=STROKE_WIDTHS[style.size],
-            thinning=0.65,
-            smoothing=1,
-            simulate_pressure=False,
-            last=True,
-        )
-        draw_smooth_path(ctx, stroke_outline_points, closed=True)
-        shape.cached_outline_path = ctx.copy_path()
+    stroke_outline_points = perfect_freehand.get_stroke_outline_points(
+        stroke_points,
+        size=STROKE_WIDTHS[shape.style.size],
+        thinning=0.65,
+        smoothing=1,
+        simulate_pressure=False,
+        last=True,
+    )
+    draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
     ctx.set_source_rgb(*STROKES[style.color])
     ctx.fill_preserve()
@@ -120,9 +107,7 @@ def finalize_draw_triangle(
     ctx.stroke()
 
 
-def finalize_dash_triangle(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: TriangleShape
-) -> None:
+def dash_triangle(ctx: "cairo.Context[CairoSomeSurface]", shape: TriangleShape) -> None:
     style = shape.style
     stroke_width = STROKE_WIDTHS[style.size] * 1.618
 
@@ -169,8 +154,8 @@ def finalize_triangle(
     style = shape.style
 
     if style.dash is DashStyle.DRAW:
-        finalize_draw_triangle(ctx, id, shape)
+        draw_triangle(ctx, id, shape)
     else:
-        finalize_dash_triangle(ctx, shape)
+        dash_triangle(ctx, shape)
 
     finalize_label(ctx, shape)

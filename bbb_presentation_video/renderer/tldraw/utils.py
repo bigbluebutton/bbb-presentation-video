@@ -17,16 +17,6 @@ from bbb_presentation_video.renderer.tldraw import vec
 DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
 
 
-@attr.s(order=False, slots=True, auto_attribs=True)
-class Bounds:
-    min_x: float
-    min_y: float
-    max_x: float
-    max_y: float
-    width: float
-    height: float
-
-
 CANVAS: Color = Color.from_int(0xFAFAFA)
 
 STICKY_TEXT_COLOR: Color = Color.from_int(0x0D0D0D)
@@ -182,24 +172,8 @@ class Style:
             self.textAlign = AlignStyle(data["textAlign"])
 
 
-def get_bounds_from_points(
-    points: Sequence[Union[Tuple[float, float], Tuple[float, float, float]]]
-) -> Bounds:
-    min_x = min_y = inf
-    max_x = max_y = -inf
-
-    if len(points) == 0:
-        min_x = min_y = max_x = max_y = 0
-
-    for point in points:
-        x = point[0]
-        y = point[1]
-        min_x = min(x, min_x)
-        min_y = min(y, min_y)
-        max_x = max(x, max_x)
-        max_y = max(y, max_y)
-
-    return Bounds(min_x, min_y, max_x, max_y, max_x - min_x, max_y - min_y)
+class Decoration(Enum):
+    ARROW: str = "arrow"
 
 
 def perimeter_of_ellipse(rx: float, ry: float) -> float:
