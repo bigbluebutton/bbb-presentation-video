@@ -32,3 +32,5 @@ jobs:
       run: black --check --target-version py38 .
     - name: Check types with mypy
       run: mypy
+    - name: Test with pytest
+      run: pytest --junitxml=junit/test-results.xml
