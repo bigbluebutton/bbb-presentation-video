@@ -95,9 +95,7 @@ def draw_ellipse(
     ctx.stroke()
 
 
-def dash_ellipse(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape
-) -> None:
+def dash_ellipse(ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape) -> None:
     style = shape.style
     stroke_width = STROKE_WIDTHS[style.size] * 1.618
     radius_x = shape.radius[0]
