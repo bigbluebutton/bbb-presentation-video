@@ -5,5 +5,9 @@
 from math import cos, pi
 
 
+def ease_out_quad(t: float) -> float:
+    return t * (2 - t)
+
+
 def ease_in_out_sine(t: float) -> float:
     return -(cos(pi * t) - 1) / 2

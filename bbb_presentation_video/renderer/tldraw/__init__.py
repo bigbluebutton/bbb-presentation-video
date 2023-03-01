@@ -235,7 +235,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 elif isinstance(shape, EllipseShape):
                     finalize_ellipse(ctx, id, shape)
                 elif isinstance(shape, ArrowShape):
-                    finalize_arrow(ctx, shape)
+                    finalize_arrow(ctx, id, shape)
                 elif isinstance(shape, TextShape):
                     finalize_text(ctx, id, shape)
                 elif isinstance(shape, StickyShape):

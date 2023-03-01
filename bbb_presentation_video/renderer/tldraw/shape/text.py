@@ -9,6 +9,7 @@ import gi
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
+    ArrowShape,
     LabelledShapeProto,
     StickyShape,
     TextShape,
@@ -196,3 +197,9 @@ def finalize_sticky_text(
     ctx.set_source_rgb(*STICKY_TEXT_COLOR)
 
     show_layout_by_lines(ctx, layout)
+
+
+def finalize_arrow_label(
+    ctx: "cairo.Context[CairoSomeSurface]", shape: ArrowShape
+) -> None:
+    ...

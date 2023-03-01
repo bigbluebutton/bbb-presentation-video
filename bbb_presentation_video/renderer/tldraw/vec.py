@@ -60,9 +60,26 @@ def med(a: S, b: S) -> V:
     return mul(add(a, b), 0.5)
 
 
+def is_equal(a: S, b: S) -> bool:
+    """Check if two vectors are identical."""
+    return a[0] == b[0] and a[1] == b[1]
+
+
 def lrp(a: S, b: S, t: float) -> V:
     """Interpolate vector A to B with a scalar t."""
     return add(a, mul(sub(b, a), t))
+
+
+def to_fixed(a: S) -> List[float]:
+    """Round a vector to two decimal places."""
+    return [round(n, ndigits=2) for n in a]
+
+
+def nudge(a: S, b: S, d: float) -> V:
+    """Push a point A towards point B by a given distance."""
+    if is_equal(a, b):
+        return (a[0], a[1])
+    return add(a, mul(uni(sub(b, a)), d))
 
 
 def points_between(a: S, b: S, steps: int = 6) -> List[Tuple[float, float, float]]:
