@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import threading
+import time
 from collections import deque
 from enum import Enum
 from fractions import Fraction
@@ -298,6 +299,8 @@ class Renderer:
                     print("\tdon't know how to handle this event")
 
             if self.recording and self.pts >= self.start_time:
+                start_time = time.perf_counter_ns()
+
                 presentation_changed = presentation.finalize_frame()
                 shapes_changed = shapes.finalize_frame(presentation.transform)
                 tldraw_changed = tldraw.finalize_frame(presentation.transform)
@@ -330,10 +333,15 @@ class Renderer:
 
                     recording_changed = True
 
-                if recording_changed:
-                    print(f"-- {float(self.pts):012.6f} frame {self.frame}")
-                # Output a frame
                 self.surface.flush()
+
+                if recording_changed:
+                    end_time = time.perf_counter_ns()
+                    print(
+                        f"-- {float(self.pts):012.6f} frame {self.frame} ({(end_time - start_time) / 1000000:.3f}ms)"
+                    )
+
+                # Output a frame
                 encoder.put(bytearray(self.surface.get_data()))
 
             self.frame += 1
