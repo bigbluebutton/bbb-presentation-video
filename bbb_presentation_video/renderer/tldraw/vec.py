@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from math import hypot
+from math import atan2, cos, hypot, sin
 from typing import List, Sequence, Tuple
 
 S = Sequence[float]
@@ -55,9 +55,31 @@ def dist(a: S, b: S) -> float:
     return hypot(a[1] - b[1], a[0] - b[0])
 
 
+def angle(A: S, B: S) -> float:
+    """Angle between vector A and vector B in radians."""
+    return atan2(B[1] - A[1], B[0] - A[0])
+
+
 def med(a: S, b: S) -> V:
     """Mean between two vectors or mid vector between two vectors."""
     return mul(add(a, b), 0.5)
+
+
+def rot_with(A: S, C: S, r: float = 0) -> V:
+    """Rotate a vector around another vector by r (radians)"""
+    if r == 0:
+        return (A[0], A[1])
+
+    s = sin(r)
+    c = cos(r)
+
+    px = A[0] - C[0]
+    py = A[1] - C[1]
+
+    nx = px * c - py * s
+    ny = px * s + py * c
+
+    return (nx + C[0], ny + C[1])
 
 
 def is_equal(a: S, b: S) -> bool:
@@ -70,9 +92,9 @@ def lrp(a: S, b: S, t: float) -> V:
     return add(a, mul(sub(b, a), t))
 
 
-def to_fixed(a: S) -> List[float]:
+def to_fixed(a: S) -> V:
     """Round a vector to two decimal places."""
-    return [round(n, ndigits=2) for n in a]
+    return (round(a[0], ndigits=2), round(a[1], ndigits=2))
 
 
 def nudge(a: S, b: S, d: float) -> V:
@@ -80,6 +102,11 @@ def nudge(a: S, b: S, d: float) -> V:
     if is_equal(a, b):
         return (a[0], a[1])
     return add(a, mul(uni(sub(b, a)), d))
+
+
+def nudge_at_angle(A: S, a: float, d: float) -> V:
+    """Push a point in a given angle by a given distance."""
+    return (cos(a) * d + A[0], sin(a) * d + A[1])
 
 
 def points_between(a: S, b: S, steps: int = 6) -> List[Tuple[float, float, float]]:

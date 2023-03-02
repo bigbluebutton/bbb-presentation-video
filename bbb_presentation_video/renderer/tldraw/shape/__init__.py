@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import List, Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
-from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events import Size
 from bbb_presentation_video.events.helpers import Position

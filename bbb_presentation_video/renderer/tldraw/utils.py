@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import math
 from enum import Enum
-from math import floor, inf, pi, sqrt
+from math import floor, hypot, pi, sqrt
 from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 
 import attr
@@ -47,7 +48,7 @@ STICKY_FONT_SIZES: Dict[SizeStyle, float] = {
     SizeStyle.LARGE: 48,
 }
 
-LETTER_SPACING: float = -0.03
+LETTER_SPACING: float = -0.03  # em
 
 
 class ColorStyle(Enum):
@@ -180,6 +181,52 @@ def perimeter_of_ellipse(rx: float, ry: float) -> float:
     """Find the approximate perimeter of an ellipse."""
     h = (rx - ry) ** 2 / (rx + ry) ** 2
     return pi * (rx + ry) * (1 + (3 * h) / (10 + sqrt(4 - 3 * h)))
+
+
+def circle_from_three_points(
+    A: Sequence[float], B: Sequence[float], C: Sequence[float]
+) -> Tuple[Tuple[float, float], float]:
+    """Get a circle from three points."""
+    (x1, y1) = A
+    (x2, y2) = B
+    (x3, y3) = C
+
+    a = x1 * (y2 - y3) - y1 * (x2 - x3) + x2 * y3 - x3 * y2
+
+    b = (
+        (x1 * x1 + y1 * y1) * (y3 - y2)
+        + (x2 * x2 + y2 * y2) * (y1 - y3)
+        + (x3 * x3 + y3 * y3) * (y2 - y1)
+    )
+
+    c = (
+        (x1 * x1 + y1 * y1) * (x2 - x3)
+        + (x2 * x2 + y2 * y2) * (x3 - x1)
+        + (x3 * x3 + y3 * y3) * (x1 - x2)
+    )
+
+    x = -b / (2 * a)
+
+    y = -c / (2 * a)
+
+    return ((x, y), hypot(x - x1, y - y1))
+
+
+def short_angle_dist(a0: float, a1: float) -> float:
+    """Get the short angle distance between two angles."""
+    max = math.pi * 2
+    da = (a1 - a0) % max
+    return ((2 * da) % max) - da
+
+
+def lerp_angles(a0: float, a1: float, t: float) -> float:
+    """Interpolate an angle between two angles."""
+    return a0 + short_angle_dist(a0, a1) * t
+
+
+def get_sweep(C: Sequence[float], A: Sequence[float], B: Sequence[float]) -> float:
+    """Get the "sweep" or short distance between two points on a circle's perimeter."""
+    return short_angle_dist(vec.angle(C, A), vec.angle(C, B))
 
 
 def draw_stroke_points(

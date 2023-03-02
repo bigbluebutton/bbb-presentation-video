@@ -27,6 +27,7 @@ class Intersection:
 
 
 def intersect_line_segment_circle(a1: S, a2: S, c: S, r: float) -> Intersection:
+    """Find the intersections between a line segment and a circle."""
     a = (a2[0] - a1[0]) * (a2[0] - a1[0]) + (a2[1] - a1[1]) * (a2[1] - a1[1])
     b = 2 * ((a2[0] - a1[0]) * (a1[0] - c[0]) + (a2[1] - a1[1]) * (a1[1] - c[1]))
     cc = (
@@ -65,4 +66,24 @@ def intersect_line_segment_circle(a1: S, a2: S, c: S, r: float) -> Intersection:
 
 
 def intersect_circle_line_segment(c: S, r: float, a1: S, a2: S) -> Intersection:
+    """Find the intersections between a circle and a line segment."""
     return intersect_line_segment_circle(a1, a2, c, r)
+
+
+def intersect_circle_circle(c1: S, r1: float, c2: S, r2: float) -> Intersection:
+    """Find the intersections between a circle and a circle."""
+    dx = c2[0] - c1[0]
+    dy = c2[1] - c1[1]
+
+    d = sqrt(dx * dx + dy * dy)
+    x = (d * d - r2 * r2 + r1 * r1) / (2 * d)
+    y = sqrt(r1 * r1 - x * x)
+
+    dx /= d
+    dy /= d
+
+    return Intersection(
+        "intersection",
+        (c1[0] + dx * x - dy * y, c1[1] + dy * x + dx * y),
+        (c1[0] + dx * x + dy * y, c1[1] + dy * x - dx * y),
+    )

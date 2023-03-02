@@ -2,18 +2,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from math import hypot
+from math import floor, pi, tau
 from random import Random
-from typing import List, Optional, Tuple, TypeVar
+from typing import Callable, List, Optional, Tuple, TypeVar
 
 import cairo
 from attr import astuple
 from perfect_freehand import get_stroke
-from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.easings import ease_out_quad
+from bbb_presentation_video.renderer.tldraw.easings import (
+    ease_in_out_cubic,
+    ease_in_out_sine,
+    ease_out_quad,
+)
 from bbb_presentation_video.renderer.tldraw.intersect import (
+    intersect_circle_circle,
     intersect_circle_line_segment,
 )
 from bbb_presentation_video.renderer.tldraw.shape import (
@@ -26,54 +30,19 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     DashStyle,
     Decoration,
     Style,
+    circle_from_three_points,
     draw_smooth_path,
     get_perfect_dash_props,
+    get_sweep,
+    lerp_angles,
 )
 
 
-def bend_point(shape: ArrowShape) -> Tuple[float, float]:
-    start_point = astuple(shape.handles.start)
-    end_point = astuple(shape.handles.end)
-
-    dist = vec.dist(start_point, end_point)
-    mid_point = vec.med(start_point, end_point)
-    bend_dist = (dist / 2) * shape.bend
-    u = vec.uni(vec.vec(start_point, end_point))
-
-    point: Tuple[float, float]
-    if bend_dist < 10:
-        point = mid_point
-    else:
-        point = vec.add(mid_point, vec.mul(vec.per(u), bend_dist))
-    return point
-
-
-def circle_from_three_points(
-    A: Tuple[float, float], B: Tuple[float, float], C: Tuple[float, float]
-) -> Tuple[float, float, float]:
-    (x1, y1) = A
-    (x2, y2) = B
-    (x3, y3) = C
-
-    a = x1 * (y2 - y3) - y1 * (x2 - x3) + x2 * y3 - x3 * y2
-
-    b = (
-        (x1 * x1 + y1 * y1) * (y3 - y2)
-        + (x2 * x2 + y2 * y2) * (y1 - y3)
-        + (x3 * x3 + y3 * y3) * (y2 - y1)
-    )
-
-    c = (
-        (x1 * x1 + y1 * y1) * (x2 - x3)
-        + (x2 * x2 + y2 * y2) * (x3 - x1)
-        + (x3 * x3 + y3 * y3) * (x1 - x2)
-    )
-
-    x = -b / (2 * a)
-
-    y = -c / (2 * a)
-
-    return (x, y, hypot(x - x1, y - y1))
+def get_arc_length(
+    C: Tuple[float, ...], r: float, A: Tuple[float, ...], B: Tuple[float, ...]
+) -> float:
+    sweep = get_sweep(C, A, B)
+    return r * tau * (sweep / tau)
 
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
@@ -83,19 +52,20 @@ def freehand_arrow_shaft(
     ctx: "cairo.Context[CairoSomeSurface]",
     id: str,
     style: Style,
-    start: Tuple[float, float],
-    end: Tuple[float, float],
+    start: Tuple[float, ...],
+    end: Tuple[float, ...],
     deco_start: Optional[Decoration],
     deco_end: Optional[Decoration],
 ) -> None:
     random = Random(id)
     stroke_width = STROKE_WIDTHS[style.size]
-    sw = 1 + stroke_width * 1.618
-    start_point = start if deco_start is None else vec.nudge(start, end, stroke_width)
-    end_point = end if deco_end is None else vec.nudge(end, start, stroke_width)
+    if deco_start is not None:
+        start = vec.nudge(start, end, stroke_width)
+    if deco_end is not None:
+        end = vec.nudge(end, start, stroke_width)
 
-    stroke = get_stroke(
-        [start_point, end_point],
+    stroke_outline_points = get_stroke(
+        [start, end],
         size=stroke_width,
         thinning=0.618 + random.uniform(-0.2, 0.2),
         easing=ease_out_quad,
@@ -103,19 +73,74 @@ def freehand_arrow_shaft(
         streamline=0,
         last=True,
     )
-    draw_smooth_path(ctx, stroke, closed=True)
-    ctx.set_source_rgb(*STROKES[style.color])
-    ctx.fill_preserve()
-    ctx.set_line_width(sw / 2)
-    ctx.set_line_cap(cairo.LineCap.ROUND)
-    ctx.set_line_join(cairo.LineJoin.ROUND)
-    ctx.stroke()
+    draw_smooth_path(ctx, stroke_outline_points, closed=True)
+
+
+def curved_freehand_arrow_shaft(
+    ctx: "cairo.Context[CairoSomeSurface]",
+    id: str,
+    style: Style,
+    start: Tuple[float, ...],
+    end: Tuple[float, ...],
+    deco_start: Optional[Decoration],
+    deco_end: Optional[Decoration],
+    center: Tuple[float, float],
+    radius: float,
+    length: float,
+    easing: Callable[[float], float],
+) -> None:
+    random = Random(id)
+    stroke_width = STROKE_WIDTHS[style.size]
+    if deco_start is not None:
+        start = vec.rot_with(start, center, stroke_width / length)
+    if deco_end is not None:
+        end = vec.rot_with(end, center, -(stroke_width / length))
+    start_angle = vec.angle(center, start)
+    end_angle = vec.angle(center, end)
+
+    points: List[Tuple[float, ...]] = [start]
+    count = 8 + floor((abs(length) / 20) * 1 + random.uniform(-0.5, 0.5))
+    for i in range(count):
+        t = easing(i / count)
+        angle = lerp_angles(start_angle, end_angle, t)
+        points.append(vec.to_fixed(vec.nudge_at_angle(center, angle, radius)))
+    points.append(end)
+
+    stroke_outline_points = get_stroke(
+        points,
+        size=1 + stroke_width,
+        thinning=0.618 + random.uniform(-0.2, 0.2),
+        easing=ease_out_quad,
+        simulate_pressure=False,
+        streamline=0,
+        last=True,
+    )
+    draw_smooth_path(ctx, stroke_outline_points, closed=True)
+
+
+def curved_arrow_shaft(
+    ctx: "cairo.Context[CairoSomeSurface]",
+    start: Tuple[float, ...],
+    end: Tuple[float, ...],
+    center: Tuple[float, float],
+    radius: float,
+    bend: float,
+) -> None:
+    start_angle = vec.angle(center, start)
+    end_angle = vec.angle(center, end)
+
+    ctx.new_sub_path()
+
+    if bend > 0:
+        ctx.arc(center[0], center[1], radius, start_angle, end_angle)
+    else:
+        ctx.arc_negative(center[0], center[1], radius, start_angle, end_angle)
 
 
 def straight_arrow_head(
     ctx: "cairo.Context[CairoSomeSurface]",
-    a: Tuple[float, float],
-    b: Tuple[float, float],
+    a: Tuple[float, ...],
+    b: Tuple[float, ...],
     r: float,
 ) -> None:
     ints = intersect_circle_line_segment(a, r, a, b).points
@@ -125,6 +150,35 @@ def straight_arrow_head(
         right = a
     else:
         int = ints[0]
+        left = vec.rot_with(int, a, pi / 6)
+        right = vec.rot_with(int, a, -pi / 6)
+
+    ctx.move_to(left[0], left[1])
+    ctx.line_to(a[0], a[1])
+    ctx.line_to(right[0], right[1])
+
+
+def curved_arrow_head(
+    ctx: "cairo.Context[CairoSomeSurface]",
+    a: Tuple[float, ...],
+    r1: float,
+    C: Tuple[float, ...],
+    r2: float,
+    sweep: bool,
+) -> None:
+    ints = intersect_circle_circle(a, r1 * 0.618, C, r2).points
+    if len(ints) == 0:
+        print("\t\tCould not find an intersection for the arrow head.")
+        left = a
+        right = a
+    else:
+        int = ints[0] if sweep else ints[1]
+        left = vec.nudge(vec.rot_with(int, a, pi / 6), a, r1 * -0.382)
+        right = vec.nudge(vec.rot_with(int, a, -pi / 6), a, r1 * -0.382)
+
+    ctx.move_to(left[0], left[1])
+    ctx.line_to(a[0], a[1])
+    ctx.line_to(right[0], right[1])
 
 
 def straight_arrow(
@@ -136,26 +190,41 @@ def straight_arrow(
     end = astuple(shape.handles.end)
     deco_start = shape.decorations.start
     deco_end = shape.decorations.end
+
     arrow_dist = vec.dist(start, end)
     if arrow_dist < 2:
         return
-    stroke_width = STROKE_WIDTHS[shape.style.size]
+    stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
+
+    stroke = STROKES[style.color]
+
     # Path between start and end points
+    ctx.save()
     if style.dash is DashStyle.DRAW:
-        freehand_arrow_shaft(ctx, id, shape.style, start, end, deco_start, deco_end)
+        freehand_arrow_shaft(ctx, id, style, start, end, deco_start, deco_end)
+
+        ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+        ctx.fill_preserve()
+        ctx.set_line_width(sw / 2)
+        ctx.set_line_cap(cairo.LineCap.ROUND)
+        ctx.set_line_join(cairo.LineJoin.ROUND)
+        ctx.stroke()
     else:
+        ctx.move_to(start[0], start[1])
+        ctx.line_to(end[0], end[1])
+
         ctx.set_line_width(sw)
         ctx.set_line_cap(cairo.LineCap.ROUND)
         ctx.set_line_join(cairo.LineJoin.ROUND)
-        ctx.set_source_rgb(*STROKES[style.color])
-        ctx.move_to(*start)
-        ctx.line_to(*end)
         dash_array, dash_offset = get_perfect_dash_props(
             arrow_dist, stroke_width * 1.618, style.dash, snap=2, outset=False
         )
         ctx.set_dash(dash_array, dash_offset)
+        ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
         ctx.stroke()
+    ctx.restore()
+
     # Arrowheads
     arrow_head_len = min(arrow_dist / 3, stroke_width * 8)
     if deco_start is Decoration.ARROW:
@@ -163,11 +232,81 @@ def straight_arrow(
     if deco_end is Decoration.ARROW:
         straight_arrow_head(ctx, end, start, arrow_head_len)
 
+    ctx.set_line_width(sw)
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+    ctx.stroke()
+
 
 def curved_arrow(
     ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: ArrowShape
 ) -> None:
-    ...
+    print("\t\tDrawing a curved arrow")
+    style = shape.style
+    start = astuple(shape.handles.start)
+    bend = astuple(shape.handles.bend)
+    end = astuple(shape.handles.end)
+    arrow_bend = shape.bend
+    deco_start = shape.decorations.start
+    deco_end = shape.decorations.end
+
+    arrow_dist = vec.dist(start, end)
+    if arrow_dist < 2:
+        return
+
+    stroke_width = STROKE_WIDTHS[style.size]
+    sw = 1 + stroke_width * 1.618
+    # Calculate a path as a segment of a circle passing through the three points start, bend, and end
+    center, radius = circle_from_three_points(start, bend, end)
+    length = get_arc_length(center, radius, start, end)
+    random = Random(id)
+    easing = random.choice([ease_in_out_sine, ease_in_out_cubic])
+
+    stroke = STROKES[style.color]
+
+    ctx.save()
+    if style.dash is DashStyle.DRAW:
+        curved_freehand_arrow_shaft(
+            ctx,
+            id,
+            style,
+            start,
+            end,
+            deco_start,
+            deco_end,
+            center,
+            radius,
+            length,
+            easing,
+        )
+
+        ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+        ctx.fill()
+    else:
+        curved_arrow_shaft(ctx, start, end, center, radius, arrow_bend)
+
+        ctx.set_line_width(sw)
+        ctx.set_line_cap(cairo.LineCap.ROUND)
+        ctx.set_line_join(cairo.LineJoin.ROUND)
+        dash_array, dash_offset = get_perfect_dash_props(
+            abs(length), sw, style.dash, snap=2, outset=False
+        )
+        ctx.set_dash(dash_array, dash_offset)
+        ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+        ctx.stroke()
+    ctx.restore()
+
+    # Arrowheads
+    arrow_head_len = min(arrow_dist / 3, stroke_width * 8)
+    if deco_start is Decoration.ARROW:
+        curved_arrow_head(ctx, start, arrow_head_len, center, radius, length < 0)
+    if deco_end is Decoration.ARROW:
+        curved_arrow_head(ctx, end, arrow_head_len, center, radius, length >= 0)
+
+    ctx.set_line_width(sw)
+    ctx.set_line_cap(cairo.LineCap.ROUND)
+    ctx.set_line_join(cairo.LineJoin.ROUND)
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+    ctx.stroke()
 
 
 def finalize_arrow(
@@ -178,13 +317,10 @@ def finalize_arrow(
     apply_shape_rotation(ctx, shape)
 
     handles = shape.handles
-    is_straight_line = (
-        vec.dist(
-            astuple(handles.bend),
-            vec.to_fixed(vec.med(astuple(handles.start), astuple(handles.end))),
-        )
-        < 1
-    )
+    start = astuple(handles.start)
+    bend = astuple(handles.bend)
+    end = astuple(handles.end)
+    is_straight_line = vec.dist(bend, vec.to_fixed(vec.med(start, end))) < 1
     if is_straight_line:
         straight_arrow(ctx, id, shape)
     else:
