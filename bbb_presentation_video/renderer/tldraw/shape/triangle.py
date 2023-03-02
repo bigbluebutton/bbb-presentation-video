@@ -81,17 +81,21 @@ def draw_triangle(
 ) -> None:
     style = shape.style
 
+    stroke = STROKES[style.color]
+    stroke_width = STROKE_WIDTHS[style.size]
+    fill = FILLS[style.color]
+
     stroke_points = triangle_stroke_points(id, shape)
 
     if style.isFilled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
 
-        ctx.set_source_rgb(*FILLS[style.color])
+        ctx.set_source_rgb(fill.r, fill.g, fill.b)
         ctx.fill()
 
     stroke_outline_points = perfect_freehand.get_stroke_outline_points(
         stroke_points,
-        size=STROKE_WIDTHS[shape.style.size],
+        size=stroke_width,
         thinning=0.65,
         smoothing=1,
         simulate_pressure=False,
@@ -99,9 +103,9 @@ def draw_triangle(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgb(*STROKES[style.color])
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     ctx.fill_preserve()
-    ctx.set_line_width(STROKE_WIDTHS[style.size])
+    ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
     ctx.set_line_join(cairo.LineJoin.ROUND)
     ctx.stroke()

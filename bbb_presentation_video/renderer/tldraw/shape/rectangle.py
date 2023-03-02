@@ -103,18 +103,22 @@ def draw_rectangle(
     ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
 ) -> None:
     style = shape.style
+    is_filled = style.isFilled
+    stroke = STROKES[style.color]
+    stroke_width = STROKE_WIDTHS[style.size]
+    fill = FILLS[style.color]
 
     stroke_points = rectangle_stroke_points(id, shape)
 
-    if style.isFilled:
+    if is_filled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
 
-        ctx.set_source_rgb(*FILLS[style.color])
+        ctx.set_source_rgb(fill.r, fill.g, fill.b)
         ctx.fill()
 
     stroke_outline_points = perfect_freehand.get_stroke_outline_points(
         stroke_points,
-        size=STROKE_WIDTHS[style.size],
+        size=stroke_width,
         thinning=0.65,
         smoothing=1,
         simulate_pressure=False,
@@ -122,9 +126,9 @@ def draw_rectangle(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgb(*STROKES[style.color])
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     ctx.fill_preserve()
-    ctx.set_line_width(STROKE_WIDTHS[style.size])
+    ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
     ctx.set_line_join(cairo.LineJoin.ROUND)
     ctx.stroke()
@@ -134,9 +138,11 @@ def dash_rectangle(
     ctx: "cairo.Context[CairoSomeSurface]", shape: RectangleShape
 ) -> None:
     style = shape.style
-    stroke_width = STROKE_WIDTHS[style.size] * 1.618
+    stroke = STROKES[style.color]
+    stroke_width = STROKE_WIDTHS[style.size]
+    fill = FILLS[style.color]
 
-    sw = 1 + stroke_width
+    sw = 1 + stroke_width * 1.618
     w = max(0, shape.size.width - sw / 2)
     h = max(0, shape.size.height - sw / 2)
 
@@ -146,7 +152,7 @@ def dash_rectangle(
         ctx.line_to(w, h)
         ctx.line_to(sw / 2, h)
         ctx.close_path()
-        ctx.set_source_rgb(*FILLS[style.color])
+        ctx.set_source_rgb(fill.r, fill.g, fill.b)
         ctx.fill()
 
     strokes = [
@@ -158,13 +164,13 @@ def dash_rectangle(
     ctx.set_line_width(sw)
     ctx.set_line_cap(cairo.LineCap.ROUND)
     ctx.set_line_join(cairo.LineJoin.ROUND)
-    ctx.set_source_rgb(*STROKES[style.color])
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     for start, end, length in strokes:
         dash_array, dash_offset = get_perfect_dash_props(
-            length, stroke_width, style.dash
+            length, stroke_width * 1.618, style.dash
         )
-        ctx.move_to(*start)
-        ctx.line_to(*end)
+        ctx.move_to(start[0], start[1])
+        ctx.line_to(end[0], end[1])
         ctx.set_dash(dash_array, dash_offset)
         ctx.stroke()
 

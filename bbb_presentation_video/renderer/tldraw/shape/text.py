@@ -122,6 +122,7 @@ def finalize_text(
     apply_shape_rotation(ctx, shape)
 
     style = shape.style
+    stroke = STROKES[style.color]
     font_size = FONT_SIZES[style.size]
 
     pctx = PangoCairo.create_context(ctx)
@@ -130,7 +131,7 @@ def finalize_text(
     layout.set_text(shape.text, -1)
 
     ctx.translate(4.0, 4.0)
-    ctx.set_source_rgb(*STROKES[style.color])
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     show_layout_by_lines(ctx, layout)
 
 
@@ -145,7 +146,7 @@ def finalize_label(
     style = shape.style
     # Label text is always centered
     style.textAlign = AlignStyle.MIDDLE
-
+    stroke = STROKES[style.color]
     font_size = FONT_SIZES[style.size]
 
     pctx = PangoCairo.create_context(ctx)
@@ -169,7 +170,7 @@ def finalize_label(
         height_offset += offsetY
 
     ctx.translate(width_offset, height_offset)
-    ctx.set_source_rgb(*STROKES[style.color])
+    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
 
     show_layout_by_lines(ctx, layout)
 
@@ -194,7 +195,7 @@ def finalize_sticky_text(
     layout.set_text(shape.text, -1)
 
     ctx.translate(STICKY_PADDING, STICKY_PADDING)
-    ctx.set_source_rgb(*STICKY_TEXT_COLOR)
+    ctx.set_source_rgb(STICKY_TEXT_COLOR.r, STICKY_TEXT_COLOR.g, STICKY_TEXT_COLOR.b)
 
     show_layout_by_lines(ctx, layout)
 
