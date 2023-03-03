@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from math import pi, sqrt
 from typing import Dict, Generic, Optional, TypeVar
 
@@ -16,15 +18,13 @@ from bbb_presentation_video.events import (
     PresenterEvent,
     ShapeEvent,
     ShapeStatus,
-    Size,
     SlideEvent,
     WhiteboardCursorEvent,
 )
-from bbb_presentation_video.events.helpers import Color, Position
+from bbb_presentation_video.events.helpers import Color, Position, Size
 from bbb_presentation_video.renderer.presentation import (
     Transform,
     apply_shapes_transform,
-    apply_slide_transform,
 )
 
 CURSOR_OPACITY = 0.6
@@ -32,11 +32,11 @@ CURSOR_PRESENTER = Color.from_int(0xFF0000, CURSOR_OPACITY)
 CURSOR_OTHER = Color.from_int(0x2A992A, CURSOR_OPACITY)
 CURSOR_RADIUS = 0.005  # 6px on 960x720
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def apply_legacy_cursor_transform(
-    ctx: "cairo.Context[CairoSomeSurface]", t: Transform
+    ctx: cairo.Context[CairoSomeSurface], t: Transform
 ) -> None:
     ctx.translate(t.padding.width, t.padding.height)
     ctx.save()
@@ -53,7 +53,7 @@ class Cursor:
 
 
 class CursorRenderer(Generic[CairoSomeSurface]):
-    ctx: "cairo.Context[CairoSomeSurface]"
+    ctx: cairo.Context[CairoSomeSurface]
     cursors: Dict[str, Cursor]
     legacy_cursor: Cursor
 
@@ -71,7 +71,7 @@ class CursorRenderer(Generic[CairoSomeSurface]):
 
     def __init__(
         self,
-        ctx: "cairo.Context[CairoSomeSurface]",
+        ctx: cairo.Context[CairoSomeSurface],
         size: Size,
         *,
         tldraw_whiteboard: bool,
@@ -122,7 +122,7 @@ class CursorRenderer(Generic[CairoSomeSurface]):
             self.presentation_slide[self.presentation] = self.slide
 
         # All cursors are hidden on presentation/slide switch
-        for user_id, cursor in self.cursors.items():
+        for cursor in self.cursors.values():
             cursor.position = None
         print("\tCursor: all cursors moved offscreen")
         self.cursors_changed = True

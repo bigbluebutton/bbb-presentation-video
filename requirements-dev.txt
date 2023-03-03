@@ -17,3 +17,6 @@ isort
 lxml-stubs
 mypy
 types-setuptools
+
+# Testing
+pytest

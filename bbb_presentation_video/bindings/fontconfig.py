@@ -2,21 +2,35 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import ctypes
-from typing import Union, cast
+from __future__ import annotations
 
-fontconfig = ctypes.cdll.LoadLibrary("libfontconfig.so.1")
-fontconfig.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
-fontconfig.FcConfigAppFontAddDir.restype = ctypes.c_int
+import ctypes
+from ctypes import c_char_p, c_int, c_void_p
+from typing import Any, Optional, Tuple, Type, Union, cast
 
 
 class FontconfigError(Exception):
     pass
 
 
+def _FcBool_errcheck(
+    result: Optional[Type[ctypes._CData]],
+    _func: ctypes._FuncPointer,
+    _arguments: Tuple[ctypes._CData, ...],
+) -> Any:
+    res = cast(c_int, result)
+    if res != c_int(1):
+        raise FontconfigError()
+
+
+fontconfig = ctypes.cdll.LoadLibrary("libfontconfig.so.1")
+fontconfig.FcConfigAppFontAddDir.argtypes = (c_void_p, c_char_p)
+fontconfig.FcConfigAppFontAddDir.restype = c_int
+fontconfig.FcConfigAppFontAddDir.errcheck = _FcBool_errcheck
+
+
 def app_font_add_dir(dir: Union[str, bytes]) -> None:
     """Add fonts from directory to font database in the current configuration."""
     if isinstance(dir, str):
         dir = dir.encode()
-    if cast(int, fontconfig.FcConfigAppFontAddDir(None, dir)) != 1:
-        raise FontconfigError()
+    fontconfig.FcConfigAppFontAddDir(None, dir)

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from typing import Dict, Generic, Optional, TypeVar, cast
 
 import cairo
@@ -36,13 +38,13 @@ from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 class TldrawRenderer(Generic[CairoSomeSurface]):
     """Render tldraw whiteboard shapes"""
 
-    ctx: "cairo.Context[CairoSomeSurface]"
+    ctx: cairo.Context[CairoSomeSurface]
     """The cairo rendering context for drawing the whiteboard."""
 
     presentation: Optional[str] = None
@@ -54,7 +56,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     presentation_slide: Dict[str, int]
     """The last shown slide on a given presentation."""
 
-    shapes: Dict[str, Dict[int, "ValueSortedDict[str, Shape]"]]
+    shapes: Dict[str, Dict[int, ValueSortedDict[str, Shape]]]
     """The list of shapes, organized by presentation then slide."""
 
     shapes_changed: bool = False
@@ -63,13 +65,17 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     transform: Transform
     """The current transform."""
 
-    pattern: Optional[cairo.Pattern] = None
-    """Cached rendered shapes for the current transform."""
+    pattern: Optional[cairo.SurfacePattern] = None
+    """Cached rendered whiteboard."""
 
-    def __init__(self, ctx: "cairo.Context[CairoSomeSurface]", transform: Transform):
+    shape_patterns: Dict[str, cairo.SurfacePattern]
+    """Cached rendered individual shapes for current presentation/slide."""
+
+    def __init__(self, ctx: cairo.Context[CairoSomeSurface], transform: Transform):
         self.ctx = ctx
         self.presentation_slide = {}
         self.shapes = {}
+        self.shape_patterns = {}
         self.transform = transform
 
         fontconfig.app_font_add_dir(resource_filename(__name__, "fonts"))
@@ -92,6 +98,9 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             print("\tTldraw: presentation did not change")
             return
 
+        # Only keep cached shape patterns for the current presentation/slide
+        self.shape_patterns.clear()
+
         self.presentation = presentation
         self.slide = self.presentation_slide.get(presentation, 0)
         self.shapes_changed = True
@@ -111,6 +120,9 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             print("\tTldraw: slide did not change")
             return
 
+        # Only keep cached shape patterns for the current presentation/slide
+        self.shape_patterns.clear()
+
         self.slide = slide
         self.presentation_slide[presentation] = slide
         self.shapes_changed = True
@@ -127,33 +139,44 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             print(f"\tTldraw: ignoring image shape type: {id}")
             return
 
-        print(repr(data))
         self.ensure_shape_structure(presentation, slide)
 
         if id in self.shapes[presentation][slide]:
-            shape = self.shapes[presentation][slide][id]
+            shape = cast(Shape, self.shapes[presentation][slide][id])
             shape.update_from_data(data)
+            action = "updated"
         else:
             shape = parse_shape_from_data(data)
             self.shapes[presentation][slide][id] = shape
+            action = "added"
 
-        print(repr(shape))
+        try:
+            del self.shape_patterns[id]
+        except KeyError:
+            pass
 
         self.shapes_changed = True
         print(
-            f"\tTldraw: added shape: {id}, presentation: {presentation}, slide: {slide}, type: {shape.__class__.__name__}"
+            f"\tTldraw: {action} shape: {id}, presentation: {presentation}, slide: {slide}, {repr(shape)}"
         )
 
     def delete_shape_event(self, event: tldraw.DeleteShapeEvent) -> None:
         id = event["id"]
         presentation = event["presentation"]
         slide = event["slide"]
+
         try:
             del self.shapes[presentation][slide][id]
         except KeyError:
             return
         except ValueError:
             return
+
+        try:
+            del self.shape_patterns[id]
+        except KeyError:
+            pass
+
         self.shapes_changed = True
         print(
             f"\tTldraw: deleted shape: {id}, presentation: {presentation}, slide: {slide}"
@@ -170,7 +193,8 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             self.delete_shape_event(cast(tldraw.DeleteShapeEvent, event))
 
     def finalize_frame(self, transform: Transform) -> bool:
-        if not self.shapes_changed and self.transform == transform:
+        transform_changed = self.transform != transform
+        if not self.shapes_changed and not transform_changed:
             return False
         self.transform = transform
         presentation = self.presentation
@@ -184,6 +208,9 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             self.pattern = None
             return False
 
+        if transform_changed:
+            self.shape_patterns.clear()
+
         shapes = self.shapes[presentation][slide]
         print(f"\tTldraw: Rendering {len(shapes)} shapes.")
 
@@ -194,33 +221,37 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
 
         for id, s in shapes.items():
             shape = cast(Shape, s)
-
-            ctx.save()
-
-            ctx.translate(*shape.point)
-
-            if isinstance(shape, DrawShape):
-                finalize_draw(ctx, id, shape)
-            elif isinstance(shape, RectangleShape):
-                finalize_rectangle(ctx, id, shape)
-            elif isinstance(shape, TriangleShape):
-                finalize_triangle(ctx, id, shape)
-            elif isinstance(shape, EllipseShape):
-                finalize_ellipse(ctx, id, shape)
-            elif isinstance(shape, ArrowShape):
-                finalize_arrow(ctx, shape)
-            elif isinstance(shape, TextShape):
-                finalize_text(ctx, id, shape)
-            elif isinstance(shape, StickyShape):
-                finalize_sticky(ctx, shape)
-            elif isinstance(shape, GroupShape):
-                # Nothing to do? All group-related updates seem to be propagated to the
-                # individual shapes in the group.
-                pass
+            if id in self.shape_patterns:
+                print(f"\tTldraw: Cached {shape.__class__.__name__}: {id}")
             else:
-                print(f"\tTldraw: Don't know how to render {shape}")
+                ctx.push_group()
 
-            ctx.restore()
+                ctx.translate(*shape.point)
+                if isinstance(shape, DrawShape):
+                    finalize_draw(ctx, id, shape)
+                elif isinstance(shape, RectangleShape):
+                    finalize_rectangle(ctx, id, shape)
+                elif isinstance(shape, TriangleShape):
+                    finalize_triangle(ctx, id, shape)
+                elif isinstance(shape, EllipseShape):
+                    finalize_ellipse(ctx, id, shape)
+                elif isinstance(shape, ArrowShape):
+                    finalize_arrow(ctx, id, shape)
+                elif isinstance(shape, TextShape):
+                    finalize_text(ctx, id, shape)
+                elif isinstance(shape, StickyShape):
+                    finalize_sticky(ctx, shape)
+                elif isinstance(shape, GroupShape):
+                    # Nothing to do? All group-related updates seem to be propagated to the
+                    # individual shapes in the group.
+                    pass
+                else:
+                    print(f"\tTldraw: Don't know how to render {shape}")
+
+                self.shape_patterns[id] = ctx.pop_group()
+
+            ctx.set_source(self.shape_patterns[id])
+            ctx.paint()
 
         self.pattern = ctx.pop_group()
         self.shapes_changed = False

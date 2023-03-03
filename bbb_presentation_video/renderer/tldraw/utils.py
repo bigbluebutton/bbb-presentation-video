@@ -2,29 +2,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
+import math
 from enum import Enum
-from math import floor, inf, pi, sqrt
+from math import floor, hypot, pi, sqrt, tau
 from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo
 import perfect_freehand
 
-from bbb_presentation_video.events.helpers import Color, color_blend
+from bbb_presentation_video.events.helpers import Color, Position, Size, color_blend
 from bbb_presentation_video.events.tldraw import StyleData
 from bbb_presentation_video.renderer.tldraw import vec
 
 DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
-
-
-@attr.s(order=False, slots=True, auto_attribs=True)
-class Bounds:
-    min_x: float
-    min_y: float
-    max_x: float
-    max_y: float
-    width: float
-    height: float
 
 
 CANVAS: Color = Color.from_int(0xFAFAFA)
@@ -57,7 +50,7 @@ STICKY_FONT_SIZES: Dict[SizeStyle, float] = {
     SizeStyle.LARGE: 48,
 }
 
-LETTER_SPACING: float = -0.03
+LETTER_SPACING: float = -0.03  # em
 
 
 class ColorStyle(Enum):
@@ -182,30 +175,60 @@ class Style:
             self.textAlign = AlignStyle(data["textAlign"])
 
 
-def get_bounds_from_points(
-    points: Sequence[Union[Tuple[float, float], Tuple[float, float, float]]]
-) -> Bounds:
-    min_x = min_y = inf
-    max_x = max_y = -inf
-
-    if len(points) == 0:
-        min_x = min_y = max_x = max_y = 0
-
-    for point in points:
-        x = point[0]
-        y = point[1]
-        min_x = min(x, min_x)
-        min_y = min(y, min_y)
-        max_x = max(x, max_x)
-        max_y = max(y, max_y)
-
-    return Bounds(min_x, min_y, max_x, max_y, max_x - min_x, max_y - min_y)
+class Decoration(Enum):
+    ARROW: str = "arrow"
 
 
 def perimeter_of_ellipse(rx: float, ry: float) -> float:
     """Find the approximate perimeter of an ellipse."""
     h = (rx - ry) ** 2 / (rx + ry) ** 2
     return pi * (rx + ry) * (1 + (3 * h) / (10 + sqrt(4 - 3 * h)))
+
+
+def circle_from_three_points(
+    A: Sequence[float], B: Sequence[float], C: Sequence[float]
+) -> Tuple[Position, float]:
+    """Get a circle from three points."""
+    (x1, y1) = A
+    (x2, y2) = B
+    (x3, y3) = C
+
+    a = x1 * (y2 - y3) - y1 * (x2 - x3) + x2 * y3 - x3 * y2
+
+    b = (
+        (x1 * x1 + y1 * y1) * (y3 - y2)
+        + (x2 * x2 + y2 * y2) * (y1 - y3)
+        + (x3 * x3 + y3 * y3) * (y2 - y1)
+    )
+
+    c = (
+        (x1 * x1 + y1 * y1) * (x2 - x3)
+        + (x2 * x2 + y2 * y2) * (x3 - x1)
+        + (x3 * x3 + y3 * y3) * (x1 - x2)
+    )
+
+    x = -b / (2 * a)
+
+    y = -c / (2 * a)
+
+    return (Position(x, y), hypot(x - x1, y - y1))
+
+
+def short_angle_dist(a0: float, a1: float) -> float:
+    """Get the short angle distance between two angles."""
+    max = math.pi * 2
+    da = (a1 - a0) % max
+    return ((2 * da) % max) - da
+
+
+def lerp_angles(a0: float, a1: float, t: float) -> float:
+    """Interpolate an angle between two angles."""
+    return a0 + short_angle_dist(a0, a1) * t
+
+
+def get_sweep(C: Sequence[float], A: Sequence[float], B: Sequence[float]) -> float:
+    """Get the "sweep" or short distance between two points on a circle's perimeter."""
+    return short_angle_dist(vec.angle(C, A), vec.angle(C, B))
 
 
 def draw_stroke_points(
@@ -259,11 +282,22 @@ def bezier_quad_to_cube(
     )
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+
+def rounded_rect(
+    ctx: cairo.Context[CairoSomeSurface], size: Size, radius: float
+) -> None:
+    ctx.new_sub_path()
+    ctx.arc(size.width - radius, radius, radius, -tau / 4, 0)
+    ctx.arc(size.width - radius, size.height - radius, radius, 0, tau / 4)
+    ctx.arc(radius, size.height - radius, radius, tau / 4, tau / 2)
+    ctx.arc(radius, radius, radius, tau / 2, -tau / 4)
+    ctx.close_path()
 
 
 def draw_smooth_path(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     points: Sequence[Tuple[float, float]],
     closed: bool = True,
 ) -> None:
@@ -302,21 +336,9 @@ def draw_smooth_path(
 
 
 def draw_smooth_stroke_point_path(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     points: Sequence[perfect_freehand.types.StrokePoint],
     closed: bool = True,
 ) -> None:
     outline_points = list(map(lambda p: p["point"], points))
     draw_smooth_path(ctx, outline_points, closed)
-
-
-def triangle_centroid(w: float, h: float) -> Tuple[float, float]:
-    points = [
-        [w / 2, 0],
-        [w, h],
-        [0, h],
-    ]
-    return (
-        (points[0][0] + points[1][0] + points[2][0]) / 3,
-        (points[0][1] + points[1][1] + points[2][1]) / 3,
-    )

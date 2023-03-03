@@ -18,3 +18,9 @@ mypy_path = "$MYPY_CONFIG_FILE_DIR/typings"
 [[tool.mypy.overrides]]
 module = "sortedcollections"
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = [
+    "--import-mode=importlib"
+]

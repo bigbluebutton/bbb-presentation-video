@@ -2,14 +2,26 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Iterator, Optional, Type, TypeVar
+from __future__ import annotations
+
+from typing import (
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import attr
 from lxml import etree
 
 from bbb_presentation_video.events.errors import EventParsingError
 
-_ColorSelf = TypeVar("_ColorSelf", bound="Color")
+ColorSelf = TypeVar("ColorSelf", bound="Color")
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -20,9 +32,7 @@ class Color:
     a: Optional[float] = None
 
     @classmethod
-    def from_int(
-        cls: Type[_ColorSelf], i: int, a: Optional[float] = None
-    ) -> _ColorSelf:
+    def from_int(cls: Type[ColorSelf], i: int, a: Optional[float] = None) -> ColorSelf:
         return cls(
             r=((i & 0xFF0000) >> 16) / 255.0,
             g=((i & 0x00FF00) >> 8) / 255.0,
@@ -46,10 +56,32 @@ def color_blend(a: Color, b: Color, t: float) -> Color:
     )
 
 
-@attr.s(order=False, slots=True, auto_attribs=True)
-class Position:
+PositionSelf = TypeVar("PositionSelf", bound="Position")
+
+
+@attr.s(order=False, slots=True, auto_attribs=True, init=False)
+class Position(Sequence[float]):
     x: float
     y: float
+
+    @overload
+    def __init__(self, iterable: Iterable[float], /) -> None:
+        ...
+
+    @overload
+    def __init__(self, x: float, y: float) -> None:
+        ...
+
+    def __init__(
+        self, x: Union[Iterable[float], float], y: Optional[float] = None
+    ) -> None:
+        if isinstance(x, Iterable):
+            i = iter(x)
+            self.x = next(i)
+            self.y = next(i)
+        else:
+            self.x = x
+            self.y = cast(float, y)
 
     def __str__(self) -> str:
         return f"[{self.x:.3f},{self.y:.3f}]"
@@ -58,8 +90,83 @@ class Position:
         yield self.x
         yield self.y
 
-    def __mul__(self, other: float) -> "Position":
-        return Position(self.x * other, self.y * other)
+    def __add__(self: PositionSelf, other: Position) -> PositionSelf:
+        return self.__class__(self.x + other.x, self.y + other.y)
+
+    def __mul__(self: PositionSelf, other: float) -> PositionSelf:
+        return self.__class__(self.x * other, self.y * other)
+
+    def __truediv__(self: PositionSelf, other: float) -> PositionSelf:
+        return self.__class__(self.x / other, self.y / other)
+
+    @overload
+    def __getitem__(self, index: int) -> float:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[float]:
+        ...
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[float, Sequence[float]]:
+        return (self.x, self.y)[index]
+
+    def __len__(self) -> int:
+        return 2
+
+
+SizeSelf = TypeVar("SizeSelf", bound="Size")
+
+
+@attr.s(order=False, slots=True, auto_attribs=True, init=False)
+class Size(Sequence[float]):
+    width: float
+    height: float
+
+    @overload
+    def __init__(self, iterable: Iterable[float], /) -> None:
+        ...
+
+    @overload
+    def __init__(self, width: float, height: float) -> None:
+        ...
+
+    def __init__(
+        self, width: Union[Iterable[float], float], height: Optional[float] = None
+    ) -> None:
+        if isinstance(width, Iterable):
+            i = iter(width)
+            self.width = next(i)
+            self.height = next(i)
+        else:
+            self.width = width
+            self.height = cast(float, height)
+
+    def __str__(self) -> str:
+        return f"{self.width:.3f}x{self.height:.3f}"
+
+    def __iter__(self) -> Iterator[float]:
+        yield self.width
+        yield self.height
+
+    def __mul__(self: SizeSelf, other: float) -> SizeSelf:
+        return self.__class__(self.width * other, self.height * other)
+
+    def __truediv__(self: SizeSelf, other: float) -> SizeSelf:
+        return self.__class__(self.width / other, self.height / other)
+
+    @overload
+    def __getitem__(self, index: int) -> float:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[float]:
+        ...
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[float, Sequence[float]]:
+        return (self.width, self.height)[index]
+
+    def __len__(self) -> int:
+        return 2
 
 
 def xml_subelement_opt(element: etree._Element, name: str) -> Optional[str]:

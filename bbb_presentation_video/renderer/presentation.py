@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
 
 from enum import Enum
 from math import ceil, floor
@@ -22,8 +23,7 @@ gi.require_version("Poppler", "0.18")
 from gi.repository import Gdk, GdkPixbuf, GLib, Poppler
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events import Size
-from bbb_presentation_video.events.helpers import Position
+from bbb_presentation_video.events.helpers import Position, Size
 
 
 class ImageType(Enum):
@@ -64,10 +64,10 @@ class Transform(object):
     shapes_size: Size
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def apply_slide_transform(ctx: "cairo.Context[CairoSomeSurface]", t: Transform) -> None:
+def apply_slide_transform(ctx: cairo.Context[CairoSomeSurface], t: Transform) -> None:
     ctx.translate(t.padding.width, t.padding.height)
     ctx.scale(t.scale, t.scale)
     ctx.rectangle(0, 0, t.size.width, t.size.height)
@@ -75,16 +75,14 @@ def apply_slide_transform(ctx: "cairo.Context[CairoSomeSurface]", t: Transform) 
     ctx.translate(-t.pos.x, -t.pos.y)
 
 
-def apply_shapes_transform(
-    ctx: "cairo.Context[CairoSomeSurface]", t: Transform
-) -> Size:
+def apply_shapes_transform(ctx: cairo.Context[CairoSomeSurface], t: Transform) -> Size:
     apply_slide_transform(ctx, t)
     ctx.scale(t.shapes_scale, t.shapes_scale)
     return t.shapes_size
 
 
 class PresentationRenderer(Generic[CairoSomeSurface]):
-    ctx: "cairo.Context[CairoSomeSurface]"
+    ctx: cairo.Context[CairoSomeSurface]
     directory: str
     size: Size
     hide_logo: bool
@@ -109,7 +107,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
     def __init__(
         self,
-        ctx: "cairo.Context[CairoSomeSurface]",
+        ctx: cairo.Context[CairoSomeSurface],
         directory: str,
         size: Size,
         hide_logo: bool,
