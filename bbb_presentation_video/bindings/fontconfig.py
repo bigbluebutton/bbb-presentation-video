@@ -18,8 +18,8 @@ def _FcBool_errcheck(
     _func: ctypes._FuncPointer,
     _arguments: Tuple[ctypes._CData, ...],
 ) -> Any:
-    res = cast(c_int, result)
-    if res != c_int(1):
+    res = int(cast(c_int, result))
+    if res != 1:
         raise FontconfigError()
 
 
