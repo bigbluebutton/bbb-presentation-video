@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from typing import Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
 
-from bbb_presentation_video.events import Size
-from bbb_presentation_video.events.helpers import Position
+from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import ShapeData
 from bbb_presentation_video.renderer.tldraw.utils import Decoration, DrawPoints, Style
 
@@ -53,7 +54,7 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         super().update_from_data(data)
 
         if "size" in data:
-            self.size = Size(*data["size"])
+            self.size = Size(data["size"])
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -77,13 +78,20 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
     labelPoint: Position = Position(0.5, 0.5)
     """The position of the label within the shape. Ranges from 0 to 1."""
 
+    def label_offset(self) -> Position:
+        """Calculate the offset needed when drawing the label for most shapes."""
+        return Position(
+            (self.labelPoint.x - 0.5) * self.size.width,
+            (self.labelPoint.y - 0.5) * self.size.height,
+        )
+
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
 
         if "label" in data:
             self.label = data["label"] if data["label"] != "" else None
         if "labelPoint" in data:
-            self.labelPoint = Position(data["labelPoint"][0], data["labelPoint"][1])
+            self.labelPoint = Position(data["labelPoint"])
 
 
 def shape_sort_key(shape: BaseShapeProto) -> float:
@@ -169,11 +177,21 @@ class StickyShape(RotatableShapeProto):
             self.text = data["text"]
 
 
-@attr.s(order=False, slots=True, auto_attribs=True)
+@attr.s(order=False, slots=True, auto_attribs=True, init=False)
 class ArrowHandles:
-    start: Position = Position(0.0, 0.0)
-    end: Position = Position(1.0, 1.0)
-    bend: Position = Position(0.5, 0.5)
+    start: Position
+    bend: Position
+    end: Position
+
+    def __init__(
+        self,
+        start: Position = Position(0.0, 0.0),
+        bend: Position = Position(0.5, 0.5),
+        end: Position = Position(1.0, 1.0),
+    ) -> None:
+        self.start = start
+        self.bend = bend
+        self.end = end
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -201,14 +219,11 @@ class ArrowShape(LabelledShapeProto):
         if "handles" in data:
             handles = data["handles"]
             if "start" in handles:
-                point = handles["start"]["point"]
-                self.handles.start = Position(point[0], point[1])
+                self.handles.start = Position(handles["start"]["point"])
             if "end" in handles:
-                point = handles["end"]["point"]
-                self.handles.end = Position(point[0], point[1])
+                self.handles.end = Position(handles["end"]["point"])
             if "bend" in handles:
-                point = handles["bend"]["point"]
-                self.handles.bend = Position(point[0], point[1])
+                self.handles.bend = Position(handles["bend"]["point"])
 
         if "decorations" in data:
             decorations = data["decorations"]
@@ -256,11 +271,11 @@ def parse_shape_from_data(data: ShapeData) -> Shape:
         raise Exception(f"Unknown shape type: {type}")
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def apply_shape_rotation(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: RotatableShapeProto
+    ctx: cairo.Context[CairoSomeSurface], shape: RotatableShapeProto
 ) -> None:
     x = shape.size.width / 2
     y = shape.size.height / 2

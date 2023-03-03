@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
 
 from collections import deque
 from typing import Deque, Dict, Generic, Optional, TypeVar
@@ -40,11 +41,11 @@ POLL_FG = Color.from_int(0x000000)
 POLL_VPADDING = 20.0
 POLL_HPADDING = 10.0
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 class ShapesRenderer(Generic[CairoSomeSurface]):
-    ctx: "cairo.Context[CairoSomeSurface]"
+    ctx: cairo.Context[CairoSomeSurface]
 
     presentation: Optional[str]
     presentation_slide: Dict[str, int]
@@ -57,7 +58,7 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
 
     shapes_changed: bool
 
-    def __init__(self, ctx: "cairo.Context[CairoSomeSurface]", transform: Transform):
+    def __init__(self, ctx: cairo.Context[CairoSomeSurface], transform: Transform):
         self.ctx = ctx
 
         self.presentation = None

@@ -1,19 +1,19 @@
 # SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
 
-from typing import TypeVar
+from math import ceil
+from typing import Callable, Optional, Tuple, TypeVar
 
 import cairo
 import gi
 
-from bbb_presentation_video.renderer.tldraw import vec
+from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.renderer.tldraw.shape import (
-    ArrowShape,
     LabelledShapeProto,
     StickyShape,
     TextShape,
-    TriangleShape,
     apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -25,9 +25,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STICKY_TEXT_COLOR,
     STROKES,
     AlignStyle,
-    DashStyle,
     Style,
-    triangle_centroid,
 )
 
 gi.require_version("Pango", "1.0")
@@ -37,20 +35,30 @@ from gi.repository import Pango, PangoCairo
 # Set DPI to "72" so we're working directly in Pango point units.
 DPI: float = 72.0
 
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
 
 def create_pango_layout(
-    pctx: Pango.Context, style: Style, font_size: float
+    ctx: cairo.Context[CairoSomeSurface],
+    style: Style,
+    font_size: float,
+    *,
+    width: Optional[float] = None,
+    padding: float = 0,
 ) -> Pango.Layout:
     scale = style.scale
+
+    pctx = PangoCairo.create_context(ctx)
+    pctx.set_round_glyph_positions(False)
 
     font = Pango.FontDescription()
     font.set_family(FONT_FACES[style.font])
     font.set_size(round(font_size * scale * Pango.SCALE))
 
     fo = cairo.FontOptions()
-    fo.set_antialias(cairo.ANTIALIAS_GRAY)
-    fo.set_hint_metrics(cairo.HINT_METRICS_ON)
-    fo.set_hint_style(cairo.HINT_STYLE_NONE)
+    fo.set_antialias(cairo.Antialias.GRAY)
+    fo.set_hint_metrics(cairo.HintMetrics.OFF)
+    fo.set_hint_style(cairo.HintStyle.NONE)
     PangoCairo.context_set_font_options(pctx, fo)
 
     attrs = Pango.AttrList()
@@ -77,12 +85,17 @@ def create_pango_layout(
         layout.set_alignment(Pango.Alignment.LEFT)
         layout.set_justify(True)
 
+    if width is not None:
+        layout.set_width(ceil((width - (padding * 2)) * Pango.SCALE))
+    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+
     return layout
 
 
 def show_layout_by_lines(
-    ctx: "cairo.Context[CairoSomeSurface]", layout: Pango.Layout
+    ctx: cairo.Context[CairoSomeSurface], layout: Pango.Layout, *, padding: float = 0
 ) -> None:
+    """Show a Pango Layout line by line to manually handle CSS-style line height."""
     # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
 
     font = layout.get_font_description()
@@ -90,6 +103,7 @@ def show_layout_by_lines(
     line_height = font.get_size() / Pango.SCALE
 
     ctx.save()
+    ctx.translate(padding, padding)
     for line in layout.get_lines_readonly():
         # With show_layout_line, text origin is at baseline. y is a negative number that
         # indicates how far the font extends above baseline, and height is a positive number
@@ -111,11 +125,20 @@ def show_layout_by_lines(
     ctx.restore()
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+def get_layout_size(layout: Pango.Layout, *, padding: float = 0) -> Size:
+    # TODO: Once we switch to Pango 1.50 and use Pango.attr_line_height_new_absolute this can
+    # be replaced with a call to layout.get_size()
+    layout_size = layout.get_size()
+    width = layout_size[0] / Pango.SCALE
+    lines = layout.get_line_count()
+    font = layout.get_font_description()
+    line_height = font.get_size() / Pango.SCALE
+    height = lines * line_height
+    return Size(width + padding * 2, height + padding * 2)
 
 
 def finalize_text(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: TextShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TextShape
 ) -> None:
     print(f"\tTldraw: Finalizing Text: {id}")
 
@@ -125,23 +148,24 @@ def finalize_text(
     stroke = STROKES[style.color]
     font_size = FONT_SIZES[style.size]
 
-    pctx = PangoCairo.create_context(ctx)
-    layout = create_pango_layout(pctx, style, font_size)
-
+    layout = create_pango_layout(ctx, style, font_size)
     layout.set_text(shape.text, -1)
 
-    ctx.translate(4.0, 4.0)
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
-    show_layout_by_lines(ctx, layout)
+    show_layout_by_lines(ctx, layout, padding=4)
 
 
 def finalize_label(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: LabelledShapeProto
-) -> None:
+    ctx: cairo.Context[CairoSomeSurface],
+    shape: LabelledShapeProto,
+    *,
+    offset: Optional[Position] = None,
+    scale: Optional[Callable[[Size], float]] = None,
+) -> Tuple[Size, float]:
     if shape.label is None or shape.label == "":
-        return
+        return (Size(16, 32), 1)
 
-    print(f"\tTldraw: Finalizing Label")
+    print(f"\t\tFinalizing Label")
 
     style = shape.style
     # Label text is always centered
@@ -149,58 +173,52 @@ def finalize_label(
     stroke = STROKES[style.color]
     font_size = FONT_SIZES[style.size]
 
-    pctx = PangoCairo.create_context(ctx)
-    layout = create_pango_layout(pctx, style, font_size)
+    ctx.save()
 
+    layout = create_pango_layout(ctx, style, font_size)
     layout.set_text(shape.label, -1)
 
-    (layout_width, layout_height) = layout.get_pixel_size()
-    if style.dash is DashStyle.DRAW or isinstance(shape, TriangleShape):
-        width_offset = (shape.size.width - layout_width) * shape.labelPoint.x
-        height_offset = (shape.size.height - layout_height) * shape.labelPoint.y
-    else:
-        width_offset = (-layout_width) * shape.labelPoint.x
-        height_offset = (-layout_height) * shape.labelPoint.y
+    label_size = get_layout_size(layout, padding=4)
+    # The shape may provide a scale adjustment to reduce label size if it wouldn't fit
+    if scale is not None:
+        scale_adj = scale(label_size)
+        label_size *= scale_adj
 
-    if isinstance(shape, TriangleShape):
-        # label of triangle has an offset
-        center = vec.div([shape.size.width, shape.size.height], 2)
-        centroid = triangle_centroid(shape.size.width, shape.size.height)
-        offsetY = (centroid[1] - center[1]) * 0.72
-        height_offset += offsetY
+    bounds = shape.size
+    if offset is None:
+        offset = shape.label_offset()
+    x = bounds.width / 2 - label_size.width / 2 + offset.x
+    y = bounds.height / 2 - label_size.height / 2 + offset.y
+    ctx.translate(x, y)
 
-    ctx.translate(width_offset, height_offset)
+    if scale is not None:
+        ctx.scale(scale_adj, scale_adj)
+        PangoCairo.update_context(ctx, layout.get_context())
+        layout.context_changed()
+
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+    show_layout_by_lines(ctx, layout, padding=4)
 
-    show_layout_by_lines(ctx, layout)
+    ctx.restore()
+
+    return (label_size, scale_adj)
 
 
 def finalize_sticky_text(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: StickyShape
+    ctx: cairo.Context[CairoSomeSurface], shape: StickyShape
 ) -> None:
     if shape.text is None or shape.text == "":
         return
 
-    print(f"\tTldraw: Finalizing Sticky Text")
+    print(f"\t\tFinalizing Sticky Text")
 
     style = shape.style
-
     font_size = STICKY_FONT_SIZES[style.size]
 
-    pctx = PangoCairo.create_context(ctx)
-    layout = create_pango_layout(pctx, style, font_size)
-    layout.set_width(int((shape.size.width - (STICKY_PADDING * 2)) * Pango.SCALE))
-    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
-
+    layout = create_pango_layout(
+        ctx, style, font_size, width=shape.size.width, padding=STICKY_PADDING
+    )
     layout.set_text(shape.text, -1)
 
-    ctx.translate(STICKY_PADDING, STICKY_PADDING)
     ctx.set_source_rgb(STICKY_TEXT_COLOR.r, STICKY_TEXT_COLOR.g, STICKY_TEXT_COLOR.b)
-
-    show_layout_by_lines(ctx, layout)
-
-
-def finalize_arrow_label(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: ArrowShape
-) -> None:
-    ...
+    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING)

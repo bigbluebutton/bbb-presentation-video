@@ -8,7 +8,6 @@ from enum import Enum
 from fractions import Fraction
 from typing import Any, Deque, List, Optional, Tuple, TypedDict, cast
 
-import attr
 from lxml import etree
 from packaging.version import Version
 
@@ -17,6 +16,7 @@ from bbb_presentation_video.events.errors import *
 from bbb_presentation_video.events.helpers import (
     Color,
     Position,
+    Size,
     xml_subelement,
     xml_subelement_opt,
     xml_subelement_shape_slide,
@@ -24,18 +24,6 @@ from bbb_presentation_video.events.helpers import (
 
 MAGIC_MYSTERY_NUMBER = 2.0
 DEFAULT_PRESENTATION_POD = "DEFAULT_PRESENTATION_POD"
-
-
-@attr.s(order=False, slots=True, auto_attribs=True)
-class Size:
-    width: float
-    height: float
-
-    def __str__(self) -> str:
-        return f"{self.width:.3f}x{self.height:.3f}"
-
-    def __mul__(self, other: float) -> "Size":
-        return Size(self.width * other, self.height * other)
 
 
 class ShapeStatus(Enum):

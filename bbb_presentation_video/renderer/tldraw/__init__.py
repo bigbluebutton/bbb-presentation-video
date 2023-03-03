@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from typing import Dict, Generic, Optional, TypeVar, cast
 
 import cairo
-from attr import Factory
 from pkg_resources import resource_filename
 from sortedcollections import ValueSortedDict
 
@@ -37,13 +38,13 @@ from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 class TldrawRenderer(Generic[CairoSomeSurface]):
     """Render tldraw whiteboard shapes"""
 
-    ctx: "cairo.Context[CairoSomeSurface]"
+    ctx: cairo.Context[CairoSomeSurface]
     """The cairo rendering context for drawing the whiteboard."""
 
     presentation: Optional[str] = None
@@ -55,7 +56,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     presentation_slide: Dict[str, int]
     """The last shown slide on a given presentation."""
 
-    shapes: Dict[str, Dict[int, "ValueSortedDict[str, Shape]"]]
+    shapes: Dict[str, Dict[int, ValueSortedDict[str, Shape]]]
     """The list of shapes, organized by presentation then slide."""
 
     shapes_changed: bool = False
@@ -70,7 +71,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     shape_patterns: Dict[str, cairo.SurfacePattern]
     """Cached rendered individual shapes for current presentation/slide."""
 
-    def __init__(self, ctx: "cairo.Context[CairoSomeSurface]", transform: Transform):
+    def __init__(self, ctx: cairo.Context[CairoSomeSurface], transform: Transform):
         self.ctx = ctx
         self.presentation_slide = {}
         self.shapes = {}

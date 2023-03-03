@@ -14,8 +14,8 @@ from typing import Deque, Iterable, Optional, cast
 import cairo
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events import Event, PerPodEvent, RecordEvent, Size
-from bbb_presentation_video.events.helpers import Color
+from bbb_presentation_video.events import Event, PerPodEvent, RecordEvent
+from bbb_presentation_video.events.helpers import Color, Size
 from bbb_presentation_video.renderer.cursor import CursorRenderer
 from bbb_presentation_video.renderer.presentation import PresentationRenderer
 from bbb_presentation_video.renderer.tldraw import TldrawRenderer

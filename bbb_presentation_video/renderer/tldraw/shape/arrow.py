@@ -2,14 +2,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from math import floor, pi, tau
 from random import Random
-from typing import Callable, List, Optional, Tuple, TypeVar
+from typing import Callable, List, Optional, Sequence, TypeVar
 
 import cairo
-from attr import astuple
 from perfect_freehand import get_stroke
 
+from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.easings import (
     ease_in_out_cubic,
@@ -24,6 +26,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShape,
     apply_shape_rotation,
 )
+from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
     STROKES,
@@ -35,34 +38,33 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     get_perfect_dash_props,
     get_sweep,
     lerp_angles,
+    rounded_rect,
 )
 
 
-def get_arc_length(
-    C: Tuple[float, ...], r: float, A: Tuple[float, ...], B: Tuple[float, ...]
-) -> float:
+def get_arc_length(C: Position, r: float, A: Position, B: Position) -> float:
     sweep = get_sweep(C, A, B)
     return r * tau * (sweep / tau)
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def freehand_arrow_shaft(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     id: str,
     style: Style,
-    start: Tuple[float, ...],
-    end: Tuple[float, ...],
+    start: Position,
+    end: Position,
     deco_start: Optional[Decoration],
     deco_end: Optional[Decoration],
 ) -> None:
     random = Random(id)
     stroke_width = STROKE_WIDTHS[style.size]
     if deco_start is not None:
-        start = vec.nudge(start, end, stroke_width)
+        start = Position(vec.nudge(start, end, stroke_width))
     if deco_end is not None:
-        end = vec.nudge(end, start, stroke_width)
+        end = Position(vec.nudge(end, start, stroke_width))
 
     stroke_outline_points = get_stroke(
         [start, end],
@@ -77,14 +79,14 @@ def freehand_arrow_shaft(
 
 
 def curved_freehand_arrow_shaft(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     id: str,
     style: Style,
-    start: Tuple[float, ...],
-    end: Tuple[float, ...],
+    start: Position,
+    end: Position,
     deco_start: Optional[Decoration],
     deco_end: Optional[Decoration],
-    center: Tuple[float, float],
+    center: Position,
     radius: float,
     length: float,
     easing: Callable[[float], float],
@@ -92,13 +94,13 @@ def curved_freehand_arrow_shaft(
     random = Random(id)
     stroke_width = STROKE_WIDTHS[style.size]
     if deco_start is not None:
-        start = vec.rot_with(start, center, stroke_width / length)
+        start = Position(vec.rot_with(start, center, stroke_width / length))
     if deco_end is not None:
-        end = vec.rot_with(end, center, -(stroke_width / length))
+        end = Position(vec.rot_with(end, center, -(stroke_width / length)))
     start_angle = vec.angle(center, start)
     end_angle = vec.angle(center, end)
 
-    points: List[Tuple[float, ...]] = [start]
+    points: List[Sequence[float]] = [start]
     count = 8 + floor((abs(length) / 20) * 1 + random.uniform(-0.5, 0.5))
     for i in range(count):
         t = easing(i / count)
@@ -119,10 +121,10 @@ def curved_freehand_arrow_shaft(
 
 
 def curved_arrow_shaft(
-    ctx: "cairo.Context[CairoSomeSurface]",
-    start: Tuple[float, ...],
-    end: Tuple[float, ...],
-    center: Tuple[float, float],
+    ctx: cairo.Context[CairoSomeSurface],
+    start: Position,
+    end: Position,
+    center: Position,
     radius: float,
     bend: float,
 ) -> None:
@@ -132,15 +134,15 @@ def curved_arrow_shaft(
     ctx.new_sub_path()
 
     if bend > 0:
-        ctx.arc(center[0], center[1], radius, start_angle, end_angle)
+        ctx.arc(center.x, center.y, radius, start_angle, end_angle)
     else:
-        ctx.arc_negative(center[0], center[1], radius, start_angle, end_angle)
+        ctx.arc_negative(center.x, center.y, radius, start_angle, end_angle)
 
 
 def straight_arrow_head(
-    ctx: "cairo.Context[CairoSomeSurface]",
-    a: Tuple[float, ...],
-    b: Tuple[float, ...],
+    ctx: cairo.Context[CairoSomeSurface],
+    a: Position,
+    b: Position,
     r: float,
 ) -> None:
     ints = intersect_circle_line_segment(a, r, a, b).points
@@ -150,19 +152,19 @@ def straight_arrow_head(
         right = a
     else:
         int = ints[0]
-        left = vec.rot_with(int, a, pi / 6)
-        right = vec.rot_with(int, a, -pi / 6)
+        left = Position(vec.rot_with(int, a, pi / 6))
+        right = Position(vec.rot_with(int, a, -pi / 6))
 
-    ctx.move_to(left[0], left[1])
-    ctx.line_to(a[0], a[1])
-    ctx.line_to(right[0], right[1])
+    ctx.move_to(left.x, left.y)
+    ctx.line_to(a.x, a.y)
+    ctx.line_to(right.x, right.y)
 
 
 def curved_arrow_head(
-    ctx: "cairo.Context[CairoSomeSurface]",
-    a: Tuple[float, ...],
+    ctx: cairo.Context[CairoSomeSurface],
+    a: Position,
     r1: float,
-    C: Tuple[float, ...],
+    C: Position,
     r2: float,
     sweep: bool,
 ) -> None:
@@ -173,27 +175,26 @@ def curved_arrow_head(
         right = a
     else:
         int = ints[0] if sweep else ints[1]
-        left = vec.nudge(vec.rot_with(int, a, pi / 6), a, r1 * -0.382)
-        right = vec.nudge(vec.rot_with(int, a, -pi / 6), a, r1 * -0.382)
+        left = Position(vec.nudge(vec.rot_with(int, a, pi / 6), a, r1 * -0.382))
+        right = Position(vec.nudge(vec.rot_with(int, a, -pi / 6), a, r1 * -0.382))
 
-    ctx.move_to(left[0], left[1])
-    ctx.line_to(a[0], a[1])
-    ctx.line_to(right[0], right[1])
+    ctx.move_to(left.x, left.y)
+    ctx.line_to(a.x, a.y)
+    ctx.line_to(right.x, right.y)
 
 
 def straight_arrow(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: ArrowShape
-) -> None:
-    print("\t\tDrawing a straight arrow")
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowShape
+) -> float:
     style = shape.style
-    start = astuple(shape.handles.start)
-    end = astuple(shape.handles.end)
+    start = shape.handles.start
+    end = shape.handles.end
     deco_start = shape.decorations.start
     deco_end = shape.decorations.end
 
     arrow_dist = vec.dist(start, end)
     if arrow_dist < 2:
-        return
+        return arrow_dist
     stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
 
@@ -233,25 +234,28 @@ def straight_arrow(
         straight_arrow_head(ctx, end, start, arrow_head_len)
 
     ctx.set_line_width(sw)
+    ctx.set_line_cap(cairo.LineCap.ROUND)
+    ctx.set_line_join(cairo.LineJoin.ROUND)
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     ctx.stroke()
 
+    return arrow_dist
+
 
 def curved_arrow(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: ArrowShape
-) -> None:
-    print("\t\tDrawing a curved arrow")
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowShape
+) -> float:
     style = shape.style
-    start = astuple(shape.handles.start)
-    bend = astuple(shape.handles.bend)
-    end = astuple(shape.handles.end)
+    start = shape.handles.start
+    bend = shape.handles.bend
+    end = shape.handles.end
     arrow_bend = shape.bend
     deco_start = shape.decorations.start
     deco_end = shape.decorations.end
 
     arrow_dist = vec.dist(start, end)
     if arrow_dist < 2:
-        return
+        return arrow_dist
 
     stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
@@ -308,20 +312,57 @@ def curved_arrow(
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     ctx.stroke()
 
+    return length
+
 
 def finalize_arrow(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: ArrowShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowShape
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow: {id}")
 
     apply_shape_rotation(ctx, shape)
 
-    handles = shape.handles
-    start = astuple(handles.start)
-    bend = astuple(handles.bend)
-    end = astuple(handles.end)
+    start = shape.handles.start
+    bend = shape.handles.bend
+    end = shape.handles.end
     is_straight_line = vec.dist(bend, vec.to_fixed(vec.med(start, end))) < 1
+
+    ctx.push_group()
     if is_straight_line:
-        straight_arrow(ctx, id, shape)
+        dist = straight_arrow(ctx, id, shape)
     else:
-        curved_arrow(ctx, id, shape)
+        dist = curved_arrow(ctx, id, shape)
+    arrow_pattern = ctx.pop_group()
+
+    label = shape.label
+    if label is not None:
+        bounds = shape.size
+        offset = Position(bend.x - bounds.width / 2, bend.y - bounds.height / 2)
+        label_size, scale_adj = finalize_label(
+            ctx,
+            shape,
+            offset=offset,
+            scale=lambda ls: max(
+                0.5,
+                min(1, max(dist / (ls.width + 128), dist / (ls.height + 128))),
+            ),
+        )
+
+        # Mask the label area so the arrow doesn't overlap it
+        ctx.push_group_with_content(cairo.Content.ALPHA)
+        ctx.rectangle(-100, -100, bounds.width + 200, bounds.height + 200)
+        ctx.fill()
+        ctx.set_operator(cairo.Operator.DEST_OUT)
+        ctx.translate(
+            bounds.width / 2 - label_size.width / 2 + offset.x,
+            bounds.height / 2 - label_size.height / 2 + offset.y,
+        )
+        rounded_rect(ctx, label_size, 4 * scale_adj)
+        ctx.fill()
+        mask = ctx.pop_group()
+
+        ctx.set_source(arrow_pattern)
+        ctx.mask(mask)
+    else:
+        ctx.set_source(arrow_pattern)
+        ctx.paint()

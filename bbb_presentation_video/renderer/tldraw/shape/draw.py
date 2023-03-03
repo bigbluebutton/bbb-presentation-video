@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from math import tau
 from typing import Tuple, TypeVar, cast
 
@@ -21,11 +23,11 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     draw_stroke_points,
 )
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def finalize_draw(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: DrawShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: DrawShape
 ) -> None:
     print(f"\tTldraw: Finalizing Draw: {id}")
 

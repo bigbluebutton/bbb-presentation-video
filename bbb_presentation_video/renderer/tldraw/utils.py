@@ -2,16 +2,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 import math
 from enum import Enum
-from math import floor, hypot, pi, sqrt
+from math import floor, hypot, pi, sqrt, tau
 from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo
 import perfect_freehand
 
-from bbb_presentation_video.events.helpers import Color, color_blend
+from bbb_presentation_video.events.helpers import Color, Position, Size, color_blend
 from bbb_presentation_video.events.tldraw import StyleData
 from bbb_presentation_video.renderer.tldraw import vec
 
@@ -185,7 +187,7 @@ def perimeter_of_ellipse(rx: float, ry: float) -> float:
 
 def circle_from_three_points(
     A: Sequence[float], B: Sequence[float], C: Sequence[float]
-) -> Tuple[Tuple[float, float], float]:
+) -> Tuple[Position, float]:
     """Get a circle from three points."""
     (x1, y1) = A
     (x2, y2) = B
@@ -209,7 +211,7 @@ def circle_from_three_points(
 
     y = -c / (2 * a)
 
-    return ((x, y), hypot(x - x1, y - y1))
+    return (Position(x, y), hypot(x - x1, y - y1))
 
 
 def short_angle_dist(a0: float, a1: float) -> float:
@@ -280,11 +282,22 @@ def bezier_quad_to_cube(
     )
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+
+def rounded_rect(
+    ctx: cairo.Context[CairoSomeSurface], size: Size, radius: float
+) -> None:
+    ctx.new_sub_path()
+    ctx.arc(size.width - radius, radius, radius, -tau / 4, 0)
+    ctx.arc(size.width - radius, size.height - radius, radius, 0, tau / 4)
+    ctx.arc(radius, size.height - radius, radius, tau / 4, tau / 2)
+    ctx.arc(radius, radius, radius, tau / 2, -tau / 4)
+    ctx.close_path()
 
 
 def draw_smooth_path(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     points: Sequence[Tuple[float, float]],
     closed: bool = True,
 ) -> None:
@@ -323,21 +336,9 @@ def draw_smooth_path(
 
 
 def draw_smooth_stroke_point_path(
-    ctx: "cairo.Context[CairoSomeSurface]",
+    ctx: cairo.Context[CairoSomeSurface],
     points: Sequence[perfect_freehand.types.StrokePoint],
     closed: bool = True,
 ) -> None:
     outline_points = list(map(lambda p: p["point"], points))
     draw_smooth_path(ctx, outline_points, closed)
-
-
-def triangle_centroid(w: float, h: float) -> Tuple[float, float]:
-    points = [
-        [w / 2, 0],
-        [w, h],
-        [0, h],
-    ]
-    return (
-        (points[0][0] + points[1][0] + points[2][0]) / 3,
-        (points[0][1] + points[1][1] + points[2][1]) / 3,
-    )

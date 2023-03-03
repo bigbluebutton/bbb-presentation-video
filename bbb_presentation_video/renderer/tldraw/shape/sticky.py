@@ -2,34 +2,28 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from math import tau
+from __future__ import annotations
+
 from typing import TypeVar
 
 import cairo
 
-from bbb_presentation_video.events import Size
+from bbb_presentation_video.events.helpers import Size
 from bbb_presentation_video.renderer.tldraw.shape import (
     StickyShape,
     apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_sticky_text
-from bbb_presentation_video.renderer.tldraw.utils import STICKY_FILLS, ColorStyle
+from bbb_presentation_video.renderer.tldraw.utils import (
+    STICKY_FILLS,
+    ColorStyle,
+    rounded_rect,
+)
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
-
-
-def rounded_rect(
-    ctx: "cairo.Context[CairoSomeSurface]", size: Size, radius: float
-) -> None:
-    ctx.new_sub_path()
-    ctx.arc(size.width - radius, radius, radius, -tau / 4, 0)
-    ctx.arc(size.width - radius, size.height - radius, radius, 0, tau / 4)
-    ctx.arc(radius, size.height - radius, radius, tau / 4, tau / 2)
-    ctx.arc(radius, radius, radius, tau / 2, -tau / 4)
-    ctx.close_path()
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def finalize_sticky(ctx: "cairo.Context[CairoSomeSurface]", shape: StickyShape) -> None:
+def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShape) -> None:
     apply_shape_rotation(ctx, shape)
 
     style = shape.style

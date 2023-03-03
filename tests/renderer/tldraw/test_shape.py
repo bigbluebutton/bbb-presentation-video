@@ -1,7 +1,4 @@
-from pytest import approx
-
-from bbb_presentation_video.events import Size
-from bbb_presentation_video.events.helpers import Position
+from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import ShapeData
 from bbb_presentation_video.renderer.tldraw.shape import ArrowShape, DrawShape
 from bbb_presentation_video.renderer.tldraw.utils import (

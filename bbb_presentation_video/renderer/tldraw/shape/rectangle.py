@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from math import floor
 from random import Random
 from typing import List, Tuple, TypeVar
@@ -96,11 +98,11 @@ def rectangle_stroke_points(
     )
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def draw_rectangle(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleShape
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
@@ -134,9 +136,7 @@ def draw_rectangle(
     ctx.stroke()
 
 
-def dash_rectangle(
-    ctx: "cairo.Context[CairoSomeSurface]", shape: RectangleShape
-) -> None:
+def dash_rectangle(ctx: cairo.Context[CairoSomeSurface], shape: RectangleShape) -> None:
     style = shape.style
     stroke = STROKES[style.color]
     stroke_width = STROKE_WIDTHS[style.size]
@@ -176,7 +176,7 @@ def dash_rectangle(
 
 
 def finalize_rectangle(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: RectangleShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleShape
 ) -> None:
     print(f"\tTldraw: Finalizing Rectangle: {id}")
 

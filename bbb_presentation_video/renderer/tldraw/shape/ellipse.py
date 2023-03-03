@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from __future__ import annotations
+
 from math import cos, pi, sin, tau
 from random import Random
-from sys import float_info
 from typing import List, Tuple, TypeVar
 
 import cairo
@@ -28,7 +29,6 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     get_perfect_dash_props,
     perimeter_of_ellipse,
 )
-from bbb_presentation_video.renderer.whiteboard import BEZIER_CIRCLE_MAGIC
 
 
 def draw_stroke_points(
@@ -65,11 +65,11 @@ def draw_stroke_points(
     )
 
 
-CairoSomeSurface = TypeVar("CairoSomeSurface", bound="cairo.Surface")
+CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def draw_ellipse(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: EllipseShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: EllipseShape
 ) -> None:
     radius = shape.radius
     style = shape.style
@@ -104,7 +104,7 @@ def draw_ellipse(
     ctx.stroke()
 
 
-def dash_ellipse(ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape) -> None:
+def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseShape) -> None:
     radius = shape.radius
     style = shape.style
     stroke = STROKES[style.color]
@@ -123,7 +123,7 @@ def dash_ellipse(ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape) ->
     )
 
     ctx.translate(radius[0], radius[1])
-    if radius[0] * radius[0] < stroke_width or radius[1] * radius[1] < stroke_width:
+    if radius[0] <= stroke_width / 2 or radius[1] <= stroke_width < 2:
         # If radii are too small, draw line segments
         ctx.move_to(-rx, 0)
         ctx.line_to(0, -ry)
@@ -151,7 +151,7 @@ def dash_ellipse(ctx: "cairo.Context[CairoSomeSurface]", shape: EllipseShape) ->
 
 
 def finalize_ellipse(
-    ctx: "cairo.Context[CairoSomeSurface]", id: str, shape: EllipseShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: EllipseShape
 ) -> None:
     print(f"\tTldraw: Finalizing Ellipse: {id}")
 
