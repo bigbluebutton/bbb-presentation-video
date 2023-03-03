@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2021 Stephen Ruiz Ltd
-# SPDX-FileCopyrightText: 2022 Calvin Walton
+# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: MIT
 
