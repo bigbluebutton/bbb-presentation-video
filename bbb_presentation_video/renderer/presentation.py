@@ -3,24 +3,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
+import atexit
+from contextlib import ExitStack
 from enum import Enum
+from importlib import resources
 from math import ceil, floor
-from os.path import abspath, exists
-from typing import Dict, Generic, Optional, TypeVar, Union
-from urllib.parse import quote as urlquote
-from urllib.parse import urlunsplit
+from os import PathLike, fspath, path
+from typing import Any, Dict, Generic, Optional, TypeVar, Union
 
 import attr
 import cairo
 import gi
-from pkg_resources import resource_filename
 
 gi.require_version("Gdk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("GLib", "2.0")
+gi.require_version("Gio", "2.0")
 gi.require_version("Poppler", "0.18")
 
-from gi.repository import Gdk, GdkPixbuf, GLib, Poppler
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Poppler
 
 from bbb_presentation_video import events
 from bbb_presentation_video.events.helpers import Position, Size
@@ -43,7 +44,11 @@ TYPE_MAP = {
     "jpeg": ImageType.IMAGE,
 }
 
-LOGO_FILE = resource_filename(__name__, "bbb_logo.pdf")
+__logo_file_manager = ExitStack()
+atexit.register(__logo_file_manager.close)
+LOGO_FILE = __logo_file_manager.enter_context(
+    resources.path(__package__, "bbb_logo.pdf")
+)
 LOGO_TYPE = ImageType.PDF
 
 # The size of the scaled coordinate system for drawing on slides
@@ -98,7 +103,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
     pan_zoom_changed: bool
     tldraw_whiteboard: bool
 
-    filename: Optional[str]
+    filename: Optional[Union[str, bytes, PathLike[Any]]]
     filetype: ImageType
     source: Optional[Union[Poppler.Document, GdkPixbuf.Pixbuf]]
     page: Optional[Union[Poppler.Page, GdkPixbuf.Pixbuf]]
@@ -212,19 +217,20 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             else:
                 self.filename = None
                 self.filetype = ImageType.MISSING
-                for extension in TYPE_MAP:
-                    filename = f"{self.directory}/presentation/{self.presentation}/{self.presentation}.{extension}"
-                    if exists(filename):
-                        self.filename = filename
-                        self.filetype = TYPE_MAP[extension]
-                        break
+                if self.presentation is not None:
+                    for extension in TYPE_MAP:
+                        filename = f"{self.directory}/presentation/{self.presentation}/{self.presentation}.{extension}"
+                        if path.exists(filename):
+                            self.filename = filename
+                            self.filetype = TYPE_MAP[extension]
+                            break
             print(f"\tPresentation: filename: {self.filename}, type: {self.filetype}")
 
             # Load the source for the new presentation
             if self.filetype is ImageType.IMAGE:
                 assert self.filename is not None
                 try:
-                    self.source = GdkPixbuf.Pixbuf.new_from_file(self.filename)
+                    self.source = GdkPixbuf.Pixbuf.new_from_file(fspath(self.filename))
                 except GLib.Error as error:
                     print(f"Failed to read image: {error}")
                     self.presentation = None
@@ -232,10 +238,8 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             elif self.filetype is ImageType.PDF:
                 assert self.filename is not None
                 try:
-                    self.filename = urlunsplit(
-                        ("file", "", urlquote(abspath(self.filename)), "", "")
-                    )
-                    self.source = Poppler.Document.new_from_file(self.filename, None)
+                    gfile = Gio.File.new_for_path(fspath(self.filename))
+                    self.source = Poppler.Document.new_from_gfile(gfile, None, None)
                 except GLib.Error as error:
                     print(f"Failed to read pdf: {error}")
                     self.presentation = None
@@ -259,7 +263,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
                 else:
                     self.page = None
                 if self.page is not None:
-                    self.page_size = Size(*self.page.get_size())
+                    self.page_size = Size(self.page.get_size())
                 else:
                     self.page_size = None
             else:
@@ -272,7 +276,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
             # Fallback page size in case the slide did not load
             if self.page_size is None:
-                self.page_size = Size(float(self.size.width), float(self.size.height))
+                self.page_size = Size(self.size)
 
             # The size of the portion of the slide that will be shown
             # zoom is a value in the interval (0, 1]
@@ -282,7 +286,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             )
             # Determine the scale to make the visible portion of the slide fit the viewport
             scale = min(self.size.width / size.width, self.size.height / size.height)
-            scaled_size = Size(scale * size.width, scale * size.height)
+            scaled_size = size * scale
 
             # Area above/below or left/right of visible portion that's empty in the viewport
             padding = Size(
@@ -301,10 +305,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
                     self.page_size.width / DRAWING_SIZE,
                     self.page_size.height / DRAWING_SIZE,
                 )
-            shapes_size = Size(
-                self.page_size.width / shapes_scale,
-                self.page_size.height / shapes_scale,
-            )
+            shapes_size = self.page_size / shapes_scale
 
             # Determine pan position (where the top left of the viewport is on the slide)
             if self.tldraw_whiteboard:
