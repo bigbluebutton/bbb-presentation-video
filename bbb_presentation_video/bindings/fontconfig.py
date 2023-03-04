@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import c_char_p, c_int, c_void_p
+from os import PathLike, fsencode
 from typing import Any, Optional, Tuple, Type, Union, cast
 
 
@@ -29,8 +30,6 @@ fontconfig.FcConfigAppFontAddDir.restype = c_int
 fontconfig.FcConfigAppFontAddDir.errcheck = _FcBool_errcheck
 
 
-def app_font_add_dir(dir: Union[str, bytes]) -> None:
+def app_font_add_dir(dir: Union[str, bytes, PathLike[Any]]) -> None:
     """Add fonts from directory to font database in the current configuration."""
-    if isinstance(dir, str):
-        dir = dir.encode()
-    fontconfig.FcConfigAppFontAddDir(None, dir)
+    fontconfig.FcConfigAppFontAddDir(None, fsencode(dir))
