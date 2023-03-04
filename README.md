@@ -42,8 +42,10 @@ With the venv activated, you can use `pip` to install the required python
 modules and development tools:
 
 ```sh
-pip install -r requirements-dev.txt
+pip install --upgrade -r requirements-dev.txt
 ```
+
+(You should re-run this occasionally to pull in updates to the development tools.)
 
 Testing
 -------
