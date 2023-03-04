@@ -1,3 +1,9 @@
+bbb-presentation-video (4.0.0~rc1) focal; urgency=medium
+
+  * Arrow labels, Performance improvements, and cleanups
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Fri, 03 Mar 2023 13:44:57 -0500
+
 bbb-presentation-video (4.0.0~beta5) focal; urgency=medium
 
   * New tldraw whiteboard slide scaling calculation
