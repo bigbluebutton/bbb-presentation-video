@@ -7,16 +7,15 @@ from __future__ import annotations
 from typing import Dict, Generic, Optional, TypeVar, cast
 
 import cairo
-from pkg_resources import resource_filename
 from sortedcollections import ValueSortedDict
 
 from bbb_presentation_video import events
-from bbb_presentation_video.bindings import fontconfig
 from bbb_presentation_video.events import Event, tldraw
 from bbb_presentation_video.renderer.presentation import (
     Transform,
     apply_shapes_transform,
 )
+from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShape,
     DrawShape,
@@ -78,7 +77,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         self.shape_patterns = {}
         self.transform = transform
 
-        fontconfig.app_font_add_dir(resource_filename(__name__, "fonts"))
+        add_fontconfig_app_font_dir()
 
     def ensure_shape_structure(self, presentation: str, slide: int) -> None:
         """Create the nested dict entries for storing shapes per presentation and slide."""
