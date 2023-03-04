@@ -6,8 +6,19 @@
 from typing import Optional, Tuple
 
 import cairo
+from gi.repository import Gio
 
 class Document:
+    @classmethod
+    def new_from_gfile(
+        cls,
+        file: Gio.File,
+        password: Optional[str],
+        cancellable: Optional[Gio.Cancellable],
+    ) -> Document:
+        """Creates a new #PopplerDocument reading the PDF contents from @file.
+        Possible errors include those in the #POPPLER_ERROR and #G_FILE_ERROR
+        domains."""
     @classmethod
     def new_from_file(cls, uri: str, password: Optional[str] = None) -> Document: ...
     def get_n_pages(self) -> int: ...
