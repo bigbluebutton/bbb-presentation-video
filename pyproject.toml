@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 [build-system]
-requires = ["setuptools >= 42", "setuptools_scm[toml] >= 3.4"]
+requires = ["setuptools >= 45.2", "setuptools_scm[toml] >= 3.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
+version_scheme = "post-release"
 
 [tool.black]
 target-version = ["py38"]
