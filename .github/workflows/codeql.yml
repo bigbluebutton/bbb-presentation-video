@@ -43,8 +43,7 @@ jobs:
         venv_path="${GITHUB_WORKSPACE}/.venv"
         python3 -m virtualenv "${venv_path}"
         "${venv_path}"/bin/pip install -e .
-        CODEQL_PYTHON="${venv_path}"/bin/python
-        echo "CODEQL_PYTHON=${CODEQL_PYTHON@Q}" | tee -a "${GITHUB_ENV}"
+        echo "CODEQL_PYTHON=${venv_path}/bin/python" | tee -a "${GITHUB_ENV}"
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
