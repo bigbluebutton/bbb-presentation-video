@@ -5,6 +5,8 @@
 import argparse
 import sys
 from fractions import Fraction
+from importlib.metadata import PackageNotFoundError, metadata
+from os import path
 from typing import IO, Any, cast
 
 __all__ = ["events", "renderer"]
@@ -38,7 +40,8 @@ def main() -> None:
     sys.stdout = cast(Any, Unbuffered(sys.stdout))
 
     parser = argparse.ArgumentParser(
-        description="Render BigBlueButton events to video", add_help=False
+        description="Render BigBlueButton presentation/whiteboard events to video",
+        add_help=False,
     )
     parser.add_argument("--help", action="help", help="show this help message and exit")
     parser.add_argument(
@@ -113,6 +116,14 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    try:
+        bpv_metadata = metadata(__package__)
+        print(f'{bpv_metadata["Name"]} version {bpv_metadata["Version"]}')
+    except PackageNotFoundError:
+        print(
+            f"{path.basename(sys.argv[0])} development version running from source directory"
+        )
 
     print(f'Using recording data from "{args.input}"')
     print(
