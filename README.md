@@ -33,6 +33,7 @@ like:
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
+python3 -m pip --require-virtualenv --upgrade pip
 ```
 
 Any time you open a new terminal, you can re-run the `source` command to load
@@ -42,7 +43,7 @@ With the venv activated, you can use `pip` to install the required python
 modules and development tools:
 
 ```sh
-pip install --upgrade -r requirements-dev.txt
+pip install --require-virtualenv --upgrade -r requirements-dev.txt -c constraints-ubuntu-focal.txt
 ```
 
 (You should re-run this occasionally to pull in updates to the development tools.)
