@@ -3,16 +3,34 @@ setuptools >= 45.2
 setuptools_scm[toml] >= 3.4
 
 # Install requires (keep in sync with setup.cfg)
-# Specific versions are used here for dev env to match Ubuntu 20.04
+attrs >= 19.3.0
+lxml >= 4.5.0
+packaging >= 20.3
+pycairo >= 1.16.2
+pygobject >= 3.36.0
+sortedcollections >= 1.0.1
+perfect-freehand >= 1.2.0
+
+# Locked dependencies to match Ubuntu 20.04
 attrs == 19.3.0 ; python_version == "3.8"
 lxml == 4.5.0 ; python_version == "3.8"
 packaging == 20.3 ; python_version == "3.8"
 pycairo == 1.16.2 ; python_version == "3.8"
 pygobject == 3.36.0 ; python_version == "3.8"
+pyparsing == 2.4.6 ; python_version == "3.8" # packaging
 sortedcollections == 1.0.1 ; python_version == "3.8"
-perfect-freehand >= 1.2.0 ; python_version == "3.8"
-# Additional locked dependencies to match Ubuntu 20.04
-sortedcontainers == 2.1.0 ; python_version == "3.8"
+sortedcontainers == 2.1.0 ; python_version == "3.8" # sortedcollections
+six == 1.14.0 ; python_version == "3.8" # packaging
+
+# Locked dependencies to match Ubuntu 22.04
+attrs == 21.2.0 ; python_version == "3.10"
+lxml == 4.8.0 ; python_version == "3.10"
+packaging == 21.3 ; python_version == "3.10"
+pycairo == 1.20.1 ; python_version == "3.10"
+pygobject == 3.42.0 ; python_version == "3.10"
+pyparsing == 2.4.7 ; python_version == "3.10" # packaging
+sortedcollections == 2.1.0 ; python_version == "3.10"
+sortedcontainers == 2.1.0 ; python_version == "3.10" # sortedcollections
 
 # Code formatting
 black
