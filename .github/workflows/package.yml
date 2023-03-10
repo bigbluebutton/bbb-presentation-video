@@ -6,6 +6,7 @@ name: Package build
 on:
   push:
     branches: [ "main" ]
+    tags: [ "**" ]
     paths-ignore:
       - debian/changelog
   pull_request:
@@ -71,3 +72,28 @@ jobs:
         with:
           name: ubuntu-${{ matrix.UBUNTU_VERSION }}
           path: "*.deb"
+  assets:
+    name: "Upload assets to release"
+    needs: ubuntu
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_type == 'tag' }}
+    permissions:
+      contents: write
+      actions: read
+
+    strategy:
+      matrix:
+        UBUNTU_VERSION: [ "20.04" ]
+
+      steps:
+        - uses: actions/checkout@v3
+
+        - uses: actions/download-artifact@v3
+          with:
+            name: ubuntu-${{ matrix.UBUNTU_VERSION }}
+
+        - name: Upload release asset
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            gh release upload ${{ github.ref_name }} ubuntu-${{ matrix.UBUNTU_VERSION }}.zip
