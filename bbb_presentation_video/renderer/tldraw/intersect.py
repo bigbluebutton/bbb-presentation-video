@@ -21,9 +21,9 @@ class Intersection:
     points: List[V]
 
     def __init__(self, message: str, *points: V) -> None:
-        self.__attrs_init__(
-            did_intersect=len(points) > 0, message=message, points=list(points)
-        )
+        self.did_intersect = len(points) > 0
+        self.message = message
+        self.points = list(points)
 
 
 def intersect_line_segment_circle(a1: S, a2: S, c: S, r: float) -> Intersection:
