@@ -31,3 +31,6 @@ pythonpath = ["."]
 addopts = [
     "--import-mode=importlib"
 ]
+filterwarnings = [
+    "ignore:Using or importing the ABCs:DeprecationWarning:sortedcollections"
+]
