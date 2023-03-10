@@ -85,15 +85,15 @@ jobs:
       matrix:
         UBUNTU_VERSION: [ "20.04" ]
 
-      steps:
-        - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-        - uses: actions/download-artifact@v3
-          with:
-            name: ubuntu-${{ matrix.UBUNTU_VERSION }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: ubuntu-${{ matrix.UBUNTU_VERSION }}
 
-        - name: Upload release asset
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: |
-            gh release upload ${{ github.ref_name }} ubuntu-${{ matrix.UBUNTU_VERSION }}.zip
+      - name: Upload release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} ubuntu-${{ matrix.UBUNTU_VERSION }}.zip
