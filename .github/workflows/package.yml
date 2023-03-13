@@ -91,6 +91,11 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: ubuntu-${{ matrix.UBUNTU_VERSION }}
+          path: ubuntu-${{ matrix.UBUNTU_VERSION }}
+
+      - name: Create release asset archive
+        run: |
+          zip -r ubuntu-${{ matrix.UBUNTU_VERSION }}.zip ubuntu-${{ matrix.UBUNTU_VERSION }}
 
       - name: Upload release asset
         env:
