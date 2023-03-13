@@ -7,6 +7,8 @@
 from enum import Enum
 from typing import Optional, Tuple
 
+from gi.repository import GObject
+
 SCALE: int
 """The scale between dimensions used for Pango distances and device units.
 
@@ -18,7 +20,9 @@ When setting font sizes, device units are always considered to be points (as
 in "12 point font"), rather than pixels.
 """
 
-class Context:
+class Context(GObject.Object):
+    def get_base_dir(self) -> Direction:
+        """Retrieves the base direction for the context."""
     def get_metrics(
         self, desc: FontDescription, language: Optional[Language]
     ) -> FontMetrics:
@@ -34,7 +38,16 @@ class Context:
         the returned fonts would be a composite of the metrics for the fonts loaded
         for the individual families.
         """
-        ...
+    def set_base_dir(self, direction: Direction) -> None:
+        """Sets the base direction for the context.
+
+        The base direction is used in applying the Unicode bidirectional algorithm; if
+        the direction is :const:`Pango.Direction.LTR` or :const:`Pango.Direction.RTL`,
+        then the value will be used as the paragraph direction in the Unicode
+        bidirectional algorithm. A value of :const:`Pango.Direction.WEAK_LTR` or
+        :const:`Pango.Direction.WEAK_RTL` is used only for paragraphs that do not
+        contain any strong characters themselves.
+        """
     def set_round_glyph_positions(self, round_positions: bool) -> None:
         """Sets whether font rendering with this context should
         round glyph positions and widths to integral positions,
@@ -50,7 +63,7 @@ class Context:
         """
         ...
 
-class Layout:
+class Layout(GObject.Object):
     def __init__(self, context: Context):
         """Create a new :class:`Pango.Layout` object with attributes initialized to
         default values for a particular :class:`Pango.Context`.
@@ -62,6 +75,14 @@ class Layout:
         This function should be called if you make changes to the context
         subsequent to creating the layout.
         """
+    def get_alignment(self) -> Alignment:
+        """Gets the alignment for the layout: how partial lines are positioned within
+        the horizontal space available.
+        """
+    def get_auto_dir(self) -> bool:
+        """Gets whether to calculate the base direction for the layout according to its
+        contents.
+        """
     def get_baseline(self) -> int:
         """Gets the Y position of baseline of the first line in `self`"""
     def get_context(self) -> Context:
@@ -72,6 +93,8 @@ class Layout:
 
         Since: 1.8
         """
+    def get_iter(self) -> LayoutIter:
+        """Returns an iterator to iterate over the visual extents of the layout."""
     def get_line_count(self) -> int:
         """Retrieves the count of lines for `self`."""
     def get_lines_readonly(self) -> list[LayoutLine]:
@@ -97,6 +120,8 @@ class Layout:
         This is simply a convenience function around :meth:`Pango.Layout.get_extents()`.
         """
     def get_spacing(self) -> int: ...
+    def get_width(self) -> int:
+        """Gets the width to which the lines of the :class:`Pango.Layout` should wrap."""
     def set_alignment(self, alignment: Alignment) -> None:
         """Sets the alignment for the layout: how partial lines are
         positioned within the horizontal space available.
@@ -261,7 +286,38 @@ class FontMetrics:
 
 class Language: ...
 
+class LayoutIter:
+    """A :class:`Pango.LayoutIter` can be used to iterate over the visual extents of a
+    :class:`Pango.Layout`.
+    """
+
+    def get_line_extents(self) -> Tuple[Rectangle, Rectangle]:
+        """Obtains the extents of the current line.
+
+        Extents are in layout coordinates (origin is the top-left corner of the entire
+        :class:`Pango.Layout`). Thus the extents returned by this function will be the
+        same width/height but not at the same x/y as the extents returned from
+        :method:`Pango.LayoutLine.get_extents`.
+        """
+    def get_line_readonly(self) -> LayoutLine:
+        """Gets the current line for read-only access.
+
+        This is a faster alternative to :method:`Pango.LayoutIter.get_line`, but the
+        user is not expected to modify the contents of the line (glyphs, glyph widths,
+        etc.).
+        """
+    def next_line(self) -> bool:
+        """Moves `self` forward to the start of the next line.
+
+        If `self` is already on the last line, returns False.
+
+        :returns:
+            whether motion was possible.
+        """
+
 class LayoutLine:
+    resolved_dir: Direction
+
     def get_extents(self) -> Tuple[Rectangle, Rectangle]:
         """Computes the logical and ink extents of a layout line.
 
@@ -296,6 +352,24 @@ class Alignment(Enum):
     """Center the line within the available space"""
     RIGHT: int
     """Put all available space on the left"""
+
+class Direction(Enum):
+    """PangoDirection represents a direction in the Unicode bidirectional algorithm."""
+
+    LTR: int
+    """A strong left-to-right direction."""
+    RTL: int
+    """A strong right-to-left direction."""
+    TTB_LTR: int
+    """Deprecated value; treated the same as `RTL`."""
+    TTB_RTL: int
+    """Deprecated value; treated the same as `LTR`."""
+    WEAK_LTR: int
+    """A weak left-to-right direction."""
+    WEAK_RTL: int
+    """A weak right-to-left direction."""
+    NEUTRAL: int
+    """No direction specified."""
 
 class EllipsizeMode(Enum):
     NONE: int

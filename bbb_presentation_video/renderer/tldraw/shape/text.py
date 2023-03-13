@@ -104,7 +104,14 @@ def show_layout_by_lines(
 
     ctx.save()
     ctx.translate(padding, padding)
-    for line in layout.get_lines_readonly():
+    iter = layout.get_iter()
+    while True:
+        # Get the layout iter's line extents for horizontal positioning
+        _ink_rect, logical_rect = iter.get_line_extents()
+        offset_x = logical_rect.x / Pango.SCALE
+
+        # Get the line's extents for vertical positioning
+        line = iter.get_line_readonly()
         # With show_layout_line, text origin is at baseline. y is a negative number that
         # indicates how far the font extends above baseline, and height is a positive number
         # which is the font's natural line height.
@@ -117,11 +124,16 @@ def show_layout_by_lines(
         # To get the baseline in the right position, we offset by the font ascent plus the
         # half-leading value.
         offset_y = (-logical_y) + (line_height - logical_height) / 2
+
         ctx.save()
-        ctx.translate(0, offset_y)
+        ctx.translate(offset_x, offset_y)
         PangoCairo.show_layout_line(ctx, line)
         ctx.restore()
+
         ctx.translate(0, line_height)
+        if not iter.next_line():
+            break
+
     ctx.restore()
 
 
