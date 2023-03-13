@@ -19,7 +19,7 @@ jobs:
           name: junit
           path: junit/
           workflow: ${{ github.event.workflow.id }}
-          workflow_conslusion: ""
+          workflow_conclusion: ""
           run_id: ${{ github.event.workflow_run.id }}
 
       - name: Publish test report
