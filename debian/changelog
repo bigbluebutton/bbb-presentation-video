@@ -1,8 +1,10 @@
 bbb-presentation-video (4.0.0~rc2) focal; urgency=medium
 
   * Fix error rendering curved arrows on Ubuntu 20.04
+  * Ensure scale_adj is always initialized
+  * Handle arrow updates which remove decorations
 
- -- Calvin Walton <calvin.walton@blindsidenetworks.com> Fri, 10 Mar 2023 16:40:36 -0500
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Mon, 13 Mar 2023 14:43:18 -0400
 
 bbb-presentation-video (4.0.0~rc1) focal; urgency=medium
 
