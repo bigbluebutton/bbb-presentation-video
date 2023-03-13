@@ -180,6 +180,7 @@ def finalize_label(
 
     label_size = get_layout_size(layout, padding=4)
     # The shape may provide a scale adjustment to reduce label size if it wouldn't fit
+    scale_adj = 1.0
     if scale is not None:
         scale_adj = scale(label_size)
         label_size *= scale_adj
