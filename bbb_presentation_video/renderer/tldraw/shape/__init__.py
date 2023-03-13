@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from typing import Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import Dict, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
 
 from bbb_presentation_video.events.helpers import Position, Size
-from bbb_presentation_video.events.tldraw import ShapeData
+from bbb_presentation_video.events.tldraw import HandleData, ShapeData
 from bbb_presentation_video.renderer.tldraw.utils import Decoration, DrawPoints, Style
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
@@ -193,11 +193,23 @@ class ArrowHandles:
         self.bend = bend
         self.end = end
 
+    def update_from_data(self, data: Dict[str, HandleData]) -> None:
+        if "start" in data:
+            self.start = Position(data["start"]["point"])
+        if "bend" in data:
+            self.bend = Position(data["bend"]["point"])
+        if "end" in data:
+            self.end = Position(data["end"]["point"])
+
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowDecorations:
     start: Optional[Decoration] = None
     end: Optional[Decoration] = Decoration.ARROW
+
+    def update_from_data(self, data: Dict[str, Optional[str]]) -> None:
+        self.start = Decoration(data["start"]) if "start" in data else None
+        self.end = Decoration(data["end"]) if "end" in data else None
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -215,26 +227,10 @@ class ArrowShape(LabelledShapeProto):
 
         if "bend" in data:
             self.bend = data["bend"]
-
         if "handles" in data:
-            handles = data["handles"]
-            if "start" in handles:
-                self.handles.start = Position(handles["start"]["point"])
-            if "end" in handles:
-                self.handles.end = Position(handles["end"]["point"])
-            if "bend" in handles:
-                self.handles.bend = Position(handles["bend"]["point"])
-
+            self.handles.update_from_data(data["handles"])
         if "decorations" in data:
-            decorations = data["decorations"]
-            if "start" in decorations:
-                start = decorations["start"]
-                self.decorations.start = (
-                    Decoration(start) if start is not None else None
-                )
-            if "end" in decorations:
-                end = decorations["end"]
-                self.decorations.end = Decoration(end) if end is not None else None
+            self.decorations.update_from_data(data["decorations"])
 
 
 Shape = Union[

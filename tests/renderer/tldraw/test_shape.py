@@ -155,3 +155,38 @@ def test_arrow_from_data() -> None:
     assert arrow.handles.bend == Position(52.21, 58.1)
     assert arrow.decorations.end == Decoration.ARROW
     assert arrow.decorations.start is None
+
+
+def test_arrow_from_data_no_decorations() -> None:
+    data: ShapeData = {
+        "size": [13.42, 699.31],
+        "label": "",
+        "rotation": 0,
+        "bend": -2.743172580401816e-7,
+        "id": "06fd6107-381a-4133-32ac-9ffc2f67e030",
+        "labelPoint": [0.5, 0.5],
+        "decorations": {},
+        "parentId": "1",
+        "childIndex": 0,
+        "name": "Arrow",
+        "point": [199.43, 311.63],
+        "style": {
+            "isFilled": False,
+            "size": "small",
+            "scale": 1,
+            "color": "black",
+            "textAlign": "start",
+            "font": "script",
+            "dash": "draw",
+        },
+        "handles": {
+            "start": {"id": "start", "index": 0, "point": [0, 699.31], "canBind": True},
+            "end": {"id": "end", "index": 1, "point": [13.42, 0], "canBind": True},
+            "bend": {"id": "bend", "index": 2, "point": [6.71, 349.66]},
+        },
+        "userId": "w_ojf9vuncwica",
+        "type": "arrow",
+    }
+    arrow = ArrowShape.from_data(data)
+    assert arrow.decorations.start is None
+    assert arrow.decorations.end is None
