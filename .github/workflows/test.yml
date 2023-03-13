@@ -18,8 +18,6 @@ jobs:
   test:
     name: Code formatting, typechecking, and tests
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
 
     strategy:
       matrix:
@@ -54,19 +52,19 @@ jobs:
 
       - name: Check formatting with black
         if: ${{ matrix.python-version == '3.8' }}
-        continue-on-error: true
         run: black --check .
 
       - name: Check types with mypy
-        continue-on-error: true
-        if: ${{ matrix.python-version == '3.8' }}
-        run: mypy
+        if: ${{ success() || failure() && matrix.python-version == '3.8' }}
+        run: mypy --junit-xml junit/mypy.xml
 
       - name: Test with pytest
-        continue-on-error: true
-        run: pytest --junitxml=junit/test-results.xml
+        if: ${{ success() || failure() }}
+        run: pytest --junitxml=junit/pytest.xml
 
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v3
+      - name: Upload test results
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v3
         with:
-          report_paths: junit/test-results.xml
+          name: junit
+          path: junit/
