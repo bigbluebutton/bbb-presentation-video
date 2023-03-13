@@ -14,11 +14,12 @@ jobs:
 
     steps:
       - name: Download test results
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
           name: junit
           path: junit/
           workflow: ${{ github.event.workflow.id }}
+          workflow_conslusion: ""
           run_id: ${{ github.event.workflow_run.id }}
 
       - name: Publish test report
