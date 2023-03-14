@@ -312,7 +312,7 @@ def curved_arrow(
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
     ctx.stroke()
 
-    return length
+    return abs(length)
 
 
 def finalize_arrow(
