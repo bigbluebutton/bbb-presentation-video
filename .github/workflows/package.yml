@@ -72,6 +72,68 @@ jobs:
         with:
           name: ubuntu-${{ matrix.UBUNTU_VERSION }}
           path: "*.deb"
+  
+  amazonlinux-2:
+    runs-on: ubuntu-latest
+    container: amazonlinux:2
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install Python and package build dependencies
+        run: |
+          amazon-linux-extras enable python3.8 ruby3.0
+          yum clean metadata
+          yum install -y \
+            python38 python38-devel python38-wheel \
+            git gcc make \
+            cairo-gobject-devel gobject-introspection-devel \
+            ruby ruby-devel ruby-irb rubygem-rake rubygem-json rubygems \
+            rpm-build
+          pip3.8 install virtualenv-tools3
+          gem install --no-document fpm
+
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: bbb-presentation-video
+
+      - name: Build and install package to image directory
+        run: |
+          python3.8 -m venv bbb-presentation-video-image/opt/bbb-presentation-video
+          bbb-presentation-video-image/opt/bbb-presentation-video/bin/python -m pip install ./bbb-presentation-video
+          virtualenv-tools --update-path /opt/bbb-presentation-video bbb-presentation-video-image/opt/bbb-presentation-video
+          mkdir -pv bbb-presentation-video-image/usr/bin
+          ln -sv /opt/bbb-presentation-video/bin/bbb-presentation-video bbb-presentation-video-image/usr/bin
+
+      - name: Use fpm to build rpm package
+        run: |
+          pushd bbb-presentation-video
+          eval "$(./dch_version.sh)"
+          popd
+          fpm --verbose \
+            --name bbb-presentation-video \
+            --input-type dir \
+            --chdir bbb-presentation-video-image \
+            --output-type rpm \
+            --version "${DCH_VERSION}" \
+            --rpm-dist amzn2 \
+            --rpm-autoreqprov \
+            --depends python3.8 \
+            --depends gobject-introspection \
+            --depends poppler-glib \
+            --depends gdk-pixbuf2 \
+            --depends pango \
+            --depends liberation-fonts \
+            --depends ffmpeg \
+            .
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: amazonlinux-2
+          path: "*.rpm"
+
   assets:
     name: "Upload assets to release"
     needs: ubuntu
@@ -83,22 +145,22 @@ jobs:
 
     strategy:
       matrix:
-        UBUNTU_VERSION: [ "20.04" ]
+        ASSET: [ ubuntu-20.04 amazonlinux-2 ]
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
-          name: ubuntu-${{ matrix.UBUNTU_VERSION }}
-          path: ubuntu-${{ matrix.UBUNTU_VERSION }}
+          name: ${{ matrix.ASSET }}
+          path: ${{ matrix.ASSET }}
 
       - name: Create release asset archive
         run: |
-          zip -jr ubuntu-${{ matrix.UBUNTU_VERSION }}.zip ubuntu-${{ matrix.UBUNTU_VERSION }}
+          zip --junk-paths --recurse-paths --compression-method store ${{ matrix.ASSET }}.zip ${{ matrix.ASSET }}
 
       - name: Upload release asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.ref_name }} ubuntu-${{ matrix.UBUNTU_VERSION }}.zip
+          gh release upload ${{ github.ref_name }} ${{ matrix.ASSET }}.zip

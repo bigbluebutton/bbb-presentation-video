@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BASH_COMPAT="4.2"
+
 # This is a tool to convert a semver 2.0.0 compatible version to a format which
 # is compatible with both debian packaging tools and - after the transformations
 # applied in debian pybuild - python PEP 440. It should generate the same python
@@ -7,7 +9,7 @@
 GIT_TAG=$(git describe --tags --abbrev=0 "$@")
 GIT_DESCRIBE=$(git describe --tags --long --dirty=.d$(date +%Y%m%d) "$@")
 GIT_EXTRA="${GIT_DESCRIBE#${GIT_TAG}}"
-GIT_TAG="${GIT_TAG//-/'~'}"
+GIT_TAG="${GIT_TAG//-/~}"
 GIT_TAG="${GIT_TAG//alpha./alpha}"
 GIT_TAG="${GIT_TAG//beta./beta}"
 GIT_TAG="${GIT_TAG//rc./rc}"
@@ -27,4 +29,4 @@ elif [[ $GIT_DISTANCE != 0 ]]; then
     DCH_VERSION+=".post${GIT_DISTANCE}"
 fi
 
-echo "DCH_VERSION=${DCH_VERSION@Q}"
+echo "DCH_VERSION=$(printf %q "${DCH_VERSION}")"
