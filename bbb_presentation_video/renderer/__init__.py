@@ -14,7 +14,7 @@ from typing import Deque, Iterable, Optional, cast
 import cairo
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events import Event, PerPodEvent, RecordEvent
+from bbb_presentation_video.events import EventsInfo, PerPodEvent, RecordEvent
 from bbb_presentation_video.events.helpers import Color, Size
 from bbb_presentation_video.renderer.cursor import CursorRenderer
 from bbb_presentation_video.renderer.presentation import PresentationRenderer
@@ -131,7 +131,7 @@ class Encoder:
 
 
 class Renderer:
-    events: Deque[Event]
+    events: EventsInfo
     length: Fraction
     input: str
     output: str
@@ -140,8 +140,6 @@ class Renderer:
     framerate: Fraction
     codec: Codec
     pod_id: str
-    hide_logo: bool
-    tldraw_whiteboard: bool
 
     frame: int
     framestep: Fraction
@@ -150,8 +148,7 @@ class Renderer:
 
     def __init__(
         self,
-        events: Iterable[Event],
-        length: Fraction,
+        events: EventsInfo,
         input: str,
         output: str,
         width: int,
@@ -161,12 +158,8 @@ class Renderer:
         start_time: Fraction,
         end_time: Fraction,
         pod_id: str,
-        hide_logo: bool,
-        tldraw_whiteboard: bool,
     ):
-        # The events get modified, so make a copy of the queue
-        self.events = deque(events)
-        self.length = length
+        self.events = events
         self.input = input
         self.output = output
         self.width = width
@@ -174,8 +167,6 @@ class Renderer:
         self.framerate = framerate
         self.codec = codec
         self.pod_id = pod_id
-        self.hide_logo = hide_logo
-        self.tldraw_whiteboard = tldraw_whiteboard
 
         # Current video position state
         self.frame = 1
@@ -189,7 +180,8 @@ class Renderer:
             self.start_time = start_time
         else:
             self.start_time = 0
-        if end_time is not None and end_time < length:
+        assert events.length is not None
+        if end_time is not None and end_time < events.length:
             self.length = end_time
 
         # Cairo rendering context
@@ -211,14 +203,15 @@ class Renderer:
         cursor = CursorRenderer(
             self.ctx,
             Size(self.width, self.height),
-            tldraw_whiteboard=self.tldraw_whiteboard,
+            tldraw_whiteboard=self.events.tldraw_whiteboard,
         )
         presentation = PresentationRenderer(
             self.ctx,
             self.input,
             Size(self.width, self.height),
-            self.hide_logo,
-            tldraw_whiteboard=self.tldraw_whiteboard,
+            self.events.hide_logo,
+            tldraw_whiteboard=self.events.tldraw_whiteboard,
+            bbb_version=self.events.bbb_version,
         )
         shapes = ShapesRenderer(self.ctx, presentation.transform)
         tldraw = TldrawRenderer(self.ctx, presentation.transform)
@@ -234,15 +227,15 @@ class Renderer:
         while self.pts < self.length:
             event_ts = Fraction(0)
             while True:
-                if len(self.events) == 0:
+                if len(self.events.events) == 0:
                     break
 
-                event = self.events[0]
+                event = self.events.events[0]
                 event_ts = event["timestamp"]
                 if event_ts > self.pts:
                     break
 
-                self.events.popleft()
+                self.events.events.popleft()
 
                 name = event["name"]
                 print(f"{float(event['timestamp']):012.6f} {event['name']}")
