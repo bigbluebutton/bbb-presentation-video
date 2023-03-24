@@ -1,3 +1,12 @@
+bbb-presentation-video (4.0.0) focal; urgency=medium
+
+  * Fix horizontal text alignment in show_layout_by_lines by @kepstin in #31
+  * Fix curved arrow dist return value by @germanocaumo in #30
+  * Add CI build for amazonlinux 2 rpm package by @kepstin in #33
+  * New tldraw slide scaling for 2.6.1 by @kepstin in #34
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Fri, 24 Mar 2023 15:19:31 -0400
+
 bbb-presentation-video (4.0.0~rc2) focal; urgency=medium
 
   * Fix error rendering curved arrows on Ubuntu 20.04
