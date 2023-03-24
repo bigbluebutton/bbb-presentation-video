@@ -136,7 +136,7 @@ jobs:
 
   assets:
     name: "Upload assets to release"
-    needs: ubuntu
+    needs: [ ubuntu, amazonlinux-2 ]
     runs-on: ubuntu-latest
     if: ${{ github.ref_type == 'tag' }}
     permissions:
