@@ -14,6 +14,7 @@ from typing import Any, Dict, Generic, Optional, TypeVar, Union
 import attr
 import cairo
 import gi
+from packaging.version import Version
 
 gi.require_version("Gdk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
@@ -56,7 +57,8 @@ DRAWING_SIZE = 1200
 
 # The size of the scaled coordinate system for tldraw whiteboard
 # https://github.com/bigbluebutton/bigbluebutton/blob/v2.6.0-rc.4/bigbluebutton-html5/imports/api/slides/server/helpers.js
-TLDRAW_DRAWING_SIZE = Size(2048, 1536)
+TLDRAW_DRAWING_SIZE_2_6_0 = Size(2048, 1536)
+TLDRAW_DRAWING_SIZE_2_6_1 = Size(1440, 1080)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -102,6 +104,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
     slide_changed: bool
     pan_zoom_changed: bool
     tldraw_whiteboard: bool
+    tldraw_drawing_size: Size
 
     filename: Optional[Union[str, bytes, PathLike[Any]]]
     filetype: ImageType
@@ -117,12 +120,18 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         size: Size,
         hide_logo: bool,
         tldraw_whiteboard: bool,
+        bbb_version: Version,
     ):
         self.ctx = ctx
         self.directory = directory
         self.size = size
         self.hide_logo = hide_logo
         self.tldraw_whiteboard = tldraw_whiteboard
+
+        if bbb_version >= Version("2.6.1"):
+            self.tldraw_drawing_size = TLDRAW_DRAWING_SIZE_2_6_1
+        else:
+            self.tldraw_drawing_size = TLDRAW_DRAWING_SIZE_2_6_0
 
         self.presentation = None
         self.presentation_slide = {}
@@ -148,7 +157,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             size=self.size,
             pos=Position(-0.0, -0.0),
             shapes_scale=1.0,
-            shapes_size=TLDRAW_DRAWING_SIZE
+            shapes_size=self.tldraw_drawing_size
             if self.tldraw_whiteboard
             else Size(DRAWING_SIZE, DRAWING_SIZE),
         )
@@ -297,8 +306,8 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             # Calculate scale for whiteboard drawing relative to page size
             if self.tldraw_whiteboard:
                 shapes_scale = max(
-                    self.page_size.height / TLDRAW_DRAWING_SIZE.height,
-                    self.page_size.width / TLDRAW_DRAWING_SIZE.width,
+                    self.page_size.height / self.tldraw_drawing_size.height,
+                    self.page_size.width / self.tldraw_drawing_size.width,
                 )
             else:
                 shapes_scale = max(

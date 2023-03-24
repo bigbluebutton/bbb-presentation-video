@@ -8,6 +8,7 @@ from enum import Enum
 from fractions import Fraction
 from typing import Any, Deque, List, Optional, Tuple, TypedDict, cast
 
+import attr
 from lxml import etree
 from packaging.version import Version
 
@@ -384,9 +385,18 @@ def parse_left(event: LeftEvent, element: etree._Element) -> None:
     event["name"] = "left"
 
 
+@attr.s(order=False, slots=True, auto_attribs=True)
+class EventsInfo:
+    bbb_version: Version
+    events: Deque[Event]
+    length: Optional[Fraction]
+    hide_logo: bool
+    tldraw_whiteboard: bool
+
+
 def parse_events(
     directory: str = ".",
-) -> Tuple[Deque[Event], Optional[Fraction], bool, bool]:
+) -> EventsInfo:
     start_time = None
     last_timestamp = None
     have_record_events = False
@@ -394,30 +404,21 @@ def parse_events(
 
     root = etree.parse(f"{directory}/events.xml")
     root_e = root.getroot()
-    print(f"Events: bbb_version: {root_e.get('bbb_version')}")
 
-    use_pod_presenter = False
-    shape_thickness_percent = False
-    shape_slide_off_by_one = True
-    shape_rounded = True
-    try:
-        bbb_version = Version(str(root_e.attrib["bbb_version"]))
-        use_pod_presenter = bbb_version >= Version("2.1")
-        shape_thickness_percent = bbb_version >= Version("2.0")
-        shape_slide_off_by_one = not (bbb_version >= Version("0.9.0"))
-        shape_rounded = not (bbb_version >= Version("2.0"))
-        tldraw_whiteboard = bbb_version >= Version("2.6")
-    except AttributeError:
-        pass
-
+    bbb_version = Version(root_e.get("bbb_version", "0.8"))
+    print(f"Events: bbb_version: {bbb_version}")
+    use_pod_presenter = bbb_version >= Version("2.1")
+    shape_thickness_percent = bbb_version >= Version("2.0")
     print(f"Events: shape_thickness_percent: {shape_thickness_percent}")
+    shape_slide_off_by_one = not (bbb_version >= Version("0.9.0"))
     print(f"Events: shape_slide_off_by_one: {shape_slide_off_by_one}")
+    shape_rounded = not (bbb_version >= Version("2.0"))
+    tldraw_whiteboard = bbb_version >= Version("2.6")
     print(f"Events: tldraw_whiteboard: {tldraw_whiteboard}")
 
     metadata = root.find("metadata")
     if metadata is None:
         raise EventParsingError("N/A", "Missing metadata element.")
-    hide_logo = metadata.get("bn-rec-hide-logo", "false") == "true"
 
     for element in root.iter("event"):
         try:
@@ -552,4 +553,10 @@ def parse_events(
         }
         events.appendleft(start_record)
 
-    return events, last_timestamp, hide_logo, tldraw_whiteboard
+    return EventsInfo(
+        bbb_version,
+        events,
+        last_timestamp,
+        hide_logo=metadata.get("bn-rec-hide-logo", "false") == "true",
+        tldraw_whiteboard=tldraw_whiteboard,
+    )

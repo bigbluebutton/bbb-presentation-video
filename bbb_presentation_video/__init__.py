@@ -132,13 +132,15 @@ def main() -> None:
     print(f'Outputting video to "{args.output}"')
 
     print("Parsing events XML...")
-    events, length, hide_logo, tldraw_whiteboard = parse_events(args.input)
-    if length is None:
+    events = parse_events(args.input)
+    if events.length is None:
         print(f"Could not determine recording length - cannot generate video.")
         exit(1)
 
+    print(f"Parsed {len(events.events)} events")
+    print(f"Recording length is {float(events.length):.3f} seconds")
     print(
-        f"Parsed {len(events)} events, recording length is {float(length):.3f} seconds, the bbb logo will be {'hidden' if hide_logo else 'shown'} for blank frames"
+        f"The bbb logo will be {'hidden' if events.hide_logo else 'shown'} for blank frames"
     )
     if args.start is not None:
         print(f"Recording section starting at {args.start} seconds")
@@ -148,7 +150,6 @@ def main() -> None:
     print("Rendering output video...")
     renderer = Renderer(
         events,
-        length,
         args.input,
         args.output,
         args.width,
@@ -158,8 +159,6 @@ def main() -> None:
         args.start,
         args.end,
         args.pod,
-        hide_logo,
-        tldraw_whiteboard,
     )
 
     renderer.render()
