@@ -7,9 +7,9 @@ Please reference the [BigBlueButton security policy](https://github.com/bigblueb
 
 | BBB Version | Version | Supported          |
 | ----------- | ------- | ------------------ |
-| 2.6.x       | 4.0.x   | :x:                |
+| 2.6.x       | 4.0.x   | ✔️                 |
 
-The initial version of BigBlueButton to use bbb-presentation-video is version 2.6. This version is still under development, so it is not yet supported for security updates.
+The initial version of BigBlueButton to use bbb-presentation-video is version 2.6.
 
 ## Reporting a Vulnerability
 
