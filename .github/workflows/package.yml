@@ -124,6 +124,7 @@ jobs:
             --depends gobject-introspection \
             --depends poppler-glib \
             --depends gdk-pixbuf2 \
+            --depends gtk3 \
             --depends pango \
             --depends liberation-fonts \
             --depends ffmpeg \
@@ -143,24 +144,29 @@ jobs:
       contents: write
       actions: read
 
-    strategy:
-      matrix:
-        ASSET: [ ubuntu-20.04 amazonlinux-2 ]
-
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
-          name: ${{ matrix.ASSET }}
-          path: ${{ matrix.ASSET }}
+          name: ubuntu-20.04
+          path: ubuntu-20.04
 
-      - name: Create release asset archive
+      - uses: actions/download-artifact@v3
+        with:
+          name: amazonlinux-2
+          path: amazonlinux-2
+
+      - name: Create release asset archives
         run: |
-          zip --junk-paths --recurse-paths --compression-method store ${{ matrix.ASSET }}.zip ${{ matrix.ASSET }}
+          for asset in ubuntu-20.04 amazonlinux-2 ; do
+            zip --junk-paths --recurse-paths --compression-method store "${asset}.zip" "${asset}"
+          done
 
-      - name: Upload release asset
+      - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.ref_name }} ${{ matrix.ASSET }}.zip
+          for asset in ubuntu-20.04 amazonlinux-2 ; do
+            gh release upload ${{ github.ref_name }} "${asset}.zip"
+          done
