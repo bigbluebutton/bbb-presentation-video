@@ -4,12 +4,11 @@
 
 import threading
 import time
-from collections import deque
 from enum import Enum
 from fractions import Fraction
 from queue import Queue
 from subprocess import PIPE, CalledProcessError, Popen
-from typing import Deque, Iterable, Optional, cast
+from typing import Optional, cast
 
 import cairo
 
@@ -224,7 +223,8 @@ class Renderer:
         shapes_changed = False
         cursor_changed = False
         recording_changed = False
-        while self.pts < self.length:
+        assert self.events.length is not None
+        while self.pts < self.events.length:
             event_ts = Fraction(0)
             while True:
                 if len(self.events.events) == 0:
