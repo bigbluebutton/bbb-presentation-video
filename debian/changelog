@@ -1,3 +1,10 @@
+bbb-presentation-video (4.0.1) focal; urgency=medium
+
+  * Fix render loop access to recording length var
+  * Handle arrow updates with empty handle hash.
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 28 Mar 2023 13:44:32 -0400
+
 bbb-presentation-video (4.0.0) focal; urgency=medium
 
   * Fix horizontal text alignment in show_layout_by_lines by @kepstin in #31
