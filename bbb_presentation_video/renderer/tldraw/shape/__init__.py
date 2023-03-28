@@ -194,12 +194,18 @@ class ArrowHandles:
         self.end = end
 
     def update_from_data(self, data: Dict[str, HandleData]) -> None:
-        if "start" in data:
+        try:
             self.start = Position(data["start"]["point"])
-        if "bend" in data:
+        except KeyError:
+            pass
+        try:
             self.bend = Position(data["bend"]["point"])
-        if "end" in data:
+        except KeyError:
+            pass
+        try:
             self.end = Position(data["end"]["point"])
+        except KeyError:
+            pass
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
