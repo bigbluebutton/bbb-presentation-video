@@ -1,3 +1,9 @@
+bbb-presentation-video (4.0.2) focal; urgency=medium
+
+  * Limit the max size of image surface to render PDF by @kepstin in #42
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 11 Apr 2023 16:39:49 -0400
+
 bbb-presentation-video (4.0.1) focal; urgency=medium
 
   * Fix render loop access to recording length var
