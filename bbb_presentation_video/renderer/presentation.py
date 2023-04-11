@@ -60,6 +60,9 @@ DRAWING_SIZE = 1200
 TLDRAW_DRAWING_SIZE_2_6_0 = Size(2048, 1536)
 TLDRAW_DRAWING_SIZE_2_6_1 = Size(1440, 1080)
 
+PDF_MAX_ZOOM = 10.0
+PDF_MAX_SIZE = 32767  # Max image dimension supported by cairo
+
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class Transform(object):
@@ -105,6 +108,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
     pan_zoom_changed: bool
     tldraw_whiteboard: bool
     tldraw_drawing_size: Size
+    pdf_max_size: Size
 
     filename: Optional[Union[str, bytes, PathLike[Any]]]
     filetype: ImageType
@@ -132,6 +136,12 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             self.tldraw_drawing_size = TLDRAW_DRAWING_SIZE_2_6_1
         else:
             self.tldraw_drawing_size = TLDRAW_DRAWING_SIZE_2_6_0
+        # Render PDF slides with a maximum zoom, but ensure not to exceed an absolute
+        # maximum size
+        self.pdf_max_size = Size(
+            min(self.size.width * PDF_MAX_ZOOM, PDF_MAX_SIZE),
+            min(self.size.height * PDF_MAX_ZOOM, PDF_MAX_SIZE),
+        )
 
         self.presentation = None
         self.presentation_slide = {}
@@ -213,6 +223,75 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.zoom = event["zoom"]
         self.pan_zoom_changed = True
         print(f"\tPresentation: pan: {self.pan} zoom: {self.zoom}")
+
+    def render_pdf(self) -> None:
+        assert isinstance(self.page, Poppler.Page)
+        assert self.page_size is not None
+
+        ctx = self.ctx
+
+        # This bit of nastiness is to work around Poppler bugs,
+        # which would otherwise contaminate the main cairo ctx
+        # with an error status, making it unusable.
+        try:
+            # Limit the max size that we render the page at. If the zoom would need it
+            # to be rendered at higher size, we'll render it blurry, but that's ok.
+            scaled_width = self.page_size.width * self.trans.scale
+            scaled_height = self.page_size.height * self.trans.scale
+            pdf_scale = max(
+                # Absolute max width/height based on max zoom and cairo limits
+                scaled_width / self.pdf_max_size.width,
+                scaled_height / self.pdf_max_size.height,
+                # Render anything smaller at 1:1 scale
+                1.0,
+            )
+            width = max(ceil(scaled_width / pdf_scale), 1)
+            height = max(ceil(scaled_height / pdf_scale), 1)
+
+            print(
+                f"\tPresentation: PDF surface size {width}x{height}, scale {pdf_scale:.3f}"
+            )
+
+            # Render the entire pdf page to a new image surface without clipping, to
+            # work around poppler bugs
+            pdfSurface = cairo.ImageSurface(cairo.FORMAT_RGB24, width, height)
+            pdfCtx = cairo.Context(pdfSurface)
+            # on an opaque white background
+            pdfCtx.set_source_rgb(1, 1, 1)
+            pdfCtx.paint()
+            pdfCtx.scale(self.trans.scale / pdf_scale, self.trans.scale / pdf_scale)
+            self.page.render(pdfCtx)
+
+            pdfPattern = cairo.SurfacePattern(pdfSurface)
+
+            # Now render that image surface as a pattern onto the main context. It is
+            # usually rendered at 1:1 pixel ratio, so only translation and clipping
+            # should be used. Since it's an img src, it should be pixel aligned.
+            # padding
+            ctx.translate(
+                floor(self.trans.padding.width),
+                floor(self.trans.padding.height),
+            )
+            # clipping
+            ctx.rectangle(
+                0,
+                0,
+                ceil(self.trans.size.width * self.trans.scale),
+                ceil(self.trans.size.height * self.trans.scale),
+            )
+            ctx.clip()
+            # panning
+            ctx.translate(
+                ceil(-self.trans.pos.x * self.trans.scale),
+                ceil(-self.trans.pos.y * self.trans.scale),
+            )
+            # scaling, if slide exceeded max resolution
+            if pdf_scale > 1.0:
+                ctx.scale(pdf_scale, pdf_scale)
+            ctx.set_source(pdfPattern)
+            ctx.paint()
+        except (SystemError, MemoryError) as e:
+            print(f"Poppler rendering failed: {e}")
 
     def finalize_frame(self) -> bool:
         needs_render = False
@@ -343,55 +422,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
                     Gdk.cairo_set_source_pixbuf(ctx, self.page, 0, 0)
                     ctx.paint()
                 elif self.filetype is ImageType.PDF:
-                    assert isinstance(self.page, Poppler.Page)
-                    assert self.page_size is not None
-                    # This bit of nastiness is to work around Poppler bugs,
-                    # which would otherwise contaminate the main cairo ctx
-                    # with an error status, making it unusable.
-                    try:
-                        # Render the entire pdf page to a new image surface
-                        # without clipping, to work around poppler bugs
-                        pdfSurface = cairo.ImageSurface(
-                            cairo.FORMAT_RGB24,
-                            int(ceil(self.page_size.width * self.trans.scale)),
-                            int(ceil(self.page_size.height * self.trans.scale)),
-                        )
-                        pdfCtx = cairo.Context(pdfSurface)
-                        # on an opaque white background
-                        pdfCtx.set_source_rgb(1, 1, 1)
-                        pdfCtx.paint()
-                        pdfCtx.scale(self.trans.scale, self.trans.scale)
-                        self.page.render(pdfCtx)
-
-                        pdfPattern = cairo.SurfacePattern(pdfSurface)
-
-                        # Now render that image surface as a pattern onto
-                        # the main context
-                        # It is already rendered at 1:1 pixel ratio, so
-                        # only translation and clipping should be used.
-                        # Since it's an img src, it should be pixel aligned.
-                        # padding
-                        ctx.translate(
-                            floor(self.trans.padding.width),
-                            floor(self.trans.padding.height),
-                        )
-                        # clipping
-                        ctx.rectangle(
-                            0,
-                            0,
-                            ceil(self.trans.size.width * self.trans.scale),
-                            ceil(self.trans.size.height * self.trans.scale),
-                        )
-                        ctx.clip()
-                        # panning
-                        ctx.translate(
-                            ceil(-self.trans.pos.x * self.trans.scale),
-                            ceil(-self.trans.pos.y * self.trans.scale),
-                        )
-                        ctx.set_source(pdfPattern)
-                        ctx.paint()
-                    except (SystemError, MemoryError) as e:
-                        print(f"Poppler rendering failed: {e}")
+                    self.render_pdf()
 
             self.pattern = ctx.pop_group()
 
