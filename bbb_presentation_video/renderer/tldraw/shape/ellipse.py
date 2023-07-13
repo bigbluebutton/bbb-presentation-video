@@ -38,8 +38,8 @@ def draw_stroke_points(
     stroke_width = STROKE_WIDTHS[style.size]
     random = Random(id)
     variation = stroke_width * 2
-    rx = radius[0] + random.uniform(-variation, variation)
-    ry = radius[1] + random.uniform(-variation, variation)
+    rx = max(0, radius[0] + random.uniform(-variation, variation))
+    ry = max(0, radius[1] + random.uniform(-variation, variation))
     perimeter = perimeter_of_ellipse(rx, ry)
     points: List[Tuple[float, float, float]] = []
     start = random.uniform(0, tau)
