@@ -16,8 +16,8 @@ class FontconfigError(Exception):
 
 def _FcBool_errcheck(
     result: Optional[Type[ctypes._CData]],
-    _func: ctypes._FuncPointer,
-    _arguments: Tuple[ctypes._CData, ...],
+    _func: Any,
+    _arguments: Any,
 ) -> Any:
     res = int(cast(c_int, result))
     if res != 1:

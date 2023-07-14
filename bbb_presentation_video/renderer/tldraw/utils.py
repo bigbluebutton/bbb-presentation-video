@@ -181,6 +181,13 @@ class Decoration(Enum):
 
 def perimeter_of_ellipse(rx: float, ry: float) -> float:
     """Find the approximate perimeter of an ellipse."""
+
+    # Handle degenerate case where the "ellipse" is actually a line or a point
+    if rx == 0:
+        return 2 * ry
+    elif ry == 0:
+        return 2 * rx
+
     h = (rx - ry) ** 2 / (rx + ry) ** 2
     return pi * (rx + ry) * (1 + (3 * h) / (10 + sqrt(4 - 3 * h)))
 

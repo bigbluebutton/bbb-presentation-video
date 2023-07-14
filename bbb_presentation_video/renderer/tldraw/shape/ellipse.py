@@ -29,6 +29,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     get_perfect_dash_props,
     perimeter_of_ellipse,
 )
+from bbb_presentation_video.renderer.utils import cairo_draw_ellipse
 
 
 def draw_stroke_points(
@@ -37,8 +38,8 @@ def draw_stroke_points(
     stroke_width = STROKE_WIDTHS[style.size]
     random = Random(id)
     variation = stroke_width * 2
-    rx = radius[0] + random.uniform(-variation, variation)
-    ry = radius[1] + random.uniform(-variation, variation)
+    rx = max(0, radius[0] + random.uniform(-variation, variation))
+    ry = max(0, radius[1] + random.uniform(-variation, variation))
     perimeter = perimeter_of_ellipse(rx, ry)
     points: List[Tuple[float, float, float]] = []
     start = random.uniform(0, tau)
@@ -122,21 +123,7 @@ def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseShape) -> N
         snap=4,
     )
 
-    ctx.translate(radius[0], radius[1])
-    if radius[0] <= stroke_width / 2 or radius[1] <= stroke_width < 2:
-        # If radii are too small, draw line segments
-        ctx.move_to(-rx, 0)
-        ctx.line_to(0, -ry)
-        ctx.line_to(rx, 0)
-        ctx.line_to(0, ry)
-        ctx.close_path()
-    else:
-        ctx.save()
-        ctx.scale(rx, ry)
-        ctx.new_sub_path()
-        ctx.arc(0, 0, 1, 0, tau)
-        ctx.close_path()
-        ctx.restore()
+    cairo_draw_ellipse(ctx, radius[0], radius[1], radius[0], radius[1])
 
     if style.isFilled:
         ctx.set_source_rgb(fill.r, fill.g, fill.b)

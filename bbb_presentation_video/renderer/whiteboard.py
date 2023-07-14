@@ -28,8 +28,7 @@ from bbb_presentation_video.renderer.presentation import (
     Transform,
     apply_shapes_transform,
 )
-
-BEZIER_CIRCLE_MAGIC = 0.551915024494
+from bbb_presentation_video.renderer.utils import cairo_draw_ellipse
 
 FONT_FAMILY = "Arial"
 
@@ -382,44 +381,7 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
             else:
                 y2 = y1 - width_r - width_r
 
-        # Draw a bezier approximation to the ellipse. Cairo's arc function
-        # doesn't deal well with degenerate (0-height/width) ellipses because
-        # of the scaling required.
-        ctx.translate((x1 + x2) / 2, (y1 + y2) / 2)
-        ctx.move_to(-width_r, 0)
-        ctx.curve_to(
-            -width_r,
-            -height_r * BEZIER_CIRCLE_MAGIC,
-            -width_r * BEZIER_CIRCLE_MAGIC,
-            -height_r,
-            0,
-            -height_r,
-        )
-        ctx.curve_to(
-            width_r * BEZIER_CIRCLE_MAGIC,
-            -height_r,
-            width_r,
-            -height_r * BEZIER_CIRCLE_MAGIC,
-            width_r,
-            0,
-        )
-        ctx.curve_to(
-            width_r,
-            height_r * BEZIER_CIRCLE_MAGIC,
-            width_r * BEZIER_CIRCLE_MAGIC,
-            height_r,
-            0,
-            height_r,
-        )
-        ctx.curve_to(
-            -width_r * BEZIER_CIRCLE_MAGIC,
-            height_r,
-            -width_r,
-            height_r * BEZIER_CIRCLE_MAGIC,
-            -width_r,
-            0,
-        )
-        ctx.close_path()
+        cairo_draw_ellipse(ctx, (x1 + x2) / 2, (y1 + y2) / 2, width_r, height_r)
         ctx.stroke()
 
     def draw_triangle(self, shape: ShapeEvent) -> None:
