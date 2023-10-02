@@ -145,9 +145,13 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             shape.update_from_data(data)
             action = "updated"
         else:
-            shape = parse_shape_from_data(data)
-            self.shapes[presentation][slide][id] = shape
-            action = "added"
+            if "type" in data:
+                shape = parse_shape_from_data(data)
+                self.shapes[presentation][slide][id] = shape
+                action = "added"
+            else:
+                print(f'\tTldraw: Got add for shape: {id} with missing "type" field')
+                return
 
         try:
             del self.shape_patterns[id]
