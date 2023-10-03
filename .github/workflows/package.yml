@@ -102,7 +102,7 @@ jobs:
       - name: Build and install package to image directory
         run: |
           python3.8 -m venv bbb-presentation-video-image/opt/bbb-presentation-video
-          bbb-presentation-video-image/opt/bbb-presentation-video/bin/python -m pip install ./bbb-presentation-video
+          bbb-presentation-video-image/opt/bbb-presentation-video/bin/python -m pip install ./bbb-presentation-video -c ./bbb-presentation-video/constraints-amazonlinux-2.txt
           virtualenv-tools --update-path /opt/bbb-presentation-video bbb-presentation-video-image/opt/bbb-presentation-video
           mkdir -pv bbb-presentation-video-image/usr/bin
           ln -sv /opt/bbb-presentation-video/bin/bbb-presentation-video bbb-presentation-video-image/usr/bin
