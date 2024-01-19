@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from typing import Dict, List, Optional, TypedDict
+from typing import Collection, Dict, List, Optional, Sequence, TypedDict, Union
 
 from lxml import etree
 
@@ -11,21 +11,48 @@ from bbb_presentation_video.events.helpers import Position, xml_subelement
 
 
 class StyleData(TypedDict, total=False):
-    color: str
     dash: str
     font: str
     isFilled: bool
     scale: float
-    size: str
     textAlign: str
+    opacity: float
+    isComplete: bool
+    fill: str
+    color: str
+    size: str
+    isClosed: bool
+    segments: List[Dict[str, Sequence[Collection[str]]]]
 
 
 class HandleData(TypedDict, total=False):
-    id: str
-    index: float
-    point: List[float]
-    canBind: bool
     bindingId: str
+    canBind: bool
+    canSnap: bool
+    id: str
+    index: Union[str, int]
+    point: List[float]
+    type: str
+    x: float
+    y: float
+
+
+class PropsData(StyleData, total=False):
+    align: str
+    arrowheadEnd: str
+    arrowheadStart: str
+    bend: float
+    end: HandleData
+    geo: str
+    handles: Dict[str, HandleData]
+    isPen: bool
+    spline: str
+    start: HandleData
+    text: str
+    verticalAlign: str
+    w: float
+    h: float
+    growY: float
 
 
 class ShapeData(TypedDict, total=False):
@@ -34,20 +61,29 @@ class ShapeData(TypedDict, total=False):
     decorations: Dict[str, Optional[str]]
     handles: Dict[str, HandleData]
     id: str
+    index: Union[int, str]
     isComplete: bool
+    isLocked: bool
+    isModerator: bool
     label: str
     labelPoint: List[float]
+    meta: Dict[str, str]
     name: str
+    opacity: float
     parentId: str
     point: List[float]
     points: List[List[float]]
+    props: PropsData
     radius: List[float]
     rotation: float
     size: List[float]
     style: StyleData
     text: str
     type: str
+    typeName: str
     userId: str
+    x: float
+    y: float
 
 
 class AddShapeEvent(TypedDict):

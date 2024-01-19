@@ -16,26 +16,63 @@ from bbb_presentation_video.renderer.presentation import (
     apply_shapes_transform,
 )
 from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
+from bbb_presentation_video.renderer.tldraw.geo.arrow_geo import finalize_geo_arrow
+from bbb_presentation_video.renderer.tldraw.geo.checkbox import finalize_checkmark
+from bbb_presentation_video.renderer.tldraw.geo.cloud import finalize_cloud
+from bbb_presentation_video.renderer.tldraw.geo.diamond import finalize_diamond
+from bbb_presentation_video.renderer.tldraw.geo.ellipse import finalize_geo_ellipse
+from bbb_presentation_video.renderer.tldraw.geo.hexagon import finalize_hexagon
+from bbb_presentation_video.renderer.tldraw.geo.oval import finalize_oval
+from bbb_presentation_video.renderer.tldraw.geo.rectangle import finalize_geo_rectangle
+from bbb_presentation_video.renderer.tldraw.geo.rhombus import finalize_rhombus
+from bbb_presentation_video.renderer.tldraw.geo.star import finalize_star
+from bbb_presentation_video.renderer.tldraw.geo.trapezoid import finalize_trapezoid
+from bbb_presentation_video.renderer.tldraw.geo.triangle import finalize_geo_triangle
+from bbb_presentation_video.renderer.tldraw.geo.xbox import finalize_x_box
 from bbb_presentation_video.renderer.tldraw.shape import (
+    ArrowGeo,
     ArrowShape,
+    ArrowShape_v2,
+    CheckBox,
+    Cloud,
+    Diamond,
     DrawShape,
     EllipseShape,
+    EllipseGeo,
     GroupShape,
+    Hexagon,
+    HighlighterShape,
+    LineShape,
+    Oval,
+    RectangleGeo,
     RectangleShape,
+    Rhombus,
     Shape,
+    Star,
     StickyShape,
+    StickyShape_v2,
     TextShape,
+    TextShape_v2,
+    Trapezoid,
     TriangleShape,
+    TriangleGeo,
+    XBox,
     parse_shape_from_data,
     shape_sort_key,
 )
 from bbb_presentation_video.renderer.tldraw.shape.arrow import finalize_arrow
+from bbb_presentation_video.renderer.tldraw.shape.arrow_v2 import finalize_arrow_v2
 from bbb_presentation_video.renderer.tldraw.shape.draw import finalize_draw
 from bbb_presentation_video.renderer.tldraw.shape.ellipse import finalize_ellipse
+from bbb_presentation_video.renderer.tldraw.shape.highlighter import finalize_highlight
+from bbb_presentation_video.renderer.tldraw.shape.line import finalize_line
 from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rectangle
 from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
+from bbb_presentation_video.renderer.tldraw.shape.sticky_v2 import finalize_sticky_v2
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
+from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
+from packaging.version import Version
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -70,12 +107,20 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     shape_patterns: Dict[str, cairo.SurfacePattern]
     """Cached rendered individual shapes for current presentation/slide."""
 
-    def __init__(self, ctx: cairo.Context[CairoSomeSurface], transform: Transform):
+    bbb_version: Version
+
+    def __init__(
+        self,
+        ctx: cairo.Context[CairoSomeSurface],
+        transform: Transform,
+        bbb_version: Version,
+    ):
         self.ctx = ctx
         self.presentation_slide = {}
         self.shapes = {}
         self.shape_patterns = {}
         self.transform = transform
+        self.bbb_version = bbb_version
 
         add_fontconfig_app_font_dir()
 
@@ -146,7 +191,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             action = "updated"
         else:
             if "type" in data:
-                shape = parse_shape_from_data(data)
+                shape = parse_shape_from_data(data, self.bbb_version)
                 self.shapes[presentation][slide][id] = shape
                 action = "added"
             else:
@@ -230,20 +275,57 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 ctx.push_group()
 
                 ctx.translate(*shape.point)
-                if isinstance(shape, DrawShape):
+                if isinstance(shape, ArrowShape):
+                    finalize_arrow(ctx, id, shape)
+                elif isinstance(shape, ArrowShape_v2):
+                    finalize_arrow_v2(ctx, id, shape)
+                elif isinstance(shape, CheckBox):
+                    finalize_checkmark(ctx, id, shape)
+                elif isinstance(shape, Cloud):
+                    finalize_cloud(ctx, id, shape)
+                elif isinstance(shape, Diamond):
+                    finalize_diamond(ctx, id, shape)
+                elif isinstance(shape, DrawShape):
                     finalize_draw(ctx, id, shape)
-                elif isinstance(shape, RectangleShape):
-                    finalize_rectangle(ctx, id, shape)
-                elif isinstance(shape, TriangleShape):
-                    finalize_triangle(ctx, id, shape)
+                elif isinstance(shape, ArrowGeo):
+                    finalize_geo_arrow(ctx, id, shape)
+                elif isinstance(shape, EllipseGeo):
+                    finalize_geo_ellipse(ctx, id, shape)
                 elif isinstance(shape, EllipseShape):
                     finalize_ellipse(ctx, id, shape)
-                elif isinstance(shape, ArrowShape):
-                    finalize_arrow(ctx, id, shape)
+                elif isinstance(shape, Hexagon):
+                    finalize_hexagon(ctx, id, shape)
+                elif isinstance(shape, HighlighterShape):
+                    finalize_highlight(ctx, id, shape)
+                elif isinstance(shape, LineShape):
+                    finalize_line(ctx, id, shape)
+                elif isinstance(shape, Oval):
+                    finalize_oval(ctx, id, shape)
+                elif isinstance(shape, RectangleGeo):
+                    finalize_geo_rectangle(ctx, id, shape)
+                elif isinstance(shape, RectangleShape):
+                    finalize_rectangle(ctx, id, shape)
+                elif isinstance(shape, Rhombus):
+                    finalize_rhombus(ctx, id, shape)
+                elif isinstance(shape, Star):
+                    finalize_star(ctx, id, shape)
+                elif isinstance(shape, Trapezoid):
+                    finalize_trapezoid(ctx, id, shape)
+                elif isinstance(shape, TriangleGeo):
+                    finalize_geo_triangle(ctx, id, shape)
+                elif isinstance(shape, TriangleShape):
+                    finalize_triangle(ctx, id, shape)
                 elif isinstance(shape, TextShape):
                     finalize_text(ctx, id, shape)
+                elif isinstance(shape, TextShape_v2):
+                    finalize_v2_text(ctx, id, shape)
                 elif isinstance(shape, StickyShape):
                     finalize_sticky(ctx, shape)
+                elif isinstance(shape, StickyShape_v2):
+                    finalize_sticky_v2(ctx, shape)
+                elif isinstance(shape, XBox):
+                    finalize_x_box(ctx, id, shape)
+
                 elif isinstance(shape, GroupShape):
                     # Nothing to do? All group-related updates seem to be propagated to the
                     # individual shapes in the group.

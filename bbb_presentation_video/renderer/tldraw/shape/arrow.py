@@ -36,16 +36,10 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     circle_from_three_points,
     draw_smooth_path,
     get_perfect_dash_props,
-    get_sweep,
     lerp_angles,
     rounded_rect,
+    get_arc_length,
 )
-
-
-def get_arc_length(C: Position, r: float, A: Position, B: Position) -> float:
-    sweep = get_sweep(C, A, B)
-    return r * tau * (sweep / tau)
-
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
