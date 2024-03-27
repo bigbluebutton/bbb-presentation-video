@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
@@ -29,6 +29,8 @@ BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 class BaseShapeProto(Protocol):
     """The base class for all tldraw shapes."""
 
+    id: str = ""
+    """ID of the shape."""
     style: Style = attr.Factory(Style)
     """Style related properties, such as color, line size, font."""
     childIndex: float = 1
@@ -37,6 +39,10 @@ class BaseShapeProto(Protocol):
     """Position of the origin of the shape."""
     opacity: float = 1.0
     """Opacity of the shape."""
+    parentId: str = ""
+    """ID of the parent shape."""
+    children: List[Shape] = []
+    """List of children shapes."""
 
     @classmethod
     def from_data(cls: Type[BaseShapeSelf], data: ShapeData) -> BaseShapeSelf:
@@ -64,6 +70,9 @@ class BaseShapeProto(Protocol):
         if "opacity" in data:
             self.style.opacity = data["opacity"]
 
+        if "parentId" in data:
+            self.parentId = data["parentId"]
+
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class SizedShapeProto(BaseShapeProto, Protocol):
@@ -81,8 +90,13 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         if "props" in data:
             props = data["props"]
 
-            if "w" in props and "h" in props and "growY" in props:
-                self.size = Size(props["w"], props["h"] + props["growY"])
+            if "w" in props and "h" in props:
+                growY = 0.0
+
+                if "growY" in props:
+                    growY = props["growY"]
+
+                self.size = Size(props["w"], props["h"] + growY)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -115,6 +129,9 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
     geo: GeoShape = GeoShape.NONE
     """Which geo type the shape is, if any."""
 
+    children: List[Shape] = []
+    """List of children shapes."""
+
     def label_offset(self) -> Position:
         """Calculate the offset needed when drawing the label for most shapes."""
         return Position(
@@ -129,6 +146,8 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
             self.label = data["label"] if data["label"] != "" else None
         if "labelPoint" in data:
             self.labelPoint = Position(data["labelPoint"])
+        if "children" in data:
+            self.children = data["children"]
         if "props" in data:
             props = data["props"]
 
@@ -140,6 +159,9 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
                 self.verticalAlign = AlignStyle(props["verticalAlign"])
             if "geo" in props:
                 self.geo = GeoShape(props["geo"])
+            if "w" in props and "h" in props and "name" in props:
+                if not self.label == "Frame":
+                    self.label = props["name"]
 
 
 def shape_sort_key(shape: BaseShapeProto) -> float:
@@ -245,6 +267,13 @@ class EllipseShape(LabelledShapeProto):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class EllipseGeo(LabelledShapeProto):
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class FrameShape(LabelledShapeProto, SizedShapeProto):
+    label: str = "Frame"
+    children: List[Shape] = []
     size: Size = Size(1.0, 1.0)
 
 
@@ -535,6 +564,7 @@ Shape = Union[
     DrawShape,
     EllipseGeo,
     EllipseShape,
+    FrameShape,
     GroupShape,
     HighlighterShape,
     LineShape,
@@ -590,6 +620,8 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
         return LineShape.from_data(data)
     elif type == "highlight":
         return HighlighterShape.from_data(data)
+    elif type == "frame":
+        return FrameShape.from_data(data)
     elif type == "geo":
         if "geo" in data["props"]:
             geo_type = GeoShape(data["props"]["geo"])

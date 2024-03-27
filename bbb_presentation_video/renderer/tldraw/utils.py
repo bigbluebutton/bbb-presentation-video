@@ -181,6 +181,7 @@ class FontStyle(Enum):
     SERIF: str = "serif"
     MONO: str = "mono"
     DRAW: str = "draw"
+    ARIAL: str = "arial"
 
 
 FONT_FACES: Dict[FontStyle, str] = {
@@ -190,6 +191,7 @@ FONT_FACES: Dict[FontStyle, str] = {
     FontStyle.SERIF: "Crimson Pro",
     FontStyle.MONO: "Source Code Pro",
     FontStyle.DRAW: "Caveat Brush",
+    FontStyle.ARIAL: "Arial 12px",
 }
 
 

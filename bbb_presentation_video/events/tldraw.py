@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from typing import Collection, Dict, List, Optional, Sequence, TypedDict, Union
+from typing import Any, Collection, Dict, List, Optional, Sequence, TypedDict, Union
 
 from lxml import etree
 
@@ -53,6 +53,7 @@ class PropsData(StyleData, total=False):
     w: float
     h: float
     growY: float
+    name: str
 
 
 class ShapeData(TypedDict, total=False):
@@ -84,6 +85,7 @@ class ShapeData(TypedDict, total=False):
     userId: str
     x: float
     y: float
+    children: List[Any]
 
 
 class AddShapeEvent(TypedDict):

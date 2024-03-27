@@ -9,6 +9,7 @@ import gi
 
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.renderer.tldraw.shape import (
+    FrameShape,
     LabelledShapeProto,
     StickyShape_v2,
     TextShape_v2,
@@ -26,6 +27,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STROKES,
     AlignStyle,
     ColorStyle,
+    FontStyle,
+    SizeStyle,
 )
 
 gi.require_version("Pango", "1.0")
@@ -133,6 +136,48 @@ def finalize_v2_label(
     ctx.set_source_rgba(
         stroke.r, stroke.g, stroke.b, style.opacity
     )  # Set original text color
+    show_layout_by_lines(ctx, layout, padding=4)
+
+    ctx.restore()
+
+    return label_size
+
+
+def finalize_frame_name(
+    ctx: cairo.Context[CairoSomeSurface],
+    shape: FrameShape,
+) -> Size:
+    if shape.label is None or shape.label == "":
+        return Size(0, 0)
+
+    print(f"\t\tFinalizing Frame name")
+
+    style = shape.style
+    stroke = STROKES[ColorStyle.BLACK]
+    font_size = 15
+
+    ctx.save()
+
+    # Create layout aligning the text to the top left
+    style.textAlign = AlignStyle.START
+    style.font = FontStyle.ARIAL
+    layout = create_pango_layout(
+        ctx,
+        style,
+        font_size,
+        width=shape.size.width,
+        padding=0,
+    )
+
+    layout.set_text(shape.label, -1)
+
+    label_size = get_layout_size(layout, padding=4)
+
+    x = 0
+    y = -20
+    ctx.translate(x, y)
+    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+
     show_layout_by_lines(ctx, layout, padding=4)
 
     ctx.restore()
