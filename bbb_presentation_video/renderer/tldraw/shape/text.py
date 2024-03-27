@@ -25,6 +25,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STICKY_TEXT_COLOR,
     STROKES,
     AlignStyle,
+    ColorStyle,
     Style,
 )
 

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Generic, Optional, TypeVar, cast
+from typing import Any, Dict, Generic, List, Optional, TypeVar, cast
 
 import cairo
 from sortedcollections import ValueSortedDict
@@ -16,26 +16,65 @@ from bbb_presentation_video.renderer.presentation import (
     apply_shapes_transform,
 )
 from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
+from bbb_presentation_video.renderer.tldraw.geo.arrow_geo import finalize_geo_arrow
+from bbb_presentation_video.renderer.tldraw.geo.checkbox import finalize_checkmark
+from bbb_presentation_video.renderer.tldraw.geo.cloud import finalize_cloud
+from bbb_presentation_video.renderer.tldraw.geo.diamond import finalize_diamond
+from bbb_presentation_video.renderer.tldraw.geo.ellipse import finalize_geo_ellipse
+from bbb_presentation_video.renderer.tldraw.geo.hexagon import finalize_hexagon
+from bbb_presentation_video.renderer.tldraw.geo.oval import finalize_oval
+from bbb_presentation_video.renderer.tldraw.geo.rectangle import finalize_geo_rectangle
+from bbb_presentation_video.renderer.tldraw.geo.rhombus import finalize_rhombus
+from bbb_presentation_video.renderer.tldraw.geo.star import finalize_star
+from bbb_presentation_video.renderer.tldraw.geo.trapezoid import finalize_trapezoid
+from bbb_presentation_video.renderer.tldraw.geo.triangle import finalize_geo_triangle
+from bbb_presentation_video.renderer.tldraw.geo.xbox import finalize_x_box
 from bbb_presentation_video.renderer.tldraw.shape import (
+    ArrowGeo,
     ArrowShape,
+    ArrowShape_v2,
+    CheckBox,
+    Cloud,
+    Diamond,
     DrawShape,
     EllipseShape,
+    EllipseGeo,
+    FrameShape,
     GroupShape,
+    Hexagon,
+    HighlighterShape,
+    LineShape,
+    Oval,
+    RectangleGeo,
     RectangleShape,
+    Rhombus,
     Shape,
+    Star,
     StickyShape,
+    StickyShape_v2,
     TextShape,
+    TextShape_v2,
+    Trapezoid,
     TriangleShape,
+    TriangleGeo,
+    XBox,
     parse_shape_from_data,
     shape_sort_key,
 )
 from bbb_presentation_video.renderer.tldraw.shape.arrow import finalize_arrow
+from bbb_presentation_video.renderer.tldraw.shape.arrow_v2 import finalize_arrow_v2
 from bbb_presentation_video.renderer.tldraw.shape.draw import finalize_draw
 from bbb_presentation_video.renderer.tldraw.shape.ellipse import finalize_ellipse
+from bbb_presentation_video.renderer.tldraw.shape.frame import finalize_frame
+from bbb_presentation_video.renderer.tldraw.shape.highlighter import finalize_highlight
+from bbb_presentation_video.renderer.tldraw.shape.line import finalize_line
 from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rectangle
 from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
+from bbb_presentation_video.renderer.tldraw.shape.sticky_v2 import finalize_sticky_v2
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
+from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
+from packaging.version import Version
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -70,12 +109,20 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     shape_patterns: Dict[str, cairo.SurfacePattern]
     """Cached rendered individual shapes for current presentation/slide."""
 
-    def __init__(self, ctx: cairo.Context[CairoSomeSurface], transform: Transform):
+    bbb_version: Version
+
+    def __init__(
+        self,
+        ctx: cairo.Context[CairoSomeSurface],
+        transform: Transform,
+        bbb_version: Version,
+    ):
         self.ctx = ctx
         self.presentation_slide = {}
         self.shapes = {}
         self.shape_patterns = {}
         self.transform = transform
+        self.bbb_version = bbb_version
 
         add_fontconfig_app_font_dir()
 
@@ -146,7 +193,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             action = "updated"
         else:
             if "type" in data:
-                shape = parse_shape_from_data(data)
+                shape = parse_shape_from_data(data, self.bbb_version)
                 self.shapes[presentation][slide][id] = shape
                 action = "added"
             else:
@@ -195,6 +242,75 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         elif event["name"] == "tldraw.delete_shape":
             self.delete_shape_event(cast(tldraw.DeleteShapeEvent, event))
 
+    def finalize_shapes(
+        self, ctx: cairo.Context[CairoSomeSurface], id: str, shape: Shape
+    ) -> None:
+        ctx.push_group()
+        ctx.translate(*shape.point)
+        if isinstance(shape, ArrowShape):
+            finalize_arrow(ctx, id, shape)
+        elif isinstance(shape, ArrowShape_v2):
+            finalize_arrow_v2(ctx, id, shape)
+        elif isinstance(shape, CheckBox):
+            finalize_checkmark(ctx, id, shape)
+        elif isinstance(shape, Cloud):
+            finalize_cloud(ctx, id, shape)
+        elif isinstance(shape, Diamond):
+            finalize_diamond(ctx, id, shape)
+        elif isinstance(shape, DrawShape):
+            finalize_draw(ctx, id, shape)
+        elif isinstance(shape, ArrowGeo):
+            finalize_geo_arrow(ctx, id, shape)
+        elif isinstance(shape, EllipseGeo):
+            finalize_geo_ellipse(ctx, id, shape)
+        elif isinstance(shape, EllipseShape):
+            finalize_ellipse(ctx, id, shape)
+        elif isinstance(shape, FrameShape):
+            finalize_frame(self, ctx, id, shape)
+        elif isinstance(shape, Hexagon):
+            finalize_hexagon(ctx, id, shape)
+        elif isinstance(shape, HighlighterShape):
+            finalize_highlight(ctx, id, shape)
+        elif isinstance(shape, LineShape):
+            finalize_line(ctx, id, shape)
+        elif isinstance(shape, Oval):
+            finalize_oval(ctx, id, shape)
+        elif isinstance(shape, RectangleGeo):
+            finalize_geo_rectangle(ctx, id, shape)
+        elif isinstance(shape, RectangleShape):
+            finalize_rectangle(ctx, id, shape)
+        elif isinstance(shape, Rhombus):
+            finalize_rhombus(ctx, id, shape)
+        elif isinstance(shape, Star):
+            finalize_star(ctx, id, shape)
+        elif isinstance(shape, Trapezoid):
+            finalize_trapezoid(ctx, id, shape)
+        elif isinstance(shape, TriangleGeo):
+            finalize_geo_triangle(ctx, id, shape)
+        elif isinstance(shape, TriangleShape):
+            finalize_triangle(ctx, id, shape)
+        elif isinstance(shape, TextShape):
+            finalize_text(ctx, id, shape)
+        elif isinstance(shape, TextShape_v2):
+            finalize_v2_text(ctx, id, shape)
+        elif isinstance(shape, StickyShape):
+            finalize_sticky(ctx, shape)
+        elif isinstance(shape, StickyShape_v2):
+            finalize_sticky_v2(ctx, shape)
+        elif isinstance(shape, XBox):
+            finalize_x_box(ctx, id, shape)
+
+        elif isinstance(shape, GroupShape):
+            # Nothing to do? All group-related updates seem to be propagated to the
+            # individual shapes in the group.
+            pass
+        else:
+            print(f"\tTldraw: Don't know how to render {shape}")
+
+        self.shape_patterns[id] = ctx.pop_group()
+        ctx.set_source(self.shape_patterns[id])
+        ctx.paint()
+
     def finalize_frame(self, transform: Transform) -> bool:
         transform_changed = self.transform != transform
         if not self.shapes_changed and not transform_changed:
@@ -222,39 +338,37 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
 
         apply_shapes_transform(ctx, transform)
 
+        # Map to store frame shapes and their children
+        frame_map: Dict[str, List[Shape]] = {}
+
+        # First pass to identify frames and initialize them in the map
         for id, s in shapes.items():
             shape = cast(Shape, s)
-            if id in self.shape_patterns:
+            if isinstance(s, FrameShape):
+                frame_map[id] = []
+
+        # Second pass to add children to frames
+        for id, s in shapes.items():
+            parent_id = s.parentId
+
+            # Check if the shape is in a frame
+            if parent_id in frame_map:
+                shape.id = id
+                frame_map[parent_id].append(s)
+
+        for id, s in shapes.items():
+            parent_id = s.parentId
+            shape = cast(Shape, s)
+
+            if id in frame_map:
+                shape.children = frame_map[id]
+
+            if id in self.shape_patterns and not id in frame_map:
                 print(f"\tTldraw: Cached {shape.__class__.__name__}: {id}")
-            else:
-                ctx.push_group()
 
-                ctx.translate(*shape.point)
-                if isinstance(shape, DrawShape):
-                    finalize_draw(ctx, id, shape)
-                elif isinstance(shape, RectangleShape):
-                    finalize_rectangle(ctx, id, shape)
-                elif isinstance(shape, TriangleShape):
-                    finalize_triangle(ctx, id, shape)
-                elif isinstance(shape, EllipseShape):
-                    finalize_ellipse(ctx, id, shape)
-                elif isinstance(shape, ArrowShape):
-                    finalize_arrow(ctx, id, shape)
-                elif isinstance(shape, TextShape):
-                    finalize_text(ctx, id, shape)
-                elif isinstance(shape, StickyShape):
-                    finalize_sticky(ctx, shape)
-                elif isinstance(shape, GroupShape):
-                    # Nothing to do? All group-related updates seem to be propagated to the
-                    # individual shapes in the group.
-                    pass
-                else:
-                    print(f"\tTldraw: Don't know how to render {shape}")
-
-                self.shape_patterns[id] = ctx.pop_group()
-
-            ctx.set_source(self.shape_patterns[id])
-            ctx.paint()
+            # Don't render the shape if it is inside of a frame shape.
+            elif not parent_id in frame_map:
+                self.finalize_shapes(ctx, id, shape)
 
         self.pattern = ctx.pop_group()
         self.shapes_changed = False

@@ -1,12 +1,19 @@
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import ShapeData
-from bbb_presentation_video.renderer.tldraw.shape import ArrowShape, DrawShape
+from bbb_presentation_video.renderer.tldraw.shape import (
+    ArrowShape,
+    DrawShape,
+    HighlighterShape,
+    LineShape,
+)
 from bbb_presentation_video.renderer.tldraw.utils import (
+    HIGHLIGHT_COLORS,
     ColorStyle,
     DashStyle,
     Decoration,
     SizeStyle,
     Style,
+    SplineType,
 )
 
 
@@ -190,3 +197,101 @@ def test_arrow_from_data_no_decorations() -> None:
     arrow = ArrowShape.from_data(data)
     assert arrow.decorations.start is None
     assert arrow.decorations.end is None
+
+
+def test_line_from_data() -> None:
+    data: ShapeData = {
+        "x": 1250,
+        "isLocked": False,
+        "y": 207,
+        "rotation": 0,
+        "typeName": "shape",
+        "isModerator": True,
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a3",
+        "id": "shape:O2QkpQBjAPe2V8hH6Co4X",
+        "meta": {"updatedBy": "w_b3rm8exhwsjf"},
+        "type": "line",
+        "props": {
+            "size": "m",
+            "handles": {
+                "start": {
+                    "x": 0,
+                    "canSnap": True,
+                    "y": 0,
+                    "canBind": False,
+                    "id": "start",
+                    "type": "vertex",
+                    "index": "a1",
+                },
+                "end": {
+                    "x": -229,
+                    "canSnap": True,
+                    "y": 377,
+                    "canBind": False,
+                    "id": "end",
+                    "type": "vertex",
+                    "index": "a2",
+                },
+                "handle:a1V": {
+                    "x": -71,
+                    "y": 216,
+                    "canBind": False,
+                    "id": "handle:a1V",
+                    "type": "vertex",
+                    "index": "a1V",
+                },
+            },
+            "dash": "draw",
+            "color": "red",
+            "spline": "cubic",
+        },
+    }
+    line = LineShape.from_data(data)
+    assert line.style == Style(
+        isFilled=False,
+        size=SizeStyle.M,
+        color=ColorStyle.RED,
+        dash=DashStyle.DRAW,
+    )
+
+    assert line.spline == SplineType.CUBIC
+    assert line.point == Position(1250, 207)
+    assert line.rotation == 0
+    assert line.label is None
+    assert line.labelPoint == Position(0.5, 0.5)
+
+    assert line.handles.start == Position(0, 0)
+    assert line.handles.controlPoint == Position(-71, 216)
+    assert line.handles.end == Position(-229, 377)
+
+
+def test_highlight_from_data() -> None:
+    data: ShapeData = {
+        "x": 354,
+        "isLocked": False,
+        "y": 140,
+        "rotation": 0,
+        "typeName": "shape",
+        "isModerator": True,
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a1",
+        "id": "shape:S_7PT3QSaUT6dzHcRV8Eb",
+        "meta": {"createdBy": "w_vxjirycsy2br"},
+        "type": "highlight",
+        "props": {
+            "size": "xl",
+            "color": "red",
+            "isPen": False,
+            "segments": [{"type": "free", "points": [{"x": 0, "y": 0, "z": 0.5}]}],
+            "isComplete": False,
+        },
+    }
+
+    highlight = HighlighterShape.from_data(data)
+    assert highlight.style == Style(size=SizeStyle.XL, color=ColorStyle.RED)
+
+    assert highlight.point == Position(354, 140)
+    assert highlight.rotation == 0

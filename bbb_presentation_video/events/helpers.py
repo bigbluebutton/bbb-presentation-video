@@ -65,12 +65,10 @@ class Position(Sequence[float]):
     y: float
 
     @overload
-    def __init__(self, iterable: Iterable[float], /) -> None:
-        ...
+    def __init__(self, iterable: Iterable[float], /) -> None: ...
 
     @overload
-    def __init__(self, x: float, y: float) -> None:
-        ...
+    def __init__(self, x: float, y: float) -> None: ...
 
     def __init__(
         self, x: Union[Iterable[float], float], y: Optional[float] = None
@@ -100,12 +98,10 @@ class Position(Sequence[float]):
         return self.__class__(self.x / other, self.y / other)
 
     @overload
-    def __getitem__(self, index: int) -> float:
-        ...
+    def __getitem__(self, index: int) -> float: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[float]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[float]: ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[float, Sequence[float]]:
         return (self.x, self.y)[index]
@@ -123,12 +119,10 @@ class Size(Sequence[float]):
     height: float
 
     @overload
-    def __init__(self, iterable: Iterable[float], /) -> None:
-        ...
+    def __init__(self, iterable: Iterable[float], /) -> None: ...
 
     @overload
-    def __init__(self, width: float, height: float) -> None:
-        ...
+    def __init__(self, width: float, height: float) -> None: ...
 
     def __init__(
         self, width: Union[Iterable[float], float], height: Optional[float] = None
@@ -155,12 +149,10 @@ class Size(Sequence[float]):
         return self.__class__(self.width / other, self.height / other)
 
     @overload
-    def __getitem__(self, index: int) -> float:
-        ...
+    def __getitem__(self, index: int) -> float: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[float]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[float]: ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[float, Sequence[float]]:
         return (self.width, self.height)[index]

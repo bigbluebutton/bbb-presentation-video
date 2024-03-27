@@ -167,9 +167,11 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             size=self.size,
             pos=Position(-0.0, -0.0),
             shapes_scale=1.0,
-            shapes_size=self.tldraw_drawing_size
-            if self.tldraw_whiteboard
-            else Size(DRAWING_SIZE, DRAWING_SIZE),
+            shapes_size=(
+                self.tldraw_drawing_size
+                if self.tldraw_whiteboard
+                else Size(DRAWING_SIZE, DRAWING_SIZE)
+            ),
         )
 
     @property
