@@ -3,18 +3,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
+
 from typing import TypeVar
 
 import cairo
 import perfect_freehand
-from bbb_presentation_video.events.helpers import Position
 
-from bbb_presentation_video.renderer.tldraw.shape import (
-    XBox,
-)
-from bbb_presentation_video.renderer.tldraw.geo.rectangle import (
-    rectangle_stroke_points,
-)
+from bbb_presentation_video.events.helpers import Position
+from bbb_presentation_video.renderer.tldraw.geo.rectangle import rectangle_stroke_points
+from bbb_presentation_video.renderer.tldraw.shape import XBox
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,

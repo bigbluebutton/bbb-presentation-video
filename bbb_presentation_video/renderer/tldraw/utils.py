@@ -7,8 +7,8 @@ from __future__ import annotations
 import math
 from enum import Enum
 from math import cos, floor, hypot, pi, sin, sqrt, tau
-from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 from random import Random
+from typing import Dict, List, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo

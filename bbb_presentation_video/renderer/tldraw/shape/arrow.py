@@ -35,10 +35,10 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     Style,
     circle_from_three_points,
     draw_smooth_path,
+    get_arc_length,
     get_perfect_dash_props,
     lerp_angles,
     rounded_rect,
-    get_arc_length,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)

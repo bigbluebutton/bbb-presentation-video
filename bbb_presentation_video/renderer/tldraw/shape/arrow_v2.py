@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
+
 from math import tau
 from typing import TypeVar
 
@@ -23,8 +24,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STROKES,
     Decoration,
     circle_from_three_points,
-    get_perfect_dash_props,
     get_arc_length,
+    get_perfect_dash_props,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)

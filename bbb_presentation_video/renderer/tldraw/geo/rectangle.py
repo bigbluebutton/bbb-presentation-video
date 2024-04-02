@@ -10,14 +10,10 @@ from typing import List, Tuple, TypeVar, Union
 
 import cairo
 import perfect_freehand
-from bbb_presentation_video.events.helpers import Position
 
+from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import (
-    CheckBox,
-    RectangleGeo,
-    XBox,
-)
+from bbb_presentation_video.renderer.tldraw.shape import CheckBox, RectangleGeo, XBox
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,

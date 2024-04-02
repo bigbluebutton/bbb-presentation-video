@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
-from enum import Enum
 
+from enum import Enum
 from math import floor
 from random import Random
 from typing import Callable, List, Optional, Sequence, TypeVar
@@ -14,13 +14,8 @@ from perfect_freehand import get_stroke
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.easings import (
-    ease_out_quad,
-)
-from bbb_presentation_video.renderer.tldraw.shape import (
-    LineShape,
-    apply_shape_rotation,
-)
+from bbb_presentation_video.renderer.tldraw.easings import ease_out_quad
+from bbb_presentation_video.renderer.tldraw.shape import LineShape, apply_shape_rotation
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,

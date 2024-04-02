@@ -4,20 +4,17 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from bbb_presentation_video.renderer.tldraw import TldrawRenderer
-import cairo
-from bbb_presentation_video.events.helpers import Position
 
+import cairo
+
+from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw.shape import FrameShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_frame_name
-from bbb_presentation_video.renderer.tldraw.utils import (
-    COLORS,
-    STROKES,
-    ColorStyle,
-)
+from bbb_presentation_video.renderer.tldraw.utils import COLORS, STROKES, ColorStyle
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 

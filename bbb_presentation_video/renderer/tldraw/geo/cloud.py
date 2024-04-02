@@ -5,18 +5,18 @@
 # Adapted from: https://github.com/tldraw/tldraw/blob/main/packages/tldraw/src/lib/shapes/geo/cloudOutline.ts
 
 from __future__ import annotations
-from math import atan2, tau
-import math
-import attr
-from typing import Any, Callable, List, Optional, Tuple, TypeVar, TypedDict, Union
 
-import cairo
+import math
+from math import atan2, tau
 from random import Random
+from typing import Any, Callable, List, Optional, Tuple, TypedDict, TypeVar, Union
+
+import attr
+import cairo
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.shape import (
-    Cloud,
-)
+from bbb_presentation_video.renderer.tldraw import vec
+from bbb_presentation_video.renderer.tldraw.shape import Cloud
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -28,7 +28,6 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     get_perfect_dash_props,
     get_point_on_circle,
 )
-from bbb_presentation_video.renderer.tldraw import vec
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 

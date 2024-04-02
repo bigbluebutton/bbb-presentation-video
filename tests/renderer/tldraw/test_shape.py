@@ -12,8 +12,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     DashStyle,
     Decoration,
     SizeStyle,
-    Style,
     SplineType,
+    Style,
 )
 
 

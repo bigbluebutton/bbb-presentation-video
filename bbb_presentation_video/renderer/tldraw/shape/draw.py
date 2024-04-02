@@ -14,13 +14,13 @@ from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.easings import ease_in_quad, ease_out_sine
 from bbb_presentation_video.renderer.tldraw.shape import DrawShape, apply_shape_rotation
 from bbb_presentation_video.renderer.tldraw.utils import (
+    COLORS,
     FILLS,
     STROKE_WIDTHS,
     STROKES,
-    COLORS,
+    ColorStyle,
     DashStyle,
     FillStyle,
-    ColorStyle,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
     draw_stroke_points,

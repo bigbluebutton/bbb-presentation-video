@@ -8,19 +8,18 @@ from typing import Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
+from packaging.version import Version
 
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import HandleData, ShapeData
 from bbb_presentation_video.renderer.tldraw.utils import (
     AlignStyle,
-    GeoShape,
     Decoration,
     DrawPoints,
+    GeoShape,
     SplineType,
     Style,
 )
-
-from packaging.version import Version
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 

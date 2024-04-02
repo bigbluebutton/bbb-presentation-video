@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, Generic, List, Optional, TypeVar, cast
 
 import cairo
+from packaging.version import Version
 from sortedcollections import ValueSortedDict
 
 from bbb_presentation_video import events
@@ -37,8 +38,8 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     Cloud,
     Diamond,
     DrawShape,
-    EllipseShape,
     EllipseGeo,
+    EllipseShape,
     FrameShape,
     GroupShape,
     Hexagon,
@@ -55,8 +56,8 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     TextShape,
     TextShape_v2,
     Trapezoid,
-    TriangleShape,
     TriangleGeo,
+    TriangleShape,
     XBox,
     parse_shape_from_data,
     shape_sort_key,
@@ -74,7 +75,6 @@ from bbb_presentation_video.renderer.tldraw.shape.sticky_v2 import finalize_stic
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
-from packaging.version import Version
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 

@@ -7,9 +7,8 @@ from __future__ import annotations
 from typing import TypeVar
 
 import cairo
-from bbb_presentation_video.renderer.tldraw.shape import (
-    EllipseGeo,
-)
+
+from bbb_presentation_video.renderer.tldraw.shape import EllipseGeo
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
