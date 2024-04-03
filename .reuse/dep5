@@ -4,5 +4,5 @@ Upstream-Contact: Calvin Walton <calvin.walton@blindsidenetworks.com>
 Source: https://github.com/blindsidenetworks/bbb-presentation-video
 
 Files: debian/*
-Copyright: 2022 Calvin Walton
+Copyright: 2024 Calvin Walton
 License: MIT
