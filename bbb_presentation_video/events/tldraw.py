@@ -11,18 +11,18 @@ from bbb_presentation_video.events.helpers import Position, xml_subelement
 
 
 class StyleData(TypedDict, total=False):
-    dash: str
-    font: str
-    isFilled: bool
-    scale: float
-    textAlign: str
-    opacity: float
-    isComplete: bool
-    fill: str
     color: str
-    size: str
+    dash: str
+    fill: str
+    font: str
     isClosed: bool
+    isComplete: bool
+    isFilled: bool
+    opacity: float
+    scale: float
     segments: List[Dict[str, Sequence[Collection[str]]]]
+    size: str
+    textAlign: str
 
 
 class HandleData(TypedDict, total=False):
@@ -44,16 +44,16 @@ class PropsData(StyleData, total=False):
     bend: float
     end: HandleData
     geo: str
+    growY: float
+    h: float
     handles: Dict[str, HandleData]
     isPen: bool
+    name: str
     spline: str
     start: HandleData
     text: str
     verticalAlign: str
     w: float
-    h: float
-    growY: float
-    name: str
 
 
 class ShapeData(TypedDict, total=False):
