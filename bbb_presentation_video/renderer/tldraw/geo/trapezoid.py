@@ -61,7 +61,7 @@ def trapezoid_stroke_points(id: str, shape: Trapezoid) -> List[StrokePoint]:
     # Which side to start drawing first
     rm = random.randrange(0, 3)
     # Number of points per side
-    # Insert each line by the corner radii and let the freehand algo
+    # Inset each line by the corner radii and let the freehand algo
     # interpolate points for the corners.
     lines = [
         vec.points_between(tl, tr, 32),
