@@ -156,7 +156,7 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
             if "geo" in props:
                 self.geo = GeoShape(props["geo"])
             if "w" in props and "h" in props and "name" in props:
-                if not self.label == "Frame":
+                if not props["name"] == "":
                     self.label = props["name"]
 
 
