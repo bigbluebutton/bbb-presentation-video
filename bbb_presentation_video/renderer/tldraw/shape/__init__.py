@@ -53,7 +53,7 @@ class BaseShapeProto(Protocol):
         if "style" in data:
             self.style.update_from_data(data["style"])
 
-        elif "props" in data:
+        if "props" in data:
             self.style.update_from_data(data["props"])
 
         if "childIndex" in data:
