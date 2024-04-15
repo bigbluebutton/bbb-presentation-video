@@ -30,7 +30,7 @@ class HandleData(TypedDict, total=False):
     canBind: bool
     canSnap: bool
     id: str
-    index: Union[str, int]
+    index: Union[float, str]
     point: List[float]
     type: str
     x: float
@@ -62,7 +62,7 @@ class ShapeData(TypedDict, total=False):
     decorations: Dict[str, Optional[str]]
     handles: Dict[str, HandleData]
     id: str
-    index: Union[int, str]
+    index: Union[float, str]
     isComplete: bool
     isLocked: bool
     isModerator: bool
