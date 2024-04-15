@@ -128,9 +128,6 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
     geo: GeoShape = GeoShape.NONE
     """Which geo type the shape is, if any."""
 
-    children: List[Shape] = []
-    """List of children shapes."""
-
     def label_offset(self) -> Position:
         """Calculate the offset needed when drawing the label for most shapes."""
         return Position(
