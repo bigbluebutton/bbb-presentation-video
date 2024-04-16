@@ -267,7 +267,7 @@ class EllipseGeo(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class FrameShape(LabelledShapeProto, SizedShapeProto):
+class FrameShape(LabelledShapeProto):
     label: str = "Frame"
     children: List[Shape] = []
     size: Size = Size(1.0, 1.0)
