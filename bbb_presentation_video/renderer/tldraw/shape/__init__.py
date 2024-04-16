@@ -597,15 +597,15 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
     elif type == "triangle":
         return TriangleShape.from_data(data)
     elif type == "arrow":
-        if not is_tldraw_v2:
-            return ArrowShape.from_data(data)
-        else:
+        if is_tldraw_v2:
             return ArrowShape_v2.from_data(data)
-    elif type == "text":
-        if not is_tldraw_v2:
-            return TextShape.from_data(data)
         else:
+            return ArrowShape.from_data(data)
+    elif type == "text":
+        if is_tldraw_v2:
             return TextShape_v2.from_data(data)
+        else:
+            return TextShape.from_data(data)
     elif type == "group":
         return GroupShape.from_data(data)
     elif type == "sticky":
