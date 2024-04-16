@@ -22,6 +22,7 @@ DrawPoints = List[Union[Tuple[float, float], Tuple[float, float, float]]]
 
 CANVAS: Color = Color.from_int(0xFAFAFA)
 
+PATTERN_FILL_BACKGROUND_COLOR: Color = Color.from_int(0xFCFFFE)
 STICKY_TEXT_COLOR: Color = Color.from_int(0x0D0D0D)
 STICKY_PADDING: float = 16.0
 
@@ -493,8 +494,11 @@ def pattern_fill(fill: Color, opacity: float = 1) -> cairo.SurfacePattern:
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 8, 8)
     ctx = cairo.Context(surface)
 
-    # RGB for #fcfffe
-    ctx.set_source_rgba(252 / 255, 255 / 255, 254 / 255, opacity)
+    ctx.set_source_rgba(
+        PATTERN_FILL_BACKGROUND_COLOR.r,
+        PATTERN_FILL_BACKGROUND_COLOR.g,
+        PATTERN_FILL_BACKGROUND_COLOR.b,
+        opacity)
     ctx.rectangle(0, 0, 8, 8)
     ctx.fill()
 
