@@ -498,7 +498,8 @@ def pattern_fill(fill: Color, opacity: float = 1) -> cairo.SurfacePattern:
         PATTERN_FILL_BACKGROUND_COLOR.r,
         PATTERN_FILL_BACKGROUND_COLOR.g,
         PATTERN_FILL_BACKGROUND_COLOR.b,
-        opacity)
+        opacity,
+    )
     ctx.rectangle(0, 0, 8, 8)
     ctx.fill()
 

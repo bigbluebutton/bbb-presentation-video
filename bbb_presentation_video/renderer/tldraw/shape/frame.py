@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, TypeVar
 
 if TYPE_CHECKING:
     from bbb_presentation_video.renderer.tldraw import TldrawRenderer
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 import cairo
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.shape import FrameShape
+from bbb_presentation_video.renderer.tldraw.shape import FrameShape, Shape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_frame_name
 from bbb_presentation_video.renderer.tldraw.utils import COLORS, STROKES, ColorStyle
 
@@ -20,7 +20,10 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def dash_frame(
-    self: TldrawRenderer[Any], ctx: cairo.Context[CairoSomeSurface], shape: FrameShape
+    self: TldrawRenderer[Any],
+    ctx: cairo.Context[CairoSomeSurface],
+    shape: FrameShape,
+    frame_map: Dict[str, List[Shape]],
 ) -> None:
     style = shape.style
 
@@ -64,8 +67,9 @@ def dash_frame(
 
     children = shape.children
 
+    # Recursively finalize the children.
     for child in children:
-        self.finalize_shapes(ctx, child.id, child)
+        self.finalize_shapes(ctx, child.id, child, frame_map)
 
     ctx.reset_clip()
 
@@ -75,10 +79,11 @@ def finalize_frame(
     ctx: cairo.Context[CairoSomeSurface],
     id: str,
     shape: FrameShape,
+    frame_map: Dict[str, List[Shape]],
 ) -> None:
     print(f"\tTldraw: Finalizing frame shape: {id}")
 
     ctx.rotate(shape.rotation)
-    dash_frame(self, ctx, shape)
+    dash_frame(self, ctx, shape, frame_map)
 
     finalize_frame_name(ctx, shape)

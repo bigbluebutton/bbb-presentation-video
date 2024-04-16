@@ -243,71 +243,86 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             self.delete_shape_event(cast(tldraw.DeleteShapeEvent, event))
 
     def finalize_shapes(
-        self, ctx: cairo.Context[CairoSomeSurface], id: str, shape: Shape
+        self,
+        ctx: cairo.Context[CairoSomeSurface],
+        id: str,
+        shape: Shape,
+        frame_map: Dict[str, List[Shape]],
     ) -> None:
-        ctx.push_group()
-        ctx.translate(*shape.point)
-        if isinstance(shape, ArrowShape):
-            finalize_arrow(ctx, id, shape)
-        elif isinstance(shape, ArrowShape_v2):
-            finalize_arrow_v2(ctx, id, shape)
-        elif isinstance(shape, CheckBox):
-            finalize_checkmark(ctx, id, shape)
-        elif isinstance(shape, Cloud):
-            finalize_cloud(ctx, id, shape)
-        elif isinstance(shape, Diamond):
-            finalize_diamond(ctx, id, shape)
-        elif isinstance(shape, DrawShape):
-            finalize_draw(ctx, id, shape)
-        elif isinstance(shape, ArrowGeo):
-            finalize_geo_arrow(ctx, id, shape)
-        elif isinstance(shape, EllipseGeo):
-            finalize_geo_ellipse(ctx, id, shape)
-        elif isinstance(shape, EllipseShape):
-            finalize_ellipse(ctx, id, shape)
-        elif isinstance(shape, FrameShape):
-            finalize_frame(self, ctx, id, shape)
-        elif isinstance(shape, Hexagon):
-            finalize_hexagon(ctx, id, shape)
-        elif isinstance(shape, HighlighterShape):
-            finalize_highlight(ctx, id, shape)
-        elif isinstance(shape, LineShape):
-            finalize_line(ctx, id, shape)
-        elif isinstance(shape, Oval):
-            finalize_oval(ctx, id, shape)
-        elif isinstance(shape, RectangleGeo):
-            finalize_geo_rectangle(ctx, id, shape)
-        elif isinstance(shape, RectangleShape):
-            finalize_rectangle(ctx, id, shape)
-        elif isinstance(shape, Rhombus):
-            finalize_rhombus(ctx, id, shape)
-        elif isinstance(shape, Star):
-            finalize_star(ctx, id, shape)
-        elif isinstance(shape, Trapezoid):
-            finalize_trapezoid(ctx, id, shape)
-        elif isinstance(shape, TriangleGeo):
-            finalize_geo_triangle(ctx, id, shape)
-        elif isinstance(shape, TriangleShape):
-            finalize_triangle(ctx, id, shape)
-        elif isinstance(shape, TextShape):
-            finalize_text(ctx, id, shape)
-        elif isinstance(shape, TextShape_v2):
-            finalize_v2_text(ctx, id, shape)
-        elif isinstance(shape, StickyShape):
-            finalize_sticky(ctx, shape)
-        elif isinstance(shape, StickyShape_v2):
-            finalize_sticky_v2(ctx, shape)
-        elif isinstance(shape, XBox):
-            finalize_x_box(ctx, id, shape)
-
-        elif isinstance(shape, GroupShape):
-            # Nothing to do? All group-related updates seem to be propagated to the
-            # individual shapes in the group.
-            pass
+        if id in self.shape_patterns and not id in frame_map:
+            print(f"\tTldraw: Cached {shape.__class__.__name__}: {id}")
         else:
-            print(f"\tTldraw: Don't know how to render {shape}")
+            ctx.push_group()
+            ctx.translate(*shape.point)
+            if isinstance(shape, ArrowShape):
+                finalize_arrow(ctx, id, shape)
+            elif isinstance(shape, ArrowShape_v2):
+                finalize_arrow_v2(ctx, id, shape)
+            elif isinstance(shape, CheckBox):
+                finalize_checkmark(ctx, id, shape)
+            elif isinstance(shape, Cloud):
+                finalize_cloud(ctx, id, shape)
+            elif isinstance(shape, Diamond):
+                finalize_diamond(ctx, id, shape)
+            elif isinstance(shape, DrawShape):
+                finalize_draw(ctx, id, shape)
+            elif isinstance(shape, ArrowGeo):
+                finalize_geo_arrow(ctx, id, shape)
+            elif isinstance(shape, EllipseGeo):
+                finalize_geo_ellipse(ctx, id, shape)
+            elif isinstance(shape, EllipseShape):
+                finalize_ellipse(ctx, id, shape)
+            elif isinstance(shape, FrameShape):
+                finalize_frame(
+                    self,
+                    ctx,
+                    id,
+                    shape,
+                    frame_map,
+                )
+            elif isinstance(shape, Hexagon):
+                finalize_hexagon(ctx, id, shape)
+            elif isinstance(shape, HighlighterShape):
+                finalize_highlight(ctx, id, shape)
+            elif isinstance(shape, LineShape):
+                finalize_line(ctx, id, shape)
+            elif isinstance(shape, Oval):
+                finalize_oval(ctx, id, shape)
+            elif isinstance(shape, RectangleGeo):
+                finalize_geo_rectangle(ctx, id, shape)
+            elif isinstance(shape, RectangleShape):
+                finalize_rectangle(ctx, id, shape)
+            elif isinstance(shape, Rhombus):
+                finalize_rhombus(ctx, id, shape)
+            elif isinstance(shape, Star):
+                finalize_star(ctx, id, shape)
+            elif isinstance(shape, Trapezoid):
+                finalize_trapezoid(ctx, id, shape)
+            elif isinstance(shape, TriangleGeo):
+                finalize_geo_triangle(ctx, id, shape)
+            elif isinstance(shape, TriangleShape):
+                finalize_triangle(ctx, id, shape)
+            elif isinstance(shape, TextShape):
+                finalize_text(ctx, id, shape)
+            elif isinstance(shape, TextShape_v2):
+                finalize_v2_text(ctx, id, shape)
+            elif isinstance(shape, StickyShape):
+                finalize_sticky(ctx, shape)
+            elif isinstance(shape, StickyShape_v2):
+                finalize_sticky_v2(ctx, shape)
+            elif isinstance(shape, XBox):
+                finalize_x_box(ctx, id, shape)
 
-        self.shape_patterns[id] = ctx.pop_group()
+            elif isinstance(shape, GroupShape):
+                # Nothing to do? All group-related updates seem to be propagated to the
+                # individual shapes in the group.
+                pass
+            else:
+                print(f"\tTldraw: Don't know how to render {shape}")
+
+            # Mark the finalized shape as cached
+            self.shape_patterns[id] = ctx.pop_group()
+
         ctx.set_source(self.shape_patterns[id])
         ctx.paint()
 
@@ -363,12 +378,9 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             if id in frame_map:
                 shape.children = frame_map[id]
 
-            if id in self.shape_patterns and not id in frame_map:
-                print(f"\tTldraw: Cached {shape.__class__.__name__}: {id}")
-
-            # Don't render the shape if it is inside of a frame shape.
-            elif not parent_id in frame_map:
-                self.finalize_shapes(ctx, id, shape)
+            # Frames are responsible for finalizing their children.
+            if not parent_id in frame_map:
+                self.finalize_shapes(ctx, id, shape, frame_map)
 
         self.pattern = ctx.pop_group()
         self.shapes_changed = False
