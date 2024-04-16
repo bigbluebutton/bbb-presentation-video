@@ -192,7 +192,7 @@ FONT_FACES: Dict[FontStyle, str] = {
     FontStyle.SERIF: "Crimson Pro",
     FontStyle.MONO: "Source Code Pro",
     FontStyle.DRAW: "Caveat Brush",
-    FontStyle.ARIAL: "Arial 12px",
+    FontStyle.ARIAL: "Arial",
 }
 
 
