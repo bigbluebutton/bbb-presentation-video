@@ -12,13 +12,13 @@ import cairo
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.intersect import (
-    intersect_circle_circle,
     intersect_circle_line_segment,
 )
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShapeV2,
     apply_shape_rotation,
 )
+from bbb_presentation_video.renderer.tldraw.shape.arrow import curved_arrow_head, curved_arrow_shaft
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
     STROKES,
@@ -29,26 +29,6 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
-
-
-def curved_arrow_shaft(
-    ctx: cairo.Context[CairoSomeSurface],
-    start: Position,
-    end: Position,
-    center: Position,
-    radius: float,
-    bend: float,
-) -> None:
-    start_angle = vec.angle(center, start)
-    end_angle = vec.angle(center, end)
-
-    ctx.new_sub_path()
-
-    if bend > 0:
-        ctx.arc(center.x, center.y, radius, start_angle, end_angle)
-    else:
-        ctx.arc_negative(center.x, center.y, radius, start_angle, end_angle)
-
 
 def straight_arrow_head(
     ctx: cairo.Context[CairoSomeSurface],
@@ -69,30 +49,6 @@ def straight_arrow_head(
     ctx.move_to(left.x, left.y)
     ctx.line_to(a.x, a.y)
     ctx.line_to(right.x, right.y)
-
-
-def curved_arrow_head(
-    ctx: cairo.Context[CairoSomeSurface],
-    a: Position,
-    r1: float,
-    C: Position,
-    r2: float,
-    sweep: bool,
-) -> None:
-    ints = intersect_circle_circle(a, r1 * 0.618, C, r2).points
-    if len(ints) == 0:
-        print("\t\tCould not find an intersection for the arrow head.")
-        left = a
-        right = a
-    else:
-        int = ints[0] if sweep else ints[1]
-        left = Position(vec.nudge(vec.rot_with(int, a, tau / 12), a, r1 * -0.382))
-        right = Position(vec.nudge(vec.rot_with(int, a, -tau / 12), a, r1 * -0.382))
-
-    ctx.move_to(left.x, left.y)
-    ctx.line_to(a.x, a.y)
-    ctx.line_to(right.x, right.y)
-
 
 def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShapeV2) -> float:
     style = shape.style

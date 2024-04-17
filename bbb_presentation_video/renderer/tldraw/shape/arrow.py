@@ -169,8 +169,8 @@ def curved_arrow_head(
         right = a
     else:
         int = ints[0] if sweep else ints[1]
-        left = Position(vec.nudge(vec.rot_with(int, a, pi / 6), a, r1 * -0.382))
-        right = Position(vec.nudge(vec.rot_with(int, a, -pi / 6), a, r1 * -0.382))
+        left = Position(vec.nudge(vec.rot_with(int, a, tau / 12), a, r1 * -0.382))
+        right = Position(vec.nudge(vec.rot_with(int, a, -tau / 12), a, r1 * -0.382))
 
     ctx.move_to(left.x, left.y)
     ctx.line_to(a.x, a.y)
