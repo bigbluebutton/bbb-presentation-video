@@ -11,9 +11,9 @@ import cairo
 import perfect_freehand
 from perfect_freehand.types import StrokePoint
 
-from bbb_presentation_video.events.helpers import Position, Size
+from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import TriangleGeo
+from bbb_presentation_video.renderer.tldraw.shape import DiamondGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -26,49 +26,49 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def triangle_centroid(size: Size) -> Position:
-    w, h = size
-    return (Position(w / 2, 0) + Position(w, h) + Position(0, h)) / 3
-
-
-def triangle_stroke_points(id: str, shape: TriangleGeo) -> List[StrokePoint]:
+def diamond_stroke_points(id: str, shape: DiamondGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
+
+    width = size.width
+    height = size.height
+    half_width = size.width / 2
+    half_height = size.height / 2
+
     stroke_width = STROKE_WIDTHS[shape.style.size]
 
     # Corners with random offsets
     variation = stroke_width * 0.75
+
     t = (
-        size.width / 2 + random.uniform(-variation, variation),
+        half_width + random.uniform(-variation, variation),
         random.uniform(-variation, variation),
     )
-    br = (
-        size.width + random.uniform(-variation, variation),
-        size.height + random.uniform(-variation, variation),
+    r = (
+        width + random.uniform(-variation, variation),
+        half_height + random.uniform(-variation, variation),
     )
-    bl = (
+    b = (
+        half_width + random.uniform(-variation, variation),
+        height + random.uniform(-variation, variation),
+    )
+    l = (
         random.uniform(-variation, variation),
-        size.height + random.uniform(-variation, variation),
+        half_height + random.uniform(-variation, variation),
     )
 
     # Which side to start drawing first
     rm = random.randrange(0, 3)
-    # Number of points per side
-    # Inset each line by the corner radii and let the freehand algo
-    # interpolate points for the corners.
-    lines = [
-        vec.points_between(t, br, 32),
-        vec.points_between(br, bl, 32),
-        vec.points_between(bl, t, 32),
-    ]
-    lines = lines[rm:] + lines[0:rm]
 
-    # For the final points, include the first half of the first line again,
-    # so that the line wraps around and avoids ending on a sharp corner.
-    # This has a bit of finesse and magic—if you change the points between
-    # function, then you'll likely need to change this one too.
-    # TODO: It actually includes the whole first line again, not just half?
-    points = [*lines[0], *lines[1], *lines[2], *lines[0]]
+    lines = [
+        vec.points_between(t, r, 32),
+        vec.points_between(r, b, 32),
+        vec.points_between(b, l, 32),
+        vec.points_between(l, t, 32),
+    ]
+
+    lines = lines[rm:] + lines[0:rm]
+    points = [*lines[0], *lines[1], *lines[2], *lines[3], *lines[0]]
 
     return perfect_freehand.get_stroke_points(
         points, size=stroke_width, streamline=0.3, last=True
@@ -78,15 +78,15 @@ def triangle_stroke_points(id: str, shape: TriangleGeo) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_triangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeo
+def draw_diamond(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: DiamondGeoShape
 ) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
     stroke_width = STROKE_WIDTHS[style.size]
 
-    stroke_points = triangle_stroke_points(id, shape)
+    stroke_points = diamond_stroke_points(id, shape)
 
     if style.isFilled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
@@ -110,40 +110,37 @@ def draw_triangle(
     ctx.stroke()
 
 
-def dash_triangle(ctx: cairo.Context[CairoSomeSurface], shape: TriangleGeo) -> None:
+def dash_diamond(ctx: cairo.Context[CairoSomeSurface], shape: DiamondGeoShape) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
     h = max(0, shape.size.height)
 
+    half_width = w / 2
+    half_height = h / 2
+
     points = [
-        Position(w / 2, 0),
-        Position(w, h),
-        Position(0, h),
-        Position(w / 2, 0),
+        Position(half_width, 0),
+        Position(w, half_height),
+        Position(half_width, h),
+        Position(0, half_height),
     ]
 
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_geo_triangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeo
+def finalize_diamond(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: DiamondGeoShape
 ) -> None:
-    print(f"\tTldraw: Finalizing Triangle (geo): {id}")
+    print(f"\tTldraw: Finalizing Diamond: {id}")
 
     style = shape.style
-    size = shape.size
 
     ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
-        draw_triangle(ctx, id, shape)
+        draw_diamond(ctx, id, shape)
     else:
-        dash_triangle(ctx, shape)
+        dash_diamond(ctx, shape)
 
-    center = Position(size / 2)
-    centeroid = triangle_centroid(size)
-    offset_y = (centeroid.y - center.y) * 0.72
-    offset = shape.label_offset() + Position(0, offset_y)
-
-    finalize_v2_label(ctx, shape, offset=offset)
+    finalize_v2_label(ctx, shape)

@@ -10,8 +10,10 @@ import cairo
 import perfect_freehand
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.geo.rectangle import rectangle_stroke_points
-from bbb_presentation_video.renderer.tldraw.shape import CheckBox
+from bbb_presentation_video.renderer.tldraw.geo.rectangle_geo_shape import (
+    rectangle_stroke_points,
+)
+from bbb_presentation_video.renderer.tldraw.shape import CheckBoxGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -49,7 +51,9 @@ def get_check_box_lines(w: float, h: float) -> List[List[List[float]]]:
     ]
 
 
-def overlay_checkmark(ctx: cairo.Context[CairoSomeSurface], shape: CheckBox) -> None:
+def overlay_checkmark(
+    ctx: cairo.Context[CairoSomeSurface], shape: CheckBoxGeoShape
+) -> None:
     sw = STROKE_WIDTHS[shape.style.size]
 
     # Calculate dimensions
@@ -78,7 +82,7 @@ def overlay_checkmark(ctx: cairo.Context[CairoSomeSurface], shape: CheckBox) -> 
 
 
 def draw_checkbox(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: CheckBox
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: CheckBoxGeoShape
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
@@ -111,7 +115,9 @@ def draw_checkbox(
     overlay_checkmark(ctx, shape)
 
 
-def dash_checkbox(ctx: cairo.Context[CairoSomeSurface], shape: CheckBox) -> None:
+def dash_checkbox(
+    ctx: cairo.Context[CairoSomeSurface], shape: CheckBoxGeoShape
+) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -129,7 +135,7 @@ def dash_checkbox(ctx: cairo.Context[CairoSomeSurface], shape: CheckBox) -> None
 
 
 def finalize_checkmark(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: CheckBox
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: CheckBoxGeoShape
 ) -> None:
     print(f"\tTldraw: Finalizing checkmark: {id}")
 

@@ -11,9 +11,9 @@ import cairo
 import perfect_freehand
 from perfect_freehand.types import StrokePoint
 
-from bbb_presentation_video.events.helpers import Position
+from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import Trapezoid
+from bbb_presentation_video.renderer.tldraw.shape import TriangleGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -26,36 +26,29 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def trapezoid_stroke_points(id: str, shape: Trapezoid) -> List[StrokePoint]:
+def triangle_centroid(size: Size) -> Position:
+    w, h = size
+    return (Position(w / 2, 0) + Position(w, h) + Position(0, h)) / 3
+
+
+def triangle_stroke_points(id: str, shape: TriangleGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
-
-    width = size.width
-    height = size.height
-
-    top_width = width * 0.6
-    x_offset = (width - top_width) / 2
-
     stroke_width = STROKE_WIDTHS[shape.style.size]
 
     # Corners with random offsets
     variation = stroke_width * 0.75
-
-    tl = (
-        x_offset + random.uniform(-variation, variation),
+    t = (
+        size.width / 2 + random.uniform(-variation, variation),
         random.uniform(-variation, variation),
     )
-    tr = (
-        x_offset + top_width + random.uniform(-variation, variation),
-        0 + random.uniform(-variation, variation),
-    )
     br = (
-        width + random.uniform(-variation, variation),
-        height + random.uniform(-variation, variation),
+        size.width + random.uniform(-variation, variation),
+        size.height + random.uniform(-variation, variation),
     )
     bl = (
         random.uniform(-variation, variation),
-        height + random.uniform(-variation, variation),
+        size.height + random.uniform(-variation, variation),
     )
 
     # Which side to start drawing first
@@ -64,10 +57,9 @@ def trapezoid_stroke_points(id: str, shape: Trapezoid) -> List[StrokePoint]:
     # Inset each line by the corner radii and let the freehand algo
     # interpolate points for the corners.
     lines = [
-        vec.points_between(tl, tr, 32),
-        vec.points_between(tr, br, 32),
+        vec.points_between(t, br, 32),
         vec.points_between(br, bl, 32),
-        vec.points_between(bl, tl, 32),
+        vec.points_between(bl, t, 32),
     ]
     lines = lines[rm:] + lines[0:rm]
 
@@ -76,7 +68,7 @@ def trapezoid_stroke_points(id: str, shape: Trapezoid) -> List[StrokePoint]:
     # This has a bit of finesse and magic—if you change the points between
     # function, then you'll likely need to change this one too.
     # TODO: It actually includes the whole first line again, not just half?
-    points = [*lines[0], *lines[1], *lines[2], *lines[3], *lines[0]]
+    points = [*lines[0], *lines[1], *lines[2], *lines[0]]
 
     return perfect_freehand.get_stroke_points(
         points, size=stroke_width, streamline=0.3, last=True
@@ -86,15 +78,15 @@ def trapezoid_stroke_points(id: str, shape: Trapezoid) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_trapezoid(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: Trapezoid
+def draw_triangle(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeoShape
 ) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
     stroke_width = STROKE_WIDTHS[style.size]
 
-    stroke_points = trapezoid_stroke_points(id, shape)
+    stroke_points = triangle_stroke_points(id, shape)
 
     if style.isFilled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
@@ -118,36 +110,42 @@ def draw_trapezoid(
     ctx.stroke()
 
 
-def dash_trapezoid(ctx: cairo.Context[CairoSomeSurface], shape: Trapezoid) -> None:
+def dash_triangle(
+    ctx: cairo.Context[CairoSomeSurface], shape: TriangleGeoShape
+) -> None:
     style = shape.style
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
 
-    top_width = width * 0.6
-    x_offset = (width - top_width) / 2
+    w = max(0, shape.size.width)
+    h = max(0, shape.size.height)
 
     points = [
-        Position(x_offset, 0),
-        Position(top_width + x_offset, 0),
-        Position(width, height),
-        Position(0, height),
+        Position(w / 2, 0),
+        Position(w, h),
+        Position(0, h),
+        Position(w / 2, 0),
     ]
 
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_trapezoid(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: Trapezoid
+def finalize_geo_triangle(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeoShape
 ) -> None:
-    print(f"\tTldraw: Finalizing Trapezoid: {id}")
+    print(f"\tTldraw: Finalizing Triangle (geo): {id}")
 
     style = shape.style
+    size = shape.size
 
     ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
-        draw_trapezoid(ctx, id, shape)
+        draw_triangle(ctx, id, shape)
     else:
-        dash_trapezoid(ctx, shape)
+        dash_triangle(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    center = Position(size / 2)
+    centeroid = triangle_centroid(size)
+    offset_y = (centeroid.y - center.y) * 0.72
+    offset = shape.label_offset() + Position(0, offset_y)
+
+    finalize_v2_label(ctx, shape, offset=offset)

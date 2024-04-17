@@ -10,7 +10,7 @@ from typing import List, TypeVar
 import cairo
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.shape import Oval
+from bbb_presentation_video.renderer.tldraw.shape import OvalGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import finalize_geo_path
 
@@ -43,7 +43,7 @@ def oval_points(w: float, h: float, n_vertices: int = 25) -> List[Position]:
     return points
 
 
-def dash_oval(ctx: cairo.Context[CairoSomeSurface], shape: Oval) -> None:
+def dash_oval(ctx: cairo.Context[CairoSomeSurface], shape: OvalGeoShape) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -55,7 +55,9 @@ def dash_oval(ctx: cairo.Context[CairoSomeSurface], shape: Oval) -> None:
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_oval(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Oval) -> None:
+def finalize_oval(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: OvalGeoShape
+) -> None:
     print(f"\tTldraw: Finalizing Oval: {id}")
 
     ctx.rotate(shape.rotation)

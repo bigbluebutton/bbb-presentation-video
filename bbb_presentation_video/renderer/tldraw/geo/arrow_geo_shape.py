@@ -13,7 +13,7 @@ import perfect_freehand
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import ArrowGeo
+from bbb_presentation_video.renderer.tldraw.shape import ArrowGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -28,7 +28,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 
 
 def arrow_geo_stroke_points(
-    id: str, shape: ArrowGeo
+    id: str, shape: ArrowGeoShape
 ) -> List[perfect_freehand.types.StrokePoint]:
     random = Random(id)
     sw = STROKE_WIDTHS[shape.style.size]
@@ -206,7 +206,7 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def draw_geo_arrow(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowGeo
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowGeoShape
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
@@ -237,7 +237,7 @@ def draw_geo_arrow(
     ctx.stroke()
 
 
-def dash_geo_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowGeo) -> None:
+def dash_geo_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowGeoShape) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -295,7 +295,7 @@ def dash_geo_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowGeo) -> Non
 
 
 def finalize_geo_arrow(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowGeo
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: ArrowGeoShape
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow (geo): {id}")
 

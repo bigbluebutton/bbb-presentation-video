@@ -13,7 +13,7 @@ from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import Diamond
+from bbb_presentation_video.renderer.tldraw.shape import TrapezoidGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -26,48 +26,56 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def diamond_stroke_points(id: str, shape: Diamond) -> List[StrokePoint]:
+def trapezoid_stroke_points(id: str, shape: TrapezoidGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
 
     width = size.width
     height = size.height
-    half_width = size.width / 2
-    half_height = size.height / 2
+
+    top_width = width * 0.6
+    x_offset = (width - top_width) / 2
 
     stroke_width = STROKE_WIDTHS[shape.style.size]
 
     # Corners with random offsets
     variation = stroke_width * 0.75
 
-    t = (
-        half_width + random.uniform(-variation, variation),
+    tl = (
+        x_offset + random.uniform(-variation, variation),
         random.uniform(-variation, variation),
     )
-    r = (
-        width + random.uniform(-variation, variation),
-        half_height + random.uniform(-variation, variation),
+    tr = (
+        x_offset + top_width + random.uniform(-variation, variation),
+        0 + random.uniform(-variation, variation),
     )
-    b = (
-        half_width + random.uniform(-variation, variation),
+    br = (
+        width + random.uniform(-variation, variation),
         height + random.uniform(-variation, variation),
     )
-    l = (
+    bl = (
         random.uniform(-variation, variation),
-        half_height + random.uniform(-variation, variation),
+        height + random.uniform(-variation, variation),
     )
 
     # Which side to start drawing first
     rm = random.randrange(0, 3)
-
+    # Number of points per side
+    # Inset each line by the corner radii and let the freehand algo
+    # interpolate points for the corners.
     lines = [
-        vec.points_between(t, r, 32),
-        vec.points_between(r, b, 32),
-        vec.points_between(b, l, 32),
-        vec.points_between(l, t, 32),
+        vec.points_between(tl, tr, 32),
+        vec.points_between(tr, br, 32),
+        vec.points_between(br, bl, 32),
+        vec.points_between(bl, tl, 32),
     ]
-
     lines = lines[rm:] + lines[0:rm]
+
+    # For the final points, include the first half of the first line again,
+    # so that the line wraps around and avoids ending on a sharp corner.
+    # This has a bit of finesse and magic—if you change the points between
+    # function, then you'll likely need to change this one too.
+    # TODO: It actually includes the whole first line again, not just half?
     points = [*lines[0], *lines[1], *lines[2], *lines[3], *lines[0]]
 
     return perfect_freehand.get_stroke_points(
@@ -78,13 +86,15 @@ def diamond_stroke_points(id: str, shape: Diamond) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_diamond(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Diamond) -> None:
+def draw_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TrapezoidGeoShape
+) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
     stroke_width = STROKE_WIDTHS[style.size]
 
-    stroke_points = diamond_stroke_points(id, shape)
+    stroke_points = trapezoid_stroke_points(id, shape)
 
     if style.isFilled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
@@ -108,37 +118,38 @@ def draw_diamond(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Diamond) 
     ctx.stroke()
 
 
-def dash_diamond(ctx: cairo.Context[CairoSomeSurface], shape: Diamond) -> None:
+def dash_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], shape: TrapezoidGeoShape
+) -> None:
     style = shape.style
+    width = max(0, shape.size.width)
+    height = max(0, shape.size.height)
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
-
-    half_width = w / 2
-    half_height = h / 2
+    top_width = width * 0.6
+    x_offset = (width - top_width) / 2
 
     points = [
-        Position(half_width, 0),
-        Position(w, half_height),
-        Position(half_width, h),
-        Position(0, half_height),
+        Position(x_offset, 0),
+        Position(top_width + x_offset, 0),
+        Position(width, height),
+        Position(0, height),
     ]
 
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_diamond(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: Diamond
+def finalize_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TrapezoidGeoShape
 ) -> None:
-    print(f"\tTldraw: Finalizing Diamond: {id}")
+    print(f"\tTldraw: Finalizing Trapezoid: {id}")
 
     style = shape.style
 
     ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
-        draw_diamond(ctx, id, shape)
+        draw_trapezoid(ctx, id, shape)
     else:
-        dash_diamond(ctx, shape)
+        dash_trapezoid(ctx, shape)
 
     finalize_v2_label(ctx, shape)

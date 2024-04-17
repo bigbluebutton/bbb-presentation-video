@@ -13,7 +13,11 @@ import perfect_freehand
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import CheckBox, RectangleGeo, XBox
+from bbb_presentation_video.renderer.tldraw.shape import (
+    CheckBoxGeoShape,
+    RectangleGeoShape,
+    XBoxGeoShape,
+)
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -27,7 +31,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 
 
 def rectangle_stroke_points(
-    id: str, shape: Union[RectangleGeo, XBox, CheckBox]
+    id: str, shape: Union[RectangleGeoShape, XBoxGeoShape, CheckBoxGeoShape]
 ) -> List[perfect_freehand.types.StrokePoint]:
     random = Random(id)
     sw = STROKE_WIDTHS[shape.style.size]
@@ -100,7 +104,7 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def draw_rectangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleGeo
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleGeoShape
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
@@ -131,7 +135,7 @@ def draw_rectangle(
     ctx.stroke()
 
 
-def dash_rectangle(ctx: cairo.Context[CairoSomeSurface], shape: RectangleGeo) -> None:
+def dash_rectangle(ctx: cairo.Context[CairoSomeSurface], shape: RectangleGeoShape) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -143,7 +147,7 @@ def dash_rectangle(ctx: cairo.Context[CairoSomeSurface], shape: RectangleGeo) ->
 
 
 def finalize_geo_rectangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleGeo
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RectangleGeoShape
 ) -> None:
     print(f"\tTldraw: Finalizing Rectangle (geo): {id}")
 

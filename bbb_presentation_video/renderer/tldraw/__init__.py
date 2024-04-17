@@ -17,48 +17,66 @@ from bbb_presentation_video.renderer.presentation import (
     apply_shapes_transform,
 )
 from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
-from bbb_presentation_video.renderer.tldraw.geo.arrow_geo import finalize_geo_arrow
-from bbb_presentation_video.renderer.tldraw.geo.checkbox import finalize_checkmark
-from bbb_presentation_video.renderer.tldraw.geo.cloud import finalize_cloud
-from bbb_presentation_video.renderer.tldraw.geo.diamond import finalize_diamond
-from bbb_presentation_video.renderer.tldraw.geo.ellipse import finalize_geo_ellipse
-from bbb_presentation_video.renderer.tldraw.geo.hexagon import finalize_hexagon
-from bbb_presentation_video.renderer.tldraw.geo.oval import finalize_oval
-from bbb_presentation_video.renderer.tldraw.geo.rectangle import finalize_geo_rectangle
-from bbb_presentation_video.renderer.tldraw.geo.rhombus import finalize_rhombus
-from bbb_presentation_video.renderer.tldraw.geo.star import finalize_star
-from bbb_presentation_video.renderer.tldraw.geo.trapezoid import finalize_trapezoid
-from bbb_presentation_video.renderer.tldraw.geo.triangle import finalize_geo_triangle
-from bbb_presentation_video.renderer.tldraw.geo.xbox import finalize_x_box
+from bbb_presentation_video.renderer.tldraw.geo.arrow_geo_shape import (
+    finalize_geo_arrow,
+)
+from bbb_presentation_video.renderer.tldraw.geo.checkbox_geo_shape import (
+    finalize_checkmark,
+)
+from bbb_presentation_video.renderer.tldraw.geo.cloud_geo_shape import finalize_cloud
+from bbb_presentation_video.renderer.tldraw.geo.diamond_geo_shape import (
+    finalize_diamond,
+)
+from bbb_presentation_video.renderer.tldraw.geo.ellipse_geo_shape import (
+    finalize_geo_ellipse,
+)
+from bbb_presentation_video.renderer.tldraw.geo.hexagon_geo_shape import (
+    finalize_hexagon,
+)
+from bbb_presentation_video.renderer.tldraw.geo.oval_geo_shape import finalize_oval
+from bbb_presentation_video.renderer.tldraw.geo.rectangle_geo_shape import (
+    finalize_geo_rectangle,
+)
+from bbb_presentation_video.renderer.tldraw.geo.rhombus_geo_shape import (
+    finalize_rhombus,
+)
+from bbb_presentation_video.renderer.tldraw.geo.star_geo_shape import finalize_star
+from bbb_presentation_video.renderer.tldraw.geo.trapezoid_geo_shape import (
+    finalize_trapezoid,
+)
+from bbb_presentation_video.renderer.tldraw.geo.triangle_geo_shape import (
+    finalize_geo_triangle,
+)
+from bbb_presentation_video.renderer.tldraw.geo.xbox_geo_shape import finalize_x_box
 from bbb_presentation_video.renderer.tldraw.shape import (
-    ArrowGeo,
+    ArrowGeoShape,
     ArrowShape,
-    ArrowShape_v2,
-    CheckBox,
-    Cloud,
-    Diamond,
+    ArrowShapeV2,
+    CheckBoxGeoShape,
+    CloudGeoShape,
+    DiamondGeoShape,
     DrawShape,
-    EllipseGeo,
+    EllipseGeoShape,
     EllipseShape,
     FrameShape,
     GroupShape,
-    Hexagon,
+    HexagonGeoShape,
     HighlighterShape,
     LineShape,
-    Oval,
-    RectangleGeo,
+    OvalGeoShape,
+    RectangleGeoShape,
     RectangleShape,
-    Rhombus,
+    RhombusGeoShape,
     Shape,
-    Star,
+    StarGeoShape,
     StickyShape,
-    StickyShape_v2,
+    StickyShapeV2,
     TextShape,
-    TextShape_v2,
-    Trapezoid,
-    TriangleGeo,
+    TextShapeV2,
+    TrapezoidGeoShape,
+    TriangleGeoShape,
     TriangleShape,
-    XBox,
+    XBoxGeoShape,
     parse_shape_from_data,
     shape_sort_key,
 )
@@ -254,24 +272,24 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         else:
             ctx.push_group()
             ctx.translate(*shape.point)
-            if isinstance(shape, ArrowShape):
+            if isinstance(shape, ArrowGeoShape):
+                finalize_geo_arrow(ctx, id, shape)
+            elif isinstance(shape, ArrowShape):
                 finalize_arrow(ctx, id, shape)
-            elif isinstance(shape, ArrowShape_v2):
+            elif isinstance(shape, ArrowShapeV2):
                 finalize_arrow_v2(ctx, id, shape)
-            elif isinstance(shape, CheckBox):
+            elif isinstance(shape, CheckBoxGeoShape):
                 finalize_checkmark(ctx, id, shape)
-            elif isinstance(shape, Cloud):
+            elif isinstance(shape, CloudGeoShape):
                 finalize_cloud(ctx, id, shape)
-            elif isinstance(shape, Diamond):
+            elif isinstance(shape, DiamondGeoShape):
                 finalize_diamond(ctx, id, shape)
             elif isinstance(shape, DrawShape):
                 finalize_draw(ctx, id, shape)
-            elif isinstance(shape, ArrowGeo):
-                finalize_geo_arrow(ctx, id, shape)
-            elif isinstance(shape, EllipseGeo):
-                finalize_geo_ellipse(ctx, id, shape)
             elif isinstance(shape, EllipseShape):
                 finalize_ellipse(ctx, id, shape)
+            elif isinstance(shape, EllipseGeoShape):
+                finalize_geo_ellipse(ctx, id, shape)
             elif isinstance(shape, FrameShape):
                 finalize_frame(
                     self,
@@ -280,47 +298,45 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                     shape,
                     frame_map,
                 )
-            elif isinstance(shape, Hexagon):
+            elif isinstance(shape, GroupShape):
+                # Nothing to do? All group-related updates seem to be propagated to the
+                # individual shapes in the group.
+                pass
+            elif isinstance(shape, HexagonGeoShape):
                 finalize_hexagon(ctx, id, shape)
             elif isinstance(shape, HighlighterShape):
                 finalize_highlight(ctx, id, shape)
             elif isinstance(shape, LineShape):
                 finalize_line(ctx, id, shape)
-            elif isinstance(shape, Oval):
+            elif isinstance(shape, OvalGeoShape):
                 finalize_oval(ctx, id, shape)
-            elif isinstance(shape, RectangleGeo):
-                finalize_geo_rectangle(ctx, id, shape)
             elif isinstance(shape, RectangleShape):
                 finalize_rectangle(ctx, id, shape)
-            elif isinstance(shape, Rhombus):
+            elif isinstance(shape, RectangleGeoShape):
+                finalize_geo_rectangle(ctx, id, shape)
+            elif isinstance(shape, RhombusGeoShape):
                 finalize_rhombus(ctx, id, shape)
-            elif isinstance(shape, Star):
+            elif isinstance(shape, StarGeoShape):
                 finalize_star(ctx, id, shape)
-            elif isinstance(shape, Trapezoid):
+            elif isinstance(shape, TrapezoidGeoShape):
                 finalize_trapezoid(ctx, id, shape)
-            elif isinstance(shape, TriangleGeo):
-                finalize_geo_triangle(ctx, id, shape)
             elif isinstance(shape, TriangleShape):
                 finalize_triangle(ctx, id, shape)
+            elif isinstance(shape, TriangleGeoShape):
+                finalize_geo_triangle(ctx, id, shape)
             elif isinstance(shape, TextShape):
                 finalize_text(ctx, id, shape)
-            elif isinstance(shape, TextShape_v2):
+            elif isinstance(shape, TextShapeV2):
                 finalize_v2_text(ctx, id, shape)
             elif isinstance(shape, StickyShape):
                 finalize_sticky(ctx, shape)
-            elif isinstance(shape, StickyShape_v2):
+            elif isinstance(shape, StickyShapeV2):
                 finalize_sticky_v2(ctx, shape)
-            elif isinstance(shape, XBox):
+            elif isinstance(shape, XBoxGeoShape):
                 finalize_x_box(ctx, id, shape)
-
-            elif isinstance(shape, GroupShape):
-                # Nothing to do? All group-related updates seem to be propagated to the
-                # individual shapes in the group.
-                pass
             else:
                 print(f"\tTldraw: Don't know how to render {shape}")
 
-            # Mark the finalized shape as cached
             self.shape_patterns[id] = ctx.pop_group()
 
         ctx.set_source(self.shape_patterns[id])

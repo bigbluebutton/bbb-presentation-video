@@ -12,8 +12,8 @@ from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.renderer.tldraw.shape import (
     FrameShape,
     LabelledShapeProto,
-    StickyShape_v2,
-    TextShape_v2,
+    StickyShapeV2,
+    TextShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.shape.text import (
     create_pango_layout,
@@ -42,7 +42,7 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def finalize_v2_text(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TextShape_v2
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TextShapeV2
 ) -> None:
     print(f"\tTldraw: Finalizing Text (v2): {id}")
 
@@ -187,7 +187,7 @@ def finalize_frame_name(
 
 
 def finalize_sticky_text_v2(
-    ctx: cairo.Context[CairoSomeSurface], shape: StickyShape_v2
+    ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2
 ) -> None:
     if shape.text is None or shape.text == "":
         return

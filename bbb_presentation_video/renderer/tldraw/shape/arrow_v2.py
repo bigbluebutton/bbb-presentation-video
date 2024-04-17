@@ -16,7 +16,7 @@ from bbb_presentation_video.renderer.tldraw.intersect import (
     intersect_circle_line_segment,
 )
 from bbb_presentation_video.renderer.tldraw.shape import (
-    ArrowShape_v2,
+    ArrowShapeV2,
     apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -94,7 +94,7 @@ def curved_arrow_head(
     ctx.line_to(right.x, right.y)
 
 
-def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShape_v2) -> float:
+def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShapeV2) -> float:
     style = shape.style
     start = shape.handles.start
     end = shape.handles.end
@@ -157,7 +157,7 @@ def get_midpoint(start: Position, end: Position, bend: float) -> Position:
 
 def curved_arrow(
     ctx: cairo.Context[CairoSomeSurface],
-    shape: ArrowShape_v2,
+    shape: ArrowShapeV2,
 ) -> float:
     style = shape.style
     start = shape.handles.start
@@ -220,7 +220,7 @@ def curved_arrow(
 def finalize_arrow_v2(
     ctx: cairo.Context[CairoSomeSurface],
     id: str,
-    shape: ArrowShape_v2,
+    shape: ArrowShapeV2,
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow (v2): {id}")
 

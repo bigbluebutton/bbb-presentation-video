@@ -8,7 +8,7 @@ from typing import TypeVar
 
 import cairo
 
-from bbb_presentation_video.renderer.tldraw.shape import EllipseGeo
+from bbb_presentation_video.renderer.tldraw.shape import EllipseGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -22,7 +22,7 @@ from bbb_presentation_video.renderer.utils import cairo_draw_ellipse
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeo) -> None:
+def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeoShape) -> None:
     radius = (shape.size.width / 2, shape.size.height / 2)
     style = shape.style
     stroke = STROKES[style.color]
@@ -56,7 +56,7 @@ def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeo) -> Non
 def finalize_geo_ellipse(
     ctx: cairo.Context[CairoSomeSurface],
     id: str,
-    shape: EllipseGeo,
+    shape: EllipseGeoShape,
 ) -> None:
     print(f"\tTldraw: Finalizing Ellipse (geo): {id}")
 

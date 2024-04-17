@@ -11,9 +11,9 @@ import cairo
 import perfect_freehand
 from perfect_freehand.types import StrokePoint
 
-from bbb_presentation_video.events.helpers import Position, Size
+from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import Rhombus
+from bbb_presentation_video.renderer.tldraw.shape import RhombusGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -26,7 +26,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def rhombus_stroke_points(id: str, shape: Rhombus) -> List[StrokePoint]:
+def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
 
@@ -77,7 +77,9 @@ def rhombus_stroke_points(id: str, shape: Rhombus) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_rhombus(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Rhombus) -> None:
+def draw_rhombus(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RhombusGeoShape
+) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
@@ -107,7 +109,7 @@ def draw_rhombus(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Rhombus) 
     ctx.stroke()
 
 
-def dash_rhombus(ctx: cairo.Context[CairoSomeSurface], shape: Rhombus) -> None:
+def dash_rhombus(ctx: cairo.Context[CairoSomeSurface], shape: RhombusGeoShape) -> None:
     style = shape.style
     width = max(0, shape.size.width)
     height = max(0, shape.size.height)
@@ -125,7 +127,7 @@ def dash_rhombus(ctx: cairo.Context[CairoSomeSurface], shape: Rhombus) -> None:
 
 
 def finalize_rhombus(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: Rhombus
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RhombusGeoShape
 ) -> None:
     print(f"\tTldraw: Finalizing Rhombus: {id}")
 

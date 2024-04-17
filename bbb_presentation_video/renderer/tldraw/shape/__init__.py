@@ -241,7 +241,7 @@ class RectangleShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class RectangleGeo(LabelledShapeProto):
+class RectangleGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
@@ -262,7 +262,7 @@ class EllipseShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class EllipseGeo(LabelledShapeProto):
+class EllipseGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
@@ -280,17 +280,17 @@ class TriangleShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TriangleGeo(LabelledShapeProto):
+class TriangleGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Diamond(LabelledShapeProto):
+class DiamondGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Trapezoid(LabelledShapeProto):
+class TrapezoidGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
@@ -306,7 +306,7 @@ class TextShape(RotatableShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TextShape_v2(RotatableShapeProto):
+class TextShapeV2(RotatableShapeProto):
     text: str = ""
 
     def update_from_data(self, data: ShapeData) -> None:
@@ -318,42 +318,42 @@ class TextShape_v2(RotatableShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Rhombus(LabelledShapeProto):
+class RhombusGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Hexagon(LabelledShapeProto):
+class HexagonGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Cloud(LabelledShapeProto):
+class CloudGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Star(LabelledShapeProto):
+class StarGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class Oval(LabelledShapeProto):
+class OvalGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class XBox(LabelledShapeProto):
+class XBoxGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class CheckBox(LabelledShapeProto):
+class CheckBoxGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class ArrowGeo(LabelledShapeProto):
+class ArrowGeoShape(LabelledShapeProto):
     size: Size = Size(1.0, 1.0)
 
 
@@ -377,7 +377,7 @@ class StickyShape(RotatableShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class StickyShape_v2(RotatableShapeProto):
+class StickyShapeV2(RotatableShapeProto):
     text: str = ""
     align: AlignStyle = AlignStyle.MIDDLE
     verticalAlign: AlignStyle = AlignStyle.MIDDLE
@@ -500,7 +500,7 @@ class ArrowShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class ArrowShape_v2(LabelledShapeProto):
+class ArrowShapeV2(LabelledShapeProto):
     bend: float = 0.0
     handles: ArrowHandles = attr.Factory(ArrowHandles)
     """Locations of the line start, end, and bend points."""
@@ -554,33 +554,33 @@ class LineShape(LabelledShapeProto):
 
 
 Shape = Union[
+    ArrowGeoShape,
     ArrowShape,
-    ArrowShape_v2,
-    Diamond,
+    ArrowShapeV2,
+    CheckBoxGeoShape,
+    CloudGeoShape,
+    DiamondGeoShape,
     DrawShape,
-    EllipseGeo,
+    EllipseGeoShape,
     EllipseShape,
     FrameShape,
     GroupShape,
+    HexagonGeoShape,
     HighlighterShape,
     LineShape,
-    RectangleGeo,
+    OvalGeoShape,
+    RectangleGeoShape,
     RectangleShape,
+    RhombusGeoShape,
+    StarGeoShape,
     StickyShape,
-    StickyShape_v2,
+    StickyShapeV2,
     TextShape,
-    TextShape_v2,
-    Trapezoid,
-    TriangleGeo,
+    TextShapeV2,
+    TrapezoidGeoShape,
+    TriangleGeoShape,
     TriangleShape,
-    Rhombus,
-    Hexagon,
-    Cloud,
-    Star,
-    Oval,
-    XBox,
-    CheckBox,
-    ArrowGeo,
+    XBoxGeoShape,
 ]
 
 
@@ -598,12 +598,12 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
         return TriangleShape.from_data(data)
     elif type == "arrow":
         if is_tldraw_v2:
-            return ArrowShape_v2.from_data(data)
+            return ArrowShapeV2.from_data(data)
         else:
             return ArrowShape.from_data(data)
     elif type == "text":
         if is_tldraw_v2:
-            return TextShape_v2.from_data(data)
+            return TextShapeV2.from_data(data)
         else:
             return TextShape.from_data(data)
     elif type == "group":
@@ -611,7 +611,7 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
     elif type == "sticky":
         return StickyShape.from_data(data)
     elif type == "note":
-        return StickyShape_v2.from_data(data)
+        return StickyShapeV2.from_data(data)
     elif type == "line":
         return LineShape.from_data(data)
     elif type == "highlight":
@@ -623,36 +623,36 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
             geo_type = GeoShape(data["props"]["geo"])
 
             if geo_type is GeoShape.DIAMOND:
-                return Diamond.from_data(data)
+                return DiamondGeoShape.from_data(data)
             if geo_type is GeoShape.ELLIPSE:
-                return EllipseGeo.from_data(data)
+                return EllipseGeoShape.from_data(data)
             if geo_type is GeoShape.RECTANGLE:
-                return RectangleGeo.from_data(data)
+                return RectangleGeoShape.from_data(data)
             if geo_type is GeoShape.TRIANGLE:
-                return TriangleGeo.from_data(data)
+                return TriangleGeoShape.from_data(data)
             if geo_type is GeoShape.TRAPEZOID:
-                return Trapezoid.from_data(data)
+                return TrapezoidGeoShape.from_data(data)
             if geo_type is GeoShape.RHOMBUS:
-                return Rhombus.from_data(data)
+                return RhombusGeoShape.from_data(data)
             if geo_type is GeoShape.HEXAGON:
-                return Hexagon.from_data(data)
+                return HexagonGeoShape.from_data(data)
             if geo_type is GeoShape.CLOUD:
-                return Cloud.from_data(data)
+                return CloudGeoShape.from_data(data)
             if geo_type is GeoShape.STAR:
-                return Star.from_data(data)
+                return StarGeoShape.from_data(data)
             if geo_type is GeoShape.OVAL:
-                return Oval.from_data(data)
+                return OvalGeoShape.from_data(data)
             if geo_type is GeoShape.CHECKBOX:
-                return CheckBox.from_data(data)
+                return CheckBoxGeoShape.from_data(data)
             if geo_type is GeoShape.XBOX:
-                return XBox.from_data(data)
+                return XBoxGeoShape.from_data(data)
             if geo_type in [
                 GeoShape.ARROW_DOWN,
                 GeoShape.ARROW_LEFT,
                 GeoShape.ARROW_RIGHT,
                 GeoShape.ARROW_UP,
             ]:
-                return ArrowGeo.from_data(data)
+                return ArrowGeoShape.from_data(data)
         raise Exception(f"Unknown geo shape: {type}")
     else:
         raise Exception(f"Unknown shape type: {type}")

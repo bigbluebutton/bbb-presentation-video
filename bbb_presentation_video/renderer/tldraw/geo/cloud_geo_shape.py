@@ -9,14 +9,14 @@ from __future__ import annotations
 import math
 from math import atan2, tau
 from random import Random
-from typing import Any, Callable, List, Optional, Tuple, TypedDict, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypedDict, TypeVar, Union
 
 import attr
 import cairo
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import Cloud
+from bbb_presentation_video.renderer.tldraw.shape import CloudGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -277,7 +277,9 @@ def calculate_angle(center: Position, point: Position) -> float:
     return angle
 
 
-def dash_cloud(ctx: cairo.Context[CairoSomeSurface], shape: Cloud, id: str) -> None:
+def dash_cloud(
+    ctx: cairo.Context[CairoSomeSurface], shape: CloudGeoShape, id: str
+) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -334,7 +336,9 @@ def dash_cloud(ctx: cairo.Context[CairoSomeSurface], shape: Cloud, id: str) -> N
     ctx.restore()
 
 
-def draw_cloud(ctx: cairo.Context[CairoSomeSurface], shape: Cloud, id: str) -> None:
+def draw_cloud(
+    ctx: cairo.Context[CairoSomeSurface], shape: CloudGeoShape, id: str
+) -> None:
     style = shape.style
     random = Random(id)
 
@@ -412,7 +416,9 @@ def draw_cloud(ctx: cairo.Context[CairoSomeSurface], shape: Cloud, id: str) -> N
     ctx.restore()
 
 
-def finalize_cloud(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Cloud) -> None:
+def finalize_cloud(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: CloudGeoShape
+) -> None:
     print(f"\tTldraw: Finalizing Cloud: {id}")
 
     ctx.rotate(shape.rotation)

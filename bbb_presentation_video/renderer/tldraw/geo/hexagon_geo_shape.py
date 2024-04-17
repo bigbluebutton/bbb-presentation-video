@@ -10,7 +10,7 @@ import cairo
 import perfect_freehand
 from perfect_freehand.types import StrokePoint
 
-from bbb_presentation_video.renderer.tldraw.shape import Hexagon
+from bbb_presentation_video.renderer.tldraw.shape import HexagonGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -25,7 +25,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 
-def hexagon_stroke_points(id: str, shape: Hexagon) -> List[StrokePoint]:
+def hexagon_stroke_points(id: str, shape: HexagonGeoShape) -> List[StrokePoint]:
     size = shape.size
 
     width = size.width
@@ -49,7 +49,9 @@ def hexagon_stroke_points(id: str, shape: Hexagon) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_hexagon(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Hexagon) -> None:
+def draw_hexagon(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: HexagonGeoShape
+) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
@@ -79,7 +81,7 @@ def draw_hexagon(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Hexagon) 
     ctx.stroke()
 
 
-def dash_hexagon(ctx: cairo.Context[CairoSomeSurface], shape: Hexagon) -> None:
+def dash_hexagon(ctx: cairo.Context[CairoSomeSurface], shape: HexagonGeoShape) -> None:
     style = shape.style
     width = max(0, shape.size.width)
     height = max(0, shape.size.height)
@@ -93,7 +95,7 @@ def dash_hexagon(ctx: cairo.Context[CairoSomeSurface], shape: Hexagon) -> None:
 
 
 def finalize_hexagon(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: Hexagon
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: HexagonGeoShape
 ) -> None:
     print(f"\tTldraw: Finalizing Hexagon: {id}")
 

@@ -10,8 +10,10 @@ import cairo
 import perfect_freehand
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.geo.rectangle import rectangle_stroke_points
-from bbb_presentation_video.renderer.tldraw.shape import XBox
+from bbb_presentation_video.renderer.tldraw.geo.rectangle_geo_shape import (
+    rectangle_stroke_points,
+)
+from bbb_presentation_video.renderer.tldraw.shape import XBoxGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -26,7 +28,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def overlay_x_cross(ctx: cairo.Context[CairoSomeSurface], shape: XBox) -> None:
+def overlay_x_cross(ctx: cairo.Context[CairoSomeSurface], shape: XBoxGeoShape) -> None:
     sw = STROKE_WIDTHS[shape.style.size]
 
     # Dimensions
@@ -53,7 +55,9 @@ def overlay_x_cross(ctx: cairo.Context[CairoSomeSurface], shape: XBox) -> None:
     ctx.stroke()
 
 
-def draw_x_box(ctx: cairo.Context[CairoSomeSurface], id: str, shape: XBox) -> None:
+def draw_x_box(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: XBoxGeoShape
+) -> None:
     style = shape.style
     is_filled = style.isFilled
     stroke = STROKES[style.color]
@@ -85,7 +89,7 @@ def draw_x_box(ctx: cairo.Context[CairoSomeSurface], id: str, shape: XBox) -> No
     overlay_x_cross(ctx, shape)
 
 
-def dash_x_box(ctx: cairo.Context[CairoSomeSurface], shape: XBox) -> None:
+def dash_x_box(ctx: cairo.Context[CairoSomeSurface], shape: XBoxGeoShape) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
@@ -102,7 +106,9 @@ def dash_x_box(ctx: cairo.Context[CairoSomeSurface], shape: XBox) -> None:
     overlay_x_cross(ctx, shape)
 
 
-def finalize_x_box(ctx: cairo.Context[CairoSomeSurface], id: str, shape: XBox) -> None:
+def finalize_x_box(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: XBoxGeoShape
+) -> None:
     print(f"\tTldraw: Finalizing x-box: {id}")
 
     ctx.rotate(shape.rotation)

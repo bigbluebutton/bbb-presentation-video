@@ -9,7 +9,7 @@ from typing import TypeVar
 import cairo
 
 from bbb_presentation_video.events.helpers import Size
-from bbb_presentation_video.renderer.tldraw.shape import StickyShape_v2
+from bbb_presentation_video.renderer.tldraw.shape import StickyShapeV2
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_sticky_text_v2
 from bbb_presentation_video.renderer.tldraw.utils import (
     STICKY_FILLS,
@@ -21,7 +21,7 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def finalize_sticky_v2(
-    ctx: cairo.Context[CairoSomeSurface], shape: StickyShape_v2
+    ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2
 ) -> None:
     style = shape.style
 

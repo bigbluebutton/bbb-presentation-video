@@ -12,7 +12,7 @@ import perfect_freehand
 from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.shape import Star
+from bbb_presentation_video.renderer.tldraw.shape import StarGeoShape
 from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
@@ -47,7 +47,7 @@ def get_star_points(w: float, h: float, n: int) -> List[Position]:
     return points
 
 
-def star_stroke_points(id: str, shape: Star) -> List[StrokePoint]:
+def star_stroke_points(id: str, shape: StarGeoShape) -> List[StrokePoint]:
     size = shape.size
 
     width = size.width
@@ -79,7 +79,9 @@ def star_stroke_points(id: str, shape: Star) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_star(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Star) -> None:
+def draw_star(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: StarGeoShape
+) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
@@ -109,7 +111,7 @@ def draw_star(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Star) -> Non
     ctx.stroke()
 
 
-def dash_star(ctx: cairo.Context[CairoSomeSurface], shape: Star) -> None:
+def dash_star(ctx: cairo.Context[CairoSomeSurface], shape: StarGeoShape) -> None:
     style = shape.style
     width = max(0, shape.size.width)
     height = max(0, shape.size.height)
@@ -120,7 +122,9 @@ def dash_star(ctx: cairo.Context[CairoSomeSurface], shape: Star) -> None:
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_star(ctx: cairo.Context[CairoSomeSurface], id: str, shape: Star) -> None:
+def finalize_star(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: StarGeoShape
+) -> None:
     print(f"\tTldraw: Finalizing Star: {id}")
 
     style = shape.style
