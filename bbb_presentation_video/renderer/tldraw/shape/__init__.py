@@ -59,6 +59,9 @@ class BaseShapeProto(Protocol):
         if "childIndex" in data:
             self.childIndex = data["childIndex"]
 
+        if "children" in data:
+            self.children = data["children"]
+
         if "point" in data:
             point = data["point"]
             self.point = Position(point[0], point[1])
@@ -142,8 +145,6 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
             self.label = data["label"] if data["label"] != "" else None
         if "labelPoint" in data:
             self.labelPoint = Position(data["labelPoint"])
-        if "children" in data:
-            self.children = data["children"]
         if "props" in data:
             props = data["props"]
 
@@ -242,6 +243,7 @@ class RectangleShape(LabelledShapeProto):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class RectangleGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
@@ -263,13 +265,17 @@ class EllipseShape(LabelledShapeProto):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class EllipseGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class FrameShape(LabelledShapeProto):
-    label: str = "Frame"
+    # BaseShapeProto
     children: List[Shape] = []
+    # LabelledShapeProto
+    label: str = "Frame"
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
@@ -281,16 +287,19 @@ class TriangleShape(LabelledShapeProto):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class TriangleGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class DiamondGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class TrapezoidGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
@@ -319,41 +328,49 @@ class TextShapeV2(RotatableShapeProto):
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class RhombusGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class HexagonGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class CloudGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class StarGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class OvalGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class XBoxGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class CheckBoxGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowGeoShape(LabelledShapeProto):
+    # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
