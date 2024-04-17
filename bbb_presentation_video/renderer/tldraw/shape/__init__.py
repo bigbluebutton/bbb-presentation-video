@@ -128,9 +128,6 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
     verticalAlign: AlignStyle = AlignStyle.MIDDLE
     """Vertical alignment of the label."""
 
-    geo: GeoShape = GeoShape.NONE
-    """Which geo type the shape is, if any."""
-
     def label_offset(self) -> Position:
         """Calculate the offset needed when drawing the label for most shapes."""
         return Position(
@@ -154,11 +151,24 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
                 self.align = AlignStyle(props["align"])
             if "verticalAlign" in props:
                 self.verticalAlign = AlignStyle(props["verticalAlign"])
-            if "geo" in props:
-                self.geo = GeoShape(props["geo"])
             if "w" in props and "h" in props and "name" in props:
                 if not props["name"] == "":
                     self.label = props["name"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class GeoShapeProto(LabelledShapeProto, Protocol):
+    geo: GeoShape = GeoShape.NONE
+    """Which geo type the shape is"""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+
+            if "geo" in props:
+                self.geo = GeoShape(props["geo"])
 
 
 def shape_sort_key(shape: BaseShapeProto) -> float:
@@ -242,7 +252,7 @@ class RectangleShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class RectangleGeoShape(LabelledShapeProto):
+class RectangleGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
@@ -264,7 +274,7 @@ class EllipseShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class EllipseGeoShape(LabelledShapeProto):
+class EllipseGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
@@ -286,19 +296,19 @@ class TriangleShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TriangleGeoShape(LabelledShapeProto):
+class TriangleGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class DiamondGeoShape(LabelledShapeProto):
+class DiamondGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class TrapezoidGeoShape(LabelledShapeProto):
+class TrapezoidGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
@@ -327,49 +337,49 @@ class TextShapeV2(RotatableShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class RhombusGeoShape(LabelledShapeProto):
+class RhombusGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class HexagonGeoShape(LabelledShapeProto):
+class HexagonGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class CloudGeoShape(LabelledShapeProto):
+class CloudGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class StarGeoShape(LabelledShapeProto):
+class StarGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class OvalGeoShape(LabelledShapeProto):
+class OvalGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class XBoxGeoShape(LabelledShapeProto):
+class XBoxGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class CheckBoxGeoShape(LabelledShapeProto):
+class CheckBoxGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
-class ArrowGeoShape(LabelledShapeProto):
+class ArrowGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
