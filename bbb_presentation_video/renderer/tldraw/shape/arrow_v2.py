@@ -3,22 +3,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
-
-from math import tau
 from typing import TypeVar
 
 import cairo
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.intersect import (
-    intersect_circle_line_segment,
-)
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShapeV2,
     apply_shape_rotation,
 )
-from bbb_presentation_video.renderer.tldraw.shape.arrow import curved_arrow_head, curved_arrow_shaft
+from bbb_presentation_video.renderer.tldraw.shape.arrow import (
+    curved_arrow_head,
+    curved_arrow_shaft,
+    straight_arrow_head,
+)
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
     STROKES,
@@ -30,25 +29,6 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
-def straight_arrow_head(
-    ctx: cairo.Context[CairoSomeSurface],
-    a: Position,
-    b: Position,
-    r: float,
-) -> None:
-    ints = intersect_circle_line_segment(a, r, a, b).points
-    if len(ints) == 0:
-        print("\t\tCould not find an intersection for the arrow head.")
-        left = a
-        right = a
-    else:
-        int = ints[0]
-        left = Position(vec.rot_with(int, a, tau / 12))
-        right = Position(vec.rot_with(int, a, -tau / 12))
-
-    ctx.move_to(left.x, left.y)
-    ctx.line_to(a.x, a.y)
-    ctx.line_to(right.x, right.y)
 
 def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShapeV2) -> float:
     style = shape.style

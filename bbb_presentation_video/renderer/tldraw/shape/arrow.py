@@ -146,8 +146,8 @@ def straight_arrow_head(
         right = a
     else:
         int = ints[0]
-        left = Position(vec.rot_with(int, a, pi / 6))
-        right = Position(vec.rot_with(int, a, -pi / 6))
+        left = Position(vec.rot_with(int, a, tau / 12))
+        right = Position(vec.rot_with(int, a, -tau / 12))
 
     ctx.move_to(left.x, left.y)
     ctx.line_to(a.x, a.y)

@@ -135,7 +135,9 @@ def draw_rectangle(
     ctx.stroke()
 
 
-def dash_rectangle(ctx: cairo.Context[CairoSomeSurface], shape: RectangleGeoShape) -> None:
+def dash_rectangle(
+    ctx: cairo.Context[CairoSomeSurface], shape: RectangleGeoShape
+) -> None:
     style = shape.style
 
     w = max(0, shape.size.width)
