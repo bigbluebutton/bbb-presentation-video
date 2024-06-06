@@ -24,7 +24,7 @@ jobs:
         python-version: [ "3.8" ]
         include:
           - python-version: "3.8"
-            ubuntu-codename: "focal"
+            ubuntu-codename: "jammy"
     steps:
 
       - name: Checkout repository

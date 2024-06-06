@@ -43,7 +43,7 @@ With the venv activated, you can use `pip` to install the required python
 modules and development tools:
 
 ```sh
-pip install --require-virtualenv --upgrade -r requirements-dev.txt -c constraints-ubuntu-focal.txt
+pip install --require-virtualenv --upgrade -r requirements-dev.txt -c constraints-ubuntu-jammy.txt
 ```
 
 (You should re-run this occasionally to pull in updates to the development tools.)

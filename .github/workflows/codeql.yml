@@ -51,8 +51,8 @@ jobs:
 
     - name: Install package and dependencies
       run: |
-        pip install -r requirements-dev.txt -c constraints-ubuntu-focal.txt
-        pip install -e . -c constraints-ubuntu-focal.txt
+        pip install -r requirements-dev.txt -c constraints-ubuntu-jammy.txt
+        pip install -e . -c constraints-ubuntu-jammy.txt
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
