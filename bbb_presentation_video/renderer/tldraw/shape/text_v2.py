@@ -21,6 +21,7 @@ from bbb_presentation_video.renderer.tldraw.shape.text import (
     show_layout_by_lines,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
+    CANVAS,
     FONT_SIZES,
     STICKY_FONT_SIZES,
     STICKY_PADDING,
@@ -32,11 +33,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     SizeStyle,
 )
 
-gi.require_version("Pango", "1.0")
-gi.require_version("PangoCairo", "1.0")
-
-# Set DPI to "72" so we're working directly in Pango point units.
-DPI: float = 72.0
+TEXT_OUTLINE_WIDTH: float = 2.0
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -47,32 +44,34 @@ def finalize_v2_text(
     print(f"\tTldraw: Finalizing Text (v2): {id}")
 
     style = shape.style
-    ctx.rotate(shape.rotation)
-
     stroke = STROKES[style.color]
     font_size = FONT_SIZES[style.size]
+
+    ctx.rotate(shape.rotation)
+
+    # A group is used so the text border and fill can be drawn opaque (to avoid over-draw issues), then
+    # be blended with alpha afterwards
+    ctx.push_group()
 
     layout = create_pango_layout(ctx, style, font_size)
     layout.set_text(shape.text, -1)
 
-    border_thickness = 2
-    border_color = (1, 1, 1, 1)  # White
-    # Draw the border by offsetting the text in several directions
-    offsets = [
-        (-border_thickness, -border_thickness),
-        (border_thickness, -border_thickness),
-        (-border_thickness, border_thickness),
-        (border_thickness, border_thickness),
-    ]
+    # Draw text border (outside stroke)
+    ctx.save()
+    ctx.set_source_rgb(*CANVAS)
+    ctx.set_line_width(TEXT_OUTLINE_WIDTH * 2)
+    ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+    show_layout_by_lines(ctx, layout, padding=4, do_path=True)
+    ctx.stroke()
+    ctx.restore()
 
-    for dx, dy in offsets:
-        ctx.translate(dx, dy)
-        ctx.set_source_rgba(*border_color)
-        show_layout_by_lines(ctx, layout, padding=4)
-        ctx.translate(-dx, -dy)  # Reset translation for next iteration
-
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    # Draw text
+    ctx.set_source_rgb(*stroke)
     show_layout_by_lines(ctx, layout, padding=4)
+
+    # Composite result with opacity applied
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(style.opacity)
 
 
 def finalize_v2_label(
@@ -88,10 +87,11 @@ def finalize_v2_label(
 
     style = shape.style
     stroke = STROKES[ColorStyle.BLACK]  # v2 labels are always black
-    border_color = (1, 1, 1, 1)  # White
     font_size = FONT_SIZES[style.size]
 
-    ctx.save()
+    # A group is used so the text border and fill can be drawn opaque (to avoid over-draw issues), then
+    # be blended with alpha afterwards
+    ctx.push_group()
 
     # Create layout aligning the text horizontally within the shape
     style.textAlign = shape.align
@@ -116,30 +116,24 @@ def finalize_v2_label(
     else:
         y = bounds.height / 2 - label_size.height / 2 + offset.y
 
-    border_thickness = 2
+    ctx.translate(x, y)
 
-    # Draw the border by offsetting the text in several directions
-    offsets = [
-        (-border_thickness, -border_thickness),
-        (border_thickness, -border_thickness),
-        (-border_thickness, border_thickness),
-        (border_thickness, border_thickness),
-    ]
-
-    for dx, dy in offsets:
-        ctx.translate(x + dx, y + dy)
-        ctx.set_source_rgba(*border_color)
-        show_layout_by_lines(ctx, layout, padding=4)
-        ctx.translate(-x - dx, -y - dy)  # Reset translation for next iteration
+    # Draw text border (outside stroke)
+    ctx.save()
+    ctx.set_source_rgb(*CANVAS)
+    ctx.set_line_width(TEXT_OUTLINE_WIDTH * 2)
+    ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+    show_layout_by_lines(ctx, layout, padding=4, do_path=True)
+    ctx.stroke()
+    ctx.restore()
 
     # Draw the original text on top
-    ctx.translate(x, y)
-    ctx.set_source_rgba(
-        stroke.r, stroke.g, stroke.b, style.opacity
-    )  # Set original text color
+    ctx.set_source_rgb(*stroke)
     show_layout_by_lines(ctx, layout, padding=4)
 
-    ctx.restore()
+    # Composite result with opacity applied
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(style.opacity)
 
     return label_size
 

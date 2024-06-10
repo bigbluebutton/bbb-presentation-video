@@ -94,7 +94,11 @@ def create_pango_layout(
 
 
 def show_layout_by_lines(
-    ctx: cairo.Context[CairoSomeSurface], layout: Pango.Layout, *, padding: float = 0
+    ctx: cairo.Context[CairoSomeSurface],
+    layout: Pango.Layout,
+    *,
+    padding: float = 0,
+    do_path: bool = False,
 ) -> None:
     """Show a Pango Layout line by line to manually handle CSS-style line height."""
     # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
@@ -128,7 +132,10 @@ def show_layout_by_lines(
 
         ctx.save()
         ctx.translate(offset_x, offset_y)
-        PangoCairo.show_layout_line(ctx, line)
+        if do_path:
+            PangoCairo.layout_line_path(ctx, line)
+        else:
+            PangoCairo.show_layout_line(ctx, line)
         ctx.restore()
 
         ctx.translate(0, line_height)

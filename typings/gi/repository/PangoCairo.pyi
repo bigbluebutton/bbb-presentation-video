@@ -42,6 +42,16 @@ def create_context(cr: cairo.Context[cairo._SomeSurface]) -> Pango.Context:
     directly, you can use :func:`create_layout` instead.
     """
 
+def layout_line_path(
+    cr: cairo.Context[cairo._SomeSurface], line: Pango.LayoutLine
+) -> None:
+    """Adds the text in :class:`Pango.LayoutLine` to the current path in the specified cairo context.
+
+    The origin of the glyphs (the left edge of the line) will be at the current point of the cairo context.
+
+    Since: 1.10
+    """
+
 def show_layout(
     cr: cairo.Context[cairo._SomeSurface], layout: Pango.Layout
 ) -> None: ...
