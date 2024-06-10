@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
@@ -25,6 +25,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STICKY_TEXT_COLOR,
     STROKES,
     AlignStyle,
+    ColorStyle,
     Style,
 )
 
@@ -93,7 +94,11 @@ def create_pango_layout(
 
 
 def show_layout_by_lines(
-    ctx: cairo.Context[CairoSomeSurface], layout: Pango.Layout, *, padding: float = 0
+    ctx: cairo.Context[CairoSomeSurface],
+    layout: Pango.Layout,
+    *,
+    padding: float = 0,
+    do_path: bool = False,
 ) -> None:
     """Show a Pango Layout line by line to manually handle CSS-style line height."""
     # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
@@ -127,7 +132,10 @@ def show_layout_by_lines(
 
         ctx.save()
         ctx.translate(offset_x, offset_y)
-        PangoCairo.show_layout_line(ctx, line)
+        if do_path:
+            PangoCairo.layout_line_path(ctx, line)
+        else:
+            PangoCairo.show_layout_line(ctx, line)
         ctx.restore()
 
         ctx.translate(0, line_height)

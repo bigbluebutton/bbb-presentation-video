@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from math import hypot
 from random import Random
 from typing import List, TypeVar
 
@@ -14,19 +13,16 @@ from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import (
-    TriangleShape,
-    apply_shape_rotation,
-)
-from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.shape import TriangleGeoShape
+from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    FILLS,
     STROKE_WIDTHS,
     STROKES,
     DashStyle,
+    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
-    get_perfect_dash_props,
+    finalize_geo_path,
 )
 
 
@@ -35,7 +31,7 @@ def triangle_centroid(size: Size) -> Position:
     return (Position(w / 2, 0) + Position(w, h) + Position(0, h)) / 3
 
 
-def triangle_stroke_points(id: str, shape: TriangleShape) -> List[StrokePoint]:
+def triangle_stroke_points(id: str, shape: TriangleGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
     stroke_width = STROKE_WIDTHS[shape.style.size]
@@ -83,23 +79,18 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def draw_triangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleShape
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeoShape
 ) -> None:
     style = shape.style
 
     stroke = STROKES[style.color]
     stroke_width = STROKE_WIDTHS[style.size]
-    fill = FILLS[style.color]
 
     stroke_points = triangle_stroke_points(id, shape)
 
     if style.isFilled:
-        ctx.save()
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
-
-        ctx.set_source_rgb(fill.r, fill.g, fill.b)
-        ctx.fill()
-        ctx.restore()
+        apply_geo_fill(ctx, style)
 
     stroke_outline_points = perfect_freehand.get_stroke_outline_points(
         stroke_points,
@@ -111,7 +102,7 @@ def draw_triangle(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
+    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -119,57 +110,33 @@ def draw_triangle(
     ctx.stroke()
 
 
-def dash_triangle(ctx: cairo.Context[CairoSomeSurface], shape: TriangleShape) -> None:
+def dash_triangle(
+    ctx: cairo.Context[CairoSomeSurface], shape: TriangleGeoShape
+) -> None:
     style = shape.style
 
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size] * 1.618
-    fill = FILLS[style.color]
+    w = max(0, shape.size.width)
+    h = max(0, shape.size.height)
 
-    sw = 1 + stroke_width
-    w = max(0, shape.size.width - sw / 2)
-    h = max(0, shape.size.height - sw / 2)
-
-    side_width = hypot(w / 2, h)
-
-    if style.isFilled:
-        ctx.save()
-        ctx.move_to(w / 2, 0)
-        ctx.line_to(w, h)
-        ctx.line_to(0, h)
-        ctx.close_path()
-        ctx.set_source_rgb(fill.r, fill.g, fill.b)
-        ctx.fill()
-        ctx.restore()
-
-    strokes = [
-        (Position(w / 2, 0), Position(w, h), side_width),
-        (Position(w, h), Position(0, h), w),
-        (Position(0, h), Position(w / 2, 0), side_width),
+    points = [
+        Position(w / 2, 0),
+        Position(w, h),
+        Position(0, h),
+        Position(w / 2, 0),
     ]
-    ctx.set_line_width(sw)
-    ctx.set_line_cap(cairo.LineCap.ROUND)
-    ctx.set_line_join(cairo.LineJoin.ROUND)
-    ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
-    for start, end, length in strokes:
-        ctx.move_to(start.x, start.y)
-        ctx.line_to(end.x, end.y)
-        dash_array, dash_offset = get_perfect_dash_props(
-            length, stroke_width, style.dash
-        )
-        ctx.set_dash(dash_array, dash_offset)
-        ctx.stroke()
+
+    finalize_geo_path(ctx, points, style)
 
 
-def finalize_triangle(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleShape
+def finalize_geo_triangle(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TriangleGeoShape
 ) -> None:
-    print(f"\tTldraw: Finalizing Triangle: {id}")
+    print(f"\tTldraw: Finalizing Triangle (geo): {id}")
 
     style = shape.style
     size = shape.size
 
-    apply_shape_rotation(ctx, shape)
+    ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
         draw_triangle(ctx, id, shape)
@@ -180,4 +147,5 @@ def finalize_triangle(
     centeroid = triangle_centroid(size)
     offset_y = (centeroid.y - center.y) * 0.72
     offset = shape.label_offset() + Position(0, offset_y)
-    finalize_label(ctx, shape, offset=offset)
+
+    finalize_v2_label(ctx, shape, offset=offset)

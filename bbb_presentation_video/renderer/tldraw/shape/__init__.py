@@ -1,17 +1,25 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import attr
 import cairo
+from packaging.version import Version
 
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import HandleData, ShapeData
-from bbb_presentation_video.renderer.tldraw.utils import Decoration, DrawPoints, Style
+from bbb_presentation_video.renderer.tldraw.utils import (
+    AlignStyle,
+    Decoration,
+    DrawPoints,
+    GeoShape,
+    SplineType,
+    Style,
+)
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 
@@ -20,12 +28,20 @@ BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 class BaseShapeProto(Protocol):
     """The base class for all tldraw shapes."""
 
+    id: str = ""
+    """ID of the shape."""
     style: Style = attr.Factory(Style)
     """Style related properties, such as color, line size, font."""
     childIndex: float = 1
     """Unsure: possibly z-position of this shape within a group?"""
     point: Position = Position(0, 0)
     """Position of the origin of the shape."""
+    opacity: float = 1.0
+    """Opacity of the shape."""
+    parentId: str = ""
+    """ID of the parent shape."""
+    children: List[Shape] = []
+    """List of children shapes."""
 
     @classmethod
     def from_data(cls: Type[BaseShapeSelf], data: ShapeData) -> BaseShapeSelf:
@@ -36,11 +52,28 @@ class BaseShapeProto(Protocol):
     def update_from_data(self, data: ShapeData) -> None:
         if "style" in data:
             self.style.update_from_data(data["style"])
+
+        if "props" in data:
+            self.style.update_from_data(data["props"])
+
         if "childIndex" in data:
             self.childIndex = data["childIndex"]
+
+        if "children" in data:
+            self.children = data["children"]
+
         if "point" in data:
             point = data["point"]
             self.point = Position(point[0], point[1])
+
+        elif "x" in data and "y" in data:
+            self.point = Position(data["x"], data["y"])
+
+        if "opacity" in data:
+            self.style.opacity = data["opacity"]
+
+        if "parentId" in data:
+            self.parentId = data["parentId"]
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -55,6 +88,17 @@ class SizedShapeProto(BaseShapeProto, Protocol):
 
         if "size" in data:
             self.size = Size(data["size"])
+
+        if "props" in data:
+            props = data["props"]
+
+            if "w" in props and "h" in props:
+                growY = 0.0
+
+                if "growY" in props:
+                    growY = props["growY"]
+
+                self.size = Size(props["w"], props["h"] + growY)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -78,6 +122,12 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
     labelPoint: Position = Position(0.5, 0.5)
     """The position of the label within the shape. Ranges from 0 to 1."""
 
+    align: AlignStyle = AlignStyle.MIDDLE
+    """Horizontal alignment of the label."""
+
+    verticalAlign: AlignStyle = AlignStyle.MIDDLE
+    """Vertical alignment of the label."""
+
     def label_offset(self) -> Position:
         """Calculate the offset needed when drawing the label for most shapes."""
         return Position(
@@ -92,6 +142,33 @@ class LabelledShapeProto(RotatableShapeProto, Protocol):
             self.label = data["label"] if data["label"] != "" else None
         if "labelPoint" in data:
             self.labelPoint = Position(data["labelPoint"])
+        if "props" in data:
+            props = data["props"]
+
+            if "text" in props:
+                self.label = props["text"]
+            if "align" in props:
+                self.align = AlignStyle(props["align"])
+            if "verticalAlign" in props:
+                self.verticalAlign = AlignStyle(props["verticalAlign"])
+            if "w" in props and "h" in props and "name" in props:
+                if not props["name"] == "":
+                    self.label = props["name"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class GeoShapeProto(LabelledShapeProto, Protocol):
+    geo: GeoShape = GeoShape.NONE
+    """Which geo type the shape is"""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+
+            if "geo" in props:
+                self.geo = GeoShape(props["geo"])
 
 
 def shape_sort_key(shape: BaseShapeProto) -> float:
@@ -115,12 +192,67 @@ class DrawShape(RotatableShapeProto):
                     self.points.append((point[0], point[1], point[2]))
                 else:
                     self.points.append((point[0], point[1]))
+
+        elif "props" in data and "segments" in data["props"]:
+            self.points = []
+            for segment in data["props"]["segments"]:
+                if (
+                    isinstance(segment, dict)
+                    and "points" in segment
+                    and isinstance(segment["points"], list)
+                ):
+                    for point in segment["points"]:
+                        if isinstance(point, dict) and "x" in point and "y" in point:
+                            if "z" in point:
+                                self.points.append((point["x"], point["y"], point["z"]))
+                            else:
+                                self.points.append((point["x"], point["y"]))
+
         if "isComplete" in data:
             self.isComplete = data["isComplete"]
+        elif "props" in data and "isComplete" in data["props"]:
+            self.isComplete = data["props"]["isComplete"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class HighlighterShape(RotatableShapeProto):
+    points: DrawPoints = []
+    """List of input points from the drawing tool."""
+    isComplete: bool = False
+    """Whether the last point in the line is present (pen lifted)."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data and "segments" in data["props"]:
+            self.points = []
+            for segment in data["props"]["segments"]:
+                if (
+                    isinstance(segment, dict)
+                    and "points" in segment
+                    and isinstance(segment["points"], list)
+                ):
+                    for point in segment["points"]:
+                        if isinstance(point, dict) and "x" in point and "y" in point:
+                            if "z" in point:
+                                self.points.append((point["x"], point["y"], point["z"]))
+                            else:
+                                self.points.append((point["x"], point["y"]))
+
+        if "isComplete" in data:
+            self.isComplete = data["isComplete"]
+        elif "props" in data and "isComplete" in data["props"]:
+            self.isComplete = data["props"]["isComplete"]
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class RectangleShape(LabelledShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class RectangleGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
@@ -142,7 +274,41 @@ class EllipseShape(LabelledShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
+class EllipseGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class FrameShape(LabelledShapeProto):
+    # BaseShapeProto
+    children: List[Shape] = []
+    # LabelledShapeProto
+    label: str = "Frame"
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
 class TriangleShape(LabelledShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class TriangleGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class DiamondGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class TrapezoidGeoShape(GeoShapeProto):
     # SizedShapeProto
     size: Size = Size(1.0, 1.0)
 
@@ -156,6 +322,66 @@ class TextShape(RotatableShapeProto):
 
         if "text" in data:
             self.text = data["text"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class TextShapeV2(RotatableShapeProto):
+    text: str = ""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            if "text" in data["props"]:
+                self.text = data["props"]["text"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class RhombusGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class HexagonGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class CloudGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class StarGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class OvalGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class XBoxGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class CheckBoxGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class ArrowGeoShape(GeoShapeProto):
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -175,6 +401,30 @@ class StickyShape(RotatableShapeProto):
 
         if "text" in data:
             self.text = data["text"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class StickyShapeV2(RotatableShapeProto):
+    text: str = ""
+    align: AlignStyle = AlignStyle.MIDDLE
+    verticalAlign: AlignStyle = AlignStyle.MIDDLE
+    size: Size = Size(200.0, 200.0)
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+            if "text" in props:
+                self.text = props["text"]
+            if "align" in props:
+                self.align = AlignStyle(props["align"])
+            if "verticalAlign" in props:
+                self.verticalAlign = AlignStyle(props["verticalAlign"])
+            if "growY" in props:
+                self.size = Size(self.size.width, self.size.height + props["growY"])
+                if props["growY"] != 0:
+                    self.verticalAlign = AlignStyle.START
 
 
 @attr.s(order=False, slots=True, auto_attribs=True, init=False)
@@ -208,6 +458,43 @@ class ArrowHandles:
             pass
 
 
+@attr.s(order=False, slots=True, auto_attribs=True, init=False)
+class LineHandles:
+    start: Position
+    controlPoint: Position
+    end: Position
+
+    def __init__(
+        self,
+        start: Position = Position(0.0, 0.0),
+        end: Position = Position(1.0, 1.0),
+        controlPoint: Position = Position(0.5, 0.5),
+    ) -> None:
+        self.start = start
+        self.controlPoint = controlPoint
+        self.end = end
+
+    def update_from_data(self, data: Dict[str, HandleData]) -> None:
+
+        if "start" in data:
+            if "point" in data["start"]:
+                self.start = Position(data["start"]["point"])
+            elif "x" in data["start"] and "y" in data["start"]:
+                self.start = Position(data["start"]["x"], data["start"]["y"])
+
+        if "end" in data:
+            if "point" in data["end"]:
+                self.end = Position(data["end"]["point"])
+            elif "x" in data["end"] and "y" in data["end"]:
+                self.end = Position(data["end"]["x"], data["end"]["y"])
+
+        if "handle:a1V" in data:
+            if "x" in data["handle:a1V"] and "y" in data["handle:a1V"]:
+                self.controlPoint = Position(
+                    data["handle:a1V"]["x"], data["handle:a1V"]["y"]
+                )
+
+
 @attr.s(order=False, slots=True, auto_attribs=True)
 class ArrowDecorations:
     start: Optional[Decoration] = None
@@ -239,20 +526,95 @@ class ArrowShape(LabelledShapeProto):
             self.decorations.update_from_data(data["decorations"])
 
 
+@attr.s(order=False, slots=True, auto_attribs=True)
+class ArrowShapeV2(LabelledShapeProto):
+    bend: float = 0.0
+    handles: ArrowHandles = attr.Factory(ArrowHandles)
+    """Locations of the line start, end, and bend points."""
+    decorations: ArrowDecorations = attr.Factory(ArrowDecorations)
+    """Whether the arrow head decorations are present on start/end of the line."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+
+            if "bend" in props:
+                self.bend = props["bend"]
+            if "start" in props:
+                if "x" in props["start"] and "y" in props["start"]:
+                    self.handles.start = Position(
+                        props["start"]["x"], props["start"]["y"]
+                    )
+            if "end" in props:
+                if "x" in props["end"] and "y" in props["end"]:
+                    self.handles.end = Position(props["end"]["x"], props["end"]["y"])
+            if "arrowheadStart" in props:
+                self.decorations.start = Decoration(props["arrowheadStart"])
+            if "arrowheadEnd" in props:
+                self.decorations.end = Decoration(props["arrowheadEnd"])
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class LineShape(LabelledShapeProto):
+    handles: LineHandles = attr.Factory(LineHandles)
+    """Locations of the line start, end, and bend points."""
+    spline: SplineType = SplineType.NONE
+    """Whether a bent line is straight or curved."""
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            if "handles" in data["props"]:
+                self.handles.update_from_data(data["props"]["handles"])
+            if "spline" in data["props"]:
+                spline_prop = data["props"]["spline"]
+
+                if spline_prop == "line":
+                    self.spline = SplineType.LINE
+                elif spline_prop == "cubic":
+                    self.spline = SplineType.CUBIC
+                else:
+                    self.spline = SplineType.NONE
+
+
 Shape = Union[
-    DrawShape,
-    RectangleShape,
-    EllipseShape,
-    TriangleShape,
+    ArrowGeoShape,
     ArrowShape,
-    TextShape,
+    ArrowShapeV2,
+    CheckBoxGeoShape,
+    CloudGeoShape,
+    DiamondGeoShape,
+    DrawShape,
+    EllipseGeoShape,
+    EllipseShape,
+    FrameShape,
     GroupShape,
+    HexagonGeoShape,
+    HighlighterShape,
+    LineShape,
+    OvalGeoShape,
+    RectangleGeoShape,
+    RectangleShape,
+    RhombusGeoShape,
+    StarGeoShape,
     StickyShape,
+    StickyShapeV2,
+    TextShape,
+    TextShapeV2,
+    TrapezoidGeoShape,
+    TriangleGeoShape,
+    TriangleShape,
+    XBoxGeoShape,
 ]
 
 
-def parse_shape_from_data(data: ShapeData) -> Shape:
+def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
     type = data["type"]
+    is_tldraw_v2 = bbb_version >= Version("3.0.0")
+
     if type == "draw":
         return DrawShape.from_data(data)
     elif type == "rectangle":
@@ -262,13 +624,63 @@ def parse_shape_from_data(data: ShapeData) -> Shape:
     elif type == "triangle":
         return TriangleShape.from_data(data)
     elif type == "arrow":
-        return ArrowShape.from_data(data)
+        if is_tldraw_v2:
+            return ArrowShapeV2.from_data(data)
+        else:
+            return ArrowShape.from_data(data)
     elif type == "text":
-        return TextShape.from_data(data)
+        if is_tldraw_v2:
+            return TextShapeV2.from_data(data)
+        else:
+            return TextShape.from_data(data)
     elif type == "group":
         return GroupShape.from_data(data)
     elif type == "sticky":
         return StickyShape.from_data(data)
+    elif type == "note":
+        return StickyShapeV2.from_data(data)
+    elif type == "line":
+        return LineShape.from_data(data)
+    elif type == "highlight":
+        return HighlighterShape.from_data(data)
+    elif type == "frame":
+        return FrameShape.from_data(data)
+    elif type == "geo":
+        if "geo" in data["props"]:
+            geo_type = GeoShape(data["props"]["geo"])
+
+            if geo_type is GeoShape.DIAMOND:
+                return DiamondGeoShape.from_data(data)
+            if geo_type is GeoShape.ELLIPSE:
+                return EllipseGeoShape.from_data(data)
+            if geo_type is GeoShape.RECTANGLE:
+                return RectangleGeoShape.from_data(data)
+            if geo_type is GeoShape.TRIANGLE:
+                return TriangleGeoShape.from_data(data)
+            if geo_type is GeoShape.TRAPEZOID:
+                return TrapezoidGeoShape.from_data(data)
+            if geo_type is GeoShape.RHOMBUS:
+                return RhombusGeoShape.from_data(data)
+            if geo_type is GeoShape.HEXAGON:
+                return HexagonGeoShape.from_data(data)
+            if geo_type is GeoShape.CLOUD:
+                return CloudGeoShape.from_data(data)
+            if geo_type is GeoShape.STAR:
+                return StarGeoShape.from_data(data)
+            if geo_type is GeoShape.OVAL:
+                return OvalGeoShape.from_data(data)
+            if geo_type is GeoShape.CHECKBOX:
+                return CheckBoxGeoShape.from_data(data)
+            if geo_type is GeoShape.XBOX:
+                return XBoxGeoShape.from_data(data)
+            if geo_type in [
+                GeoShape.ARROW_DOWN,
+                GeoShape.ARROW_LEFT,
+                GeoShape.ARROW_RIGHT,
+                GeoShape.ARROW_UP,
+            ]:
+                return ArrowGeoShape.from_data(data)
+        raise Exception(f"Unknown geo shape: {type}")
     else:
         raise Exception(f"Unknown shape type: {type}")
 

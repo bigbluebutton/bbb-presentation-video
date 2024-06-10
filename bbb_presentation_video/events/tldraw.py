@@ -1,9 +1,9 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from typing import Dict, List, Optional, TypedDict
+from typing import Any, Collection, Dict, List, Optional, Sequence, TypedDict, Union
 
 from lxml import etree
 
@@ -13,19 +13,47 @@ from bbb_presentation_video.events.helpers import Position, xml_subelement
 class StyleData(TypedDict, total=False):
     color: str
     dash: str
+    fill: str
     font: str
+    isClosed: bool
+    isComplete: bool
     isFilled: bool
+    opacity: float
     scale: float
+    segments: List[Dict[str, Sequence[Collection[str]]]]
     size: str
     textAlign: str
 
 
 class HandleData(TypedDict, total=False):
-    id: str
-    index: float
-    point: List[float]
-    canBind: bool
     bindingId: str
+    canBind: bool
+    canSnap: bool
+    id: str
+    index: Union[float, str]
+    point: List[float]
+    type: str
+    x: float
+    y: float
+
+
+class PropsData(StyleData, total=False):
+    align: str
+    arrowheadEnd: str
+    arrowheadStart: str
+    bend: float
+    end: HandleData
+    geo: str
+    growY: float
+    h: float
+    handles: Dict[str, HandleData]
+    isPen: bool
+    name: str
+    spline: str
+    start: HandleData
+    text: str
+    verticalAlign: str
+    w: float
 
 
 class ShapeData(TypedDict, total=False):
@@ -34,20 +62,30 @@ class ShapeData(TypedDict, total=False):
     decorations: Dict[str, Optional[str]]
     handles: Dict[str, HandleData]
     id: str
+    index: Union[float, str]
     isComplete: bool
+    isLocked: bool
+    isModerator: bool
     label: str
     labelPoint: List[float]
+    meta: Dict[str, str]
     name: str
+    opacity: float
     parentId: str
     point: List[float]
     points: List[List[float]]
+    props: PropsData
     radius: List[float]
     rotation: float
     size: List[float]
     style: StyleData
     text: str
     type: str
+    typeName: str
     userId: str
+    x: float
+    y: float
+    children: List[Any]
 
 
 class AddShapeEvent(TypedDict):

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -15,7 +15,7 @@ class FontconfigError(Exception):
 
 
 def _FcBool_errcheck(
-    result: Optional[Type[ctypes._CData]],
+    result: Optional[ctypes._CData],
     _func: Any,
     _arguments: Any,
 ) -> Any:

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -213,7 +213,9 @@ class Renderer:
             bbb_version=self.events.bbb_version,
         )
         shapes = ShapesRenderer(self.ctx, presentation.transform)
-        tldraw = TldrawRenderer(self.ctx, presentation.transform)
+        tldraw = TldrawRenderer(
+            self.ctx, presentation.transform, self.events.bbb_version
+        )
 
         encoder = Encoder(
             self.output, self.width, self.height, self.framerate, self.codec

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -35,17 +35,11 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     Style,
     circle_from_three_points,
     draw_smooth_path,
+    get_arc_length,
     get_perfect_dash_props,
-    get_sweep,
     lerp_angles,
     rounded_rect,
 )
-
-
-def get_arc_length(C: Position, r: float, A: Position, B: Position) -> float:
-    sweep = get_sweep(C, A, B)
-    return r * tau * (sweep / tau)
-
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -152,8 +146,8 @@ def straight_arrow_head(
         right = a
     else:
         int = ints[0]
-        left = Position(vec.rot_with(int, a, pi / 6))
-        right = Position(vec.rot_with(int, a, -pi / 6))
+        left = Position(vec.rot_with(int, a, tau / 12))
+        right = Position(vec.rot_with(int, a, -tau / 12))
 
     ctx.move_to(left.x, left.y)
     ctx.line_to(a.x, a.y)
@@ -175,8 +169,8 @@ def curved_arrow_head(
         right = a
     else:
         int = ints[0] if sweep else ints[1]
-        left = Position(vec.nudge(vec.rot_with(int, a, pi / 6), a, r1 * -0.382))
-        right = Position(vec.nudge(vec.rot_with(int, a, -pi / 6), a, r1 * -0.382))
+        left = Position(vec.nudge(vec.rot_with(int, a, tau / 12), a, r1 * -0.382))
+        right = Position(vec.nudge(vec.rot_with(int, a, -tau / 12), a, r1 * -0.382))
 
     ctx.move_to(left.x, left.y)
     ctx.line_to(a.x, a.y)

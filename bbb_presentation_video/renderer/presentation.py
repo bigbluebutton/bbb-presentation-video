@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 BigBlueButton Inc. and by respective authors
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
@@ -167,9 +167,11 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             size=self.size,
             pos=Position(-0.0, -0.0),
             shapes_scale=1.0,
-            shapes_size=self.tldraw_drawing_size
-            if self.tldraw_whiteboard
-            else Size(DRAWING_SIZE, DRAWING_SIZE),
+            shapes_size=(
+                self.tldraw_drawing_size
+                if self.tldraw_whiteboard
+                else Size(DRAWING_SIZE, DRAWING_SIZE)
+            ),
         )
 
     @property
