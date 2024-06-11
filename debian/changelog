@@ -1,3 +1,9 @@
+bbb-presentation-video (5.0.0~beta1) focal; urgency=medium
+
+  * Support Tldraw v2 whiteboard shapes
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 11 Jun 2024 14:56:14 -0400
+
 bbb-presentation-video (4.0.2) focal; urgency=medium
 
   * Limit the max size of image surface to render PDF by @kepstin in #42
