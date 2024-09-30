@@ -64,6 +64,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     HighlighterShape,
     LineShape,
     OvalGeoShape,
+    PollShape,
     RectangleGeoShape,
     RectangleShape,
     RhombusGeoShape,
@@ -87,6 +88,7 @@ from bbb_presentation_video.renderer.tldraw.shape.ellipse import finalize_ellips
 from bbb_presentation_video.renderer.tldraw.shape.frame import finalize_frame
 from bbb_presentation_video.renderer.tldraw.shape.highlighter import finalize_highlight
 from bbb_presentation_video.renderer.tldraw.shape.line import finalize_line
+from bbb_presentation_video.renderer.tldraw.shape.poll import finalize_poll
 from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rectangle
 from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
 from bbb_presentation_video.renderer.tldraw.shape.sticky_v2 import finalize_sticky_v2
@@ -310,6 +312,8 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 finalize_line(ctx, id, shape)
             elif isinstance(shape, OvalGeoShape):
                 finalize_oval(ctx, id, shape)
+            elif isinstance(shape, PollShape):
+                finalize_poll(ctx, id, shape)
             elif isinstance(shape, RectangleShape):
                 finalize_rectangle(ctx, id, shape)
             elif isinstance(shape, RectangleGeoShape):

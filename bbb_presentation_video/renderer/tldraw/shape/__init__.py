@@ -579,10 +579,12 @@ class LineShape(LabelledShapeProto):
                 else:
                     self.spline = SplineType.NONE
 
+
 @attr.s(order=False, slots=True, auto_attribs=True)
 class PollShapeAnswer:
     key: str
     numVotes: int
+
 
 @attr.s(order=False, slots=True, auto_attribs=True)
 class PollShape(RotatableShapeProto):
@@ -596,7 +598,7 @@ class PollShape(RotatableShapeProto):
     def update_from_data(self, data: ShapeData) -> None:
         # Poll shapes contain a prop "fill" which isn't a valid FillStyle
         if "props" in data and "fill" in data["props"]:
-            del(data["props"]["fill"])
+            del data["props"]["fill"]
 
         super().update_from_data(data)
 
@@ -613,7 +615,10 @@ class PollShape(RotatableShapeProto):
             if "questionText" in props:
                 self.questionText = props["questionText"]
             if "answers" in props:
-                self.answers = [PollShapeAnswer(key=answer["key"], numVotes=answer["numVotes"]) for answer in props["answers"]]
+                self.answers = [
+                    PollShapeAnswer(key=answer["key"], numVotes=answer["numVotes"])
+                    for answer in props["answers"]
+                ]
 
 
 Shape = Union[
