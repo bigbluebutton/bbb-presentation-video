@@ -579,6 +579,42 @@ class LineShape(LabelledShapeProto):
                 else:
                     self.spline = SplineType.NONE
 
+@attr.s(order=False, slots=True, auto_attribs=True)
+class PollShapeAnswer:
+    key: str
+    numVotes: int
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class PollShape(RotatableShapeProto):
+    question: str = ""
+    numResponders: int = 0
+    numRespondents: int = 0
+    questionType: str = ""
+    questionText: str = ""
+    answers: List[PollShapeAnswer] = attr.Factory(list)
+
+    def update_from_data(self, data: ShapeData) -> None:
+        # Poll shapes contain a prop "fill" which isn't a valid FillStyle
+        if "props" in data and "fill" in data["props"]:
+            del(data["props"]["fill"])
+
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+            if "question" in props:
+                self.question = props["question"]
+            if "numResponders" in props:
+                self.numResponders = props["numResponders"]
+            if "numRespondents" in props:
+                self.numRespondents = props["numRespondents"]
+            if "questionType" in props:
+                self.questionType = props["questionType"]
+            if "questionText" in props:
+                self.questionText = props["questionText"]
+            if "answers" in props:
+                self.answers = [PollShapeAnswer(key=answer["key"], numVotes=answer["numVotes"]) for answer in props["answers"]]
+
 
 Shape = Union[
     ArrowGeoShape,
@@ -608,6 +644,7 @@ Shape = Union[
     TriangleGeoShape,
     TriangleShape,
     XBoxGeoShape,
+    PollShape,
 ]
 
 
@@ -645,6 +682,8 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
         return HighlighterShape.from_data(data)
     elif type == "frame":
         return FrameShape.from_data(data)
+    elif type == "poll":
+        return PollShape.from_data(data)
     elif type == "geo":
         if "geo" in data["props"]:
             geo_type = GeoShape(data["props"]["geo"])
