@@ -280,7 +280,7 @@ class FontDescription:
             Use :meth:`Pango.FontDescription.set_absolute_size` if you need
             a particular size in device units.
         """
-    def set_weight(self, weight: int) -> None:
+    def set_weight(self, weight: Weight | int) -> None:
         """Sets the weight field of a font description.
 
         The weight field specifies how bold or light the font should be.
