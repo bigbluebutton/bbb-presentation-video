@@ -167,6 +167,92 @@ FILLS: Dict[ColorStyle, Color] = dict(
     ]
 )
 
+V2_TEXT_COLOR: Color = Color.from_int(0x000000)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class V2Color:
+    solid: Color
+    semi: Color
+    pattern: Color
+    highlight: Color
+
+
+V2_COLORS: Dict[ColorStyle, V2Color] = {
+    ColorStyle.BLACK: V2Color(
+        solid=Color.from_int(0x1D1D1D),
+        semi=Color.from_int(0xE8E8E8),
+        pattern=Color.from_int(0x494949),
+        highlight=Color.from_int(0xFDDD00),
+    ),
+    ColorStyle.BLUE: V2Color(
+        solid=Color.from_int(0x4263EB),
+        semi=Color.from_int(0xDCE1F8),
+        pattern=Color.from_int(0x6681EE),
+        highlight=Color.from_int(0x10ACFF),
+    ),
+    ColorStyle.GREEN: V2Color(
+        solid=Color.from_int(0x099268),
+        semi=Color.from_int(0xD3E9E3),
+        pattern=Color.from_int(0x39A785),
+        highlight=Color.from_int(0x00FFC8),
+    ),
+    ColorStyle.GREY: V2Color(
+        solid=Color.from_int(0xADB5BD),
+        semi=Color.from_int(0xECEEF0),
+        pattern=Color.from_int(0xBCC3C9),
+        highlight=Color.from_int(0xCBE7F1),
+    ),
+    ColorStyle.LIGHT_BLUE: V2Color(
+        solid=Color.from_int(0x4DABF7),
+        semi=Color.from_int(0xDDEDFA),
+        pattern=Color.from_int(0x6FBBF8),
+        highlight=Color.from_int(0x00F4FF),
+    ),
+    ColorStyle.LIGHT_GREEN: V2Color(
+        solid=Color.from_int(0x40C057),
+        semi=Color.from_int(0xDBF0E0),
+        pattern=Color.from_int(0x65CB78),
+        highlight=Color.from_int(0x65F641),
+    ),
+    ColorStyle.LIGHT_RED: V2Color(
+        solid=Color.from_int(0xFF8787),
+        semi=Color.from_int(0xF4DADB),
+        pattern=Color.from_int(0xFE9E9E),
+        highlight=Color.from_int(0xFF7FA3),
+    ),
+    ColorStyle.LIGHT_VIOLET: V2Color(
+        solid=Color.from_int(0xE599F7),
+        semi=Color.from_int(0xF5EAFA),
+        pattern=Color.from_int(0xE9ACF8),
+        highlight=Color.from_int(0xFF88FF),
+    ),
+    ColorStyle.ORANGE: V2Color(
+        solid=Color.from_int(0xF76707),
+        semi=Color.from_int(0xF8E2D4),
+        pattern=Color.from_int(0xF78438),
+        highlight=Color.from_int(0xFFA500),
+    ),
+    ColorStyle.RED: V2Color(
+        solid=Color.from_int(0xE03131),
+        semi=Color.from_int(0xF4DADB),
+        pattern=Color.from_int(0xE55959),
+        highlight=Color.from_int(0xFF636E),
+    ),
+    ColorStyle.VIOLET: V2Color(
+        solid=Color.from_int(0xAE3EC9),
+        semi=Color.from_int(0xECDCF2),
+        pattern=Color.from_int(0xBD63D3),
+        highlight=Color.from_int(0xC77CFF),
+    ),
+    ColorStyle.YELLOW: V2Color(
+        solid=Color.from_int(0xFFC078),
+        semi=Color.from_int(0xF9F0E6),
+        pattern=Color.from_int(0xFECB92),
+        highlight=Color.from_int(0xFDDD00),
+    ),
+}
+
 
 class DashStyle(Enum):
     DRAW: str = "draw"

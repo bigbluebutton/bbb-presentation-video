@@ -54,6 +54,12 @@ class PropsData(StyleData, total=False):
     text: str
     verticalAlign: str
     w: float
+    question: str
+    numResponders: int
+    numRespondents: int
+    questionType: str
+    questionText: str
+    answers: List[Dict[str, Any]]
 
 
 class ShapeData(TypedDict, total=False):

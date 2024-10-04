@@ -252,6 +252,8 @@ class FontDescription:
             if the field was explicitly set or not.
         """
     def get_size_is_absolute(self) -> bool: ...
+    def get_weight(self) -> int:
+        """Gets the weight field of a font description."""
     def set_absolute_size(self, size: float) -> None: ...
     def set_family(self, family: str) -> None:
         """Sets the family name field of a font description.
@@ -277,6 +279,11 @@ class FontDescription:
             to a 10 * (96 / 72) = 13.3 pixel font.
             Use :meth:`Pango.FontDescription.set_absolute_size` if you need
             a particular size in device units.
+        """
+    def set_weight(self, weight: Weight | int) -> None:
+        """Sets the weight field of a font description.
+
+        The weight field specifies how bold or light the font should be.
         """
 
 class FontMetrics:
@@ -376,6 +383,37 @@ class EllipsizeMode(Enum):
     START: int
     MIDDLE: int
     END: int
+
+class Weight(Enum):
+    """An enumeration specifying the weight (boldness) of a font.
+
+    Weight is specified as a numeric value ranging from 100 to 1000.
+    This enumeration simply provides some common, predefined values."""
+
+    THIN: int
+    """the thin weight (= 100) Since: 1.24"""
+    ULTRALIGHT: int
+    """the ultralight weight (= 200)"""
+    LIGHT: int
+    """the light weight (= 300)"""
+    SEMILIGHT: int
+    """the semilight weight (= 350) Since: 1.36.7"""
+    BOOK: int
+    """the book weight (= 380) Since: 1.24)"""
+    NORMAL: int
+    """the default weight (= 400)"""
+    MEDIUM: int
+    """the medium weight (= 500) Since: 1.24"""
+    SEMIBOLD: int
+    """the semibold weight (= 600)"""
+    BOLD: int
+    """the bold weight (= 700)"""
+    ULTRABOLD: int
+    """the ultrabold weight (= 800)"""
+    HEAVY: int
+    """the heavy weight (= 900)"""
+    ULTRAHEAVY: int
+    """the ultraheavy weight (= 1000) Since: 1.24"""
 
 class WrapMode(Enum):
     """:class:`Pango.WrapMode` describes how to wrap the lines of a :class:`Pango.Layout`
