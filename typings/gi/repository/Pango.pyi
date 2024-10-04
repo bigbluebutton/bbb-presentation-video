@@ -389,7 +389,7 @@ class Weight(Enum):
 
     Weight is specified as a numeric value ranging from 100 to 1000.
     This enumeration simply provides some common, predefined values."""
-    
+
     THIN: int
     """the thin weight (= 100) Since: 1.24"""
     ULTRALIGHT: int
