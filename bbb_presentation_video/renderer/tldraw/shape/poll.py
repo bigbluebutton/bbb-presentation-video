@@ -20,8 +20,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 FONT_FAMILY = "Arial"
 POLL_LINE_WIDTH = 2.0
 POLL_FONT_SIZE = 18
-POLL_VPADDING = 8.0
-POLL_HPADDING = 8.0
+POLL_VPADDING = 12.0
+POLL_HPADDING = 12.0
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -100,15 +100,21 @@ def finalize_poll(
     # All sizes are calculated, so draw the poll
     layout.set_ellipsize(Pango.EllipsizeMode.END)
     if shape.questionText != "":
+        title_font = Pango.FontDescription()
+        title_font.set_family(FONT_FAMILY)
+        title_font.set_absolute_size(int(POLL_FONT_SIZE * Pango.SCALE))
+        title_font.set_weight(Pango.Weight.BOLD)
+        layout.set_font_description(title_font)
         layout.set_width(int(width - 2 * POLL_HPADDING) * Pango.SCALE)
         layout.set_text(shape.questionText, -1)
-        title_width, title_height = layout.get_pixel_size()
+        _label_width, label_height = layout.get_pixel_size()
         ctx.move_to(
-            (width - title_width) / 2,
-            (POLL_FONT_SIZE - title_height) / 2 + POLL_VPADDING,
+            POLL_HPADDING,
+            (POLL_FONT_SIZE - label_height) / 2 + POLL_VPADDING,
         )
         ctx.set_source_rgb(*V2_TEXT_COLOR)
         PangoCairo.show_layout(ctx, layout)
+        layout.set_font_description(font)
 
     for i, answer in enumerate(shape.answers):
         bar_y = (bar_height + POLL_VPADDING) * i + POLL_VPADDING + title_height
