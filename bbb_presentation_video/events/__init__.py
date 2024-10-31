@@ -131,15 +131,25 @@ def parse_pan_zoom(
 
     width_ratio = xml_subelement(element, name, "widthRatio")
     height_ratio = xml_subelement(element, name, "heightRatio")
+
+    # Some BBB versions can produce invalid NaN ratios which can't be parsed as floats
     if width_ratio == "NaN" or height_ratio == "NaN":
         event["zoom"] = Size(1.0, 1.0)
     else:
         event["zoom"] = Size(float(width_ratio) / 100, float(height_ratio) / 100)
+
     # Workaround a bug where BBB can return a width or height ratio of 0,
     # which is nonsensical and causes divide-by-zero errors.
     # It can also return values less than zero, I dunno what's up with that.
     if event["zoom"].width <= 0 or event["zoom"].height <= 0:
         event["zoom"] = Size(1.0, 1.0)
+
+    # The max zoom permitted in the BBB client is 400% (i.e. show 1/4 of the width of the slide)
+    # Apply a hard limit at 800% to prevent processing errors
+    if event["zoom"].width < 0.125:
+        event["zoom"] = Size(
+            0.125, event["zoom"].height * (0.125 / event["zoom"].height)
+        )
 
     pod_id = xml_subelement_opt(element, "podId")
     event["pod_id"] = pod_id if pod_id is not None else DEFAULT_PRESENTATION_POD
