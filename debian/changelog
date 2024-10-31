@@ -1,3 +1,24 @@
+bbb-presentation-video (4.0.5) focal; urgency=medium
+
+  * Work around text rendering issues at extreme zoom levels @kepstin in #56
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Thu, 31 Oct 2024 14:48:05 -0400
+
+bbb-presentation-video (4.0.4) focal; urgency=medium
+
+  * Fix amazonlinux:2 package build by @kepstin in #47
+  * Ignore tldraw add shape with missing type field. by @kepstin in #46
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Tue, 03 Oct 2023 16:41:52 -0400
+
+bbb-presentation-video (4.0.3) focal; urgency=medium
+
+  * Fix crashes in ellipse rendering by @kepstin in #45
+    * Fixes cairo.Error: invalid matrix (not invertible) on small ellipse #43
+    * Fixes math domain error in perimeter_of_ellipse #44
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Fri, 14 Jul 2023 17:21:03 -0400
+
 bbb-presentation-video (4.0.2) focal; urgency=medium
 
   * Limit the max size of image surface to render PDF by @kepstin in #42
