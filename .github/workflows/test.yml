@@ -21,10 +21,10 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ "3.8" ]
+        python-version: [ "3.10" ]
         include:
-          - python-version: "3.8"
-            ubuntu-codename: "focal"
+          - python-version: "3.10"
+            ubuntu-codename: "jammy"
     steps:
 
       - name: Checkout repository
@@ -33,7 +33,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          DEBIAN_FRONTEND=noninteractive sudo apt-get install build-essential libgirepository1.0-dev gir1.2-glib-2.0 gir1.2-poppler-0.18 gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 gir1.2-pango-1.0
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install build-essential libgirepository1.0-dev gir1.2-glib-2.0 gir1.2-poppler-0.18 gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 gir1.2-pango-1.0 libcairo2-dev
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -51,11 +51,11 @@ jobs:
           pip install -e . -c constraints-ubuntu-${{ matrix.ubuntu-codename }}.txt
 
       - name: Check formatting with black
-        if: ${{ matrix.python-version == '3.8' }}
+        if: ${{ matrix.python-version == '3.10' }}
         run: black --check .
 
       - name: Check types with mypy
-        if: ${{ success() || failure() && matrix.python-version == '3.8' }}
+        if: ${{ success() || failure() && matrix.python-version == '3.10' }}
         run: mypy --junit-xml junit/mypy.xml
 
       - name: Test with pytest
