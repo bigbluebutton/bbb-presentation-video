@@ -15,7 +15,7 @@ class FontconfigError(Exception):
 
 
 def _FcBool_errcheck(
-    result: Optional[Type[ctypes._CData]],
+    result: Optional[ctypes._CData],
     _func: Any,
     _arguments: Any,
 ) -> Any:
