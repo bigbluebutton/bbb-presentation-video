@@ -31,9 +31,7 @@ jobs:
       - name: Install debian packaging tools
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common
-          add-apt-repository -y ppa:git-core/ppa
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends debhelper devscripts equivs git git-buildpackage pristine-tar
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends software-properties-common debhelper devscripts equivs git git-buildpackage pristine-tar
 
       - name: Checkout source code
         uses: actions/checkout@v4
