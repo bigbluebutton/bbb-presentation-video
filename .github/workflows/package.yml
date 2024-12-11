@@ -18,10 +18,10 @@ jobs:
   ubuntu:
     strategy:
       matrix:
-        UBUNTU_VERSION: [ "20.04" ]
+        UBUNTU_VERSION: [ "22.04" ]
         include:
-          - UBUNTU_VERSION: "20.04"
-            UBUNTU_CODENAME: focal
+          - UBUNTU_VERSION: "22.04"
+            UBUNTU_CODENAME: jammy
     runs-on: ubuntu-latest
     container: ubuntu:${{ matrix.UBUNTU_VERSION }}
     defaults:
@@ -88,12 +88,12 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ubuntu-20.04
-          path: ubuntu-20.04
+          name: ubuntu-22.04
+          path: ubuntu-22.04
 
       - name: Create release asset archives
         run: |
-          for asset in ubuntu-20.04 ; do
+          for asset in ubuntu-22.04 ; do
             zip --junk-paths --recurse-paths --compression-method store "${asset}.zip" "${asset}"
           done
 
@@ -101,6 +101,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for asset in ubuntu-20.04 ; do
+          for asset in ubuntu-22.04 ; do
             gh release upload ${{ github.ref_name }} "${asset}.zip"
           done
