@@ -19,7 +19,7 @@ jobs:
           name: junit
           path: junit/
           github-token: ${{ secrets.GH_PAT }}
-          run_id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v3
