@@ -14,12 +14,11 @@ jobs:
 
     steps:
       - name: Download test results
-        uses: dawidd6/action-download-artifact@v2
+        uses: action/download-artifact@v4
         with:
           name: junit
           path: junit/
-          workflow: ${{ github.event.workflow.id }}
-          workflow_conclusion: ""
+          github-token: ${{ secrets.GH_PAT }}
           run_id: ${{ github.event.workflow_run.id }}
 
       - name: Publish test report

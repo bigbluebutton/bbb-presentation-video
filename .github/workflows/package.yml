@@ -36,7 +36,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends debhelper devscripts equivs git git-buildpackage pristine-tar
 
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
           fetch-depth: 0
@@ -68,10 +68,11 @@ jobs:
           ls ..
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ubuntu-${{ matrix.UBUNTU_VERSION }}
           path: "*.deb"
+          if-no-files-found: error
   
   amazonlinux-2:
     runs-on: ubuntu-latest
@@ -94,7 +95,7 @@ jobs:
           gem install --no-document fpm
 
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           path: bbb-presentation-video
@@ -130,10 +131,11 @@ jobs:
             --depends ffmpeg \
             .
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: amazonlinux-2
           path: "*.rpm"
+          if-no-files-found: error
 
   assets:
     name: "Upload assets to release"
@@ -145,14 +147,14 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ubuntu-20.04
           path: ubuntu-20.04
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: amazonlinux-2
           path: amazonlinux-2
