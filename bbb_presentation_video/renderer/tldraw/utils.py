@@ -28,13 +28,13 @@ STICKY_PADDING: float = 16.0
 
 
 class SizeStyle(Enum):
-    SMALL: str = "small"
-    S: str = "s"
-    MEDIUM: str = "medium"
-    M: str = "m"
-    LARGE: str = "large"
-    L: str = "l"
-    XL: str = "xl"
+    SMALL = "small"
+    S = "s"
+    MEDIUM = "medium"
+    M = "m"
+    LARGE = "large"
+    L = "l"
+    XL = "xl"
 
 
 STROKE_WIDTHS: Dict[SizeStyle, float] = {
@@ -71,24 +71,24 @@ LETTER_SPACING: float = -0.03  # em
 
 
 class ColorStyle(Enum):
-    WHITE: str = "white"
-    LIGHT_GRAY: str = "lightGray"
-    GRAY: str = "gray"
-    GREY: str = "grey"
-    BLACK: str = "black"
-    GREEN: str = "green"
-    LIGHT_GREEN: str = "light-green"
-    CYAN: str = "cyan"
-    BLUE: str = "blue"
-    LIGHT_BLUE: str = "light-blue"
-    INDIGO: str = "indigo"
-    VIOLET: str = "violet"
-    LIGHT_VIOLET: str = "light-violet"
-    RED: str = "red"
-    LIGHT_RED: str = "light-red"
-    ORANGE: str = "orange"
-    YELLOW: str = "yellow"
-    SEMI: str = "semi"
+    WHITE = "white"
+    LIGHT_GRAY = "lightGray"
+    GRAY = "gray"
+    GREY = "grey"
+    BLACK = "black"
+    GREEN = "green"
+    LIGHT_GREEN = "light-green"
+    CYAN = "cyan"
+    BLUE = "blue"
+    LIGHT_BLUE = "light-blue"
+    INDIGO = "indigo"
+    VIOLET = "violet"
+    LIGHT_VIOLET = "light-violet"
+    RED = "red"
+    LIGHT_RED = "light-red"
+    ORANGE = "orange"
+    YELLOW = "yellow"
+    SEMI = "semi"
 
 
 COLORS: Dict[ColorStyle, Color] = {
@@ -255,20 +255,20 @@ V2_COLORS: Dict[ColorStyle, V2Color] = {
 
 
 class DashStyle(Enum):
-    DRAW: str = "draw"
-    SOLID: str = "solid"
-    DASHED: str = "dashed"
-    DOTTED: str = "dotted"
+    DRAW = "draw"
+    SOLID = "solid"
+    DASHED = "dashed"
+    DOTTED = "dotted"
 
 
 class FontStyle(Enum):
-    SCRIPT: str = "script"
-    SANS: str = "sans"
-    ERIF: str = "erif"  # Old tldraw versions had this spelling mistake
-    SERIF: str = "serif"
-    MONO: str = "mono"
-    DRAW: str = "draw"
-    ARIAL: str = "arial"
+    SCRIPT = "script"
+    SANS = "sans"
+    ERIF = "erif"  # Old tldraw versions had this spelling mistake
+    SERIF = "serif"
+    MONO = "mono"
+    DRAW = "draw"
+    ARIAL = "arial"
 
 
 FONT_FACES: Dict[FontStyle, str] = {
@@ -283,17 +283,17 @@ FONT_FACES: Dict[FontStyle, str] = {
 
 
 class AlignStyle(Enum):
-    START: str = "start"
-    MIDDLE: str = "middle"
-    END: str = "end"
-    JUSTIFY: str = "justify"
+    START = "start"
+    MIDDLE = "middle"
+    END = "end"
+    JUSTIFY = "justify"
 
 
 class FillStyle(Enum):
-    NONE: str = "none"
-    SEMI: str = "semi"
-    SOLID: str = "solid"
-    PATTERN: str = "pattern"
+    NONE = "none"
+    SEMI = "semi"
+    SOLID = "solid"
+    PATTERN = "pattern"
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -337,40 +337,40 @@ class Style:
 
 
 class Decoration(Enum):
-    ARROW: str = "arrow"
-    BAR: str = "bar"
-    DIAMOND: str = "diamond"
-    DOT: str = "dot"
-    INVERTED: str = "inverted"
-    NONE: str = "none"
-    SQUARE: str = "square"
-    TRIANGLE: str = "triangle"
+    ARROW = "arrow"
+    BAR = "bar"
+    DIAMOND = "diamond"
+    DOT = "dot"
+    INVERTED = "inverted"
+    NONE = "none"
+    SQUARE = "square"
+    TRIANGLE = "triangle"
 
 
 class SplineType(Enum):
-    CUBIC: str = "cubic"
-    LINE: str = "line"
-    NONE: str = "none"
+    CUBIC = "cubic"
+    LINE = "line"
+    NONE = "none"
 
 
 class GeoShape(Enum):
-    ARROW_DOWN: str = "arrow-down"
-    ARROW_LEFT: str = "arrow-left"
-    ARROW_RIGHT: str = "arrow-right"
-    ARROW_UP: str = "arrow-up"
-    CHECKBOX: str = "check-box"
-    CLOUD: str = "cloud"
-    DIAMOND: str = "diamond"
-    ELLIPSE: str = "ellipse"
-    HEXAGON: str = "hexagon"
-    NONE: str = ""
-    OVAL: str = "oval"
-    RECTANGLE: str = "rectangle"
-    RHOMBUS: str = "rhombus"
-    STAR: str = "star"
-    TRAPEZOID: str = "trapezoid"
-    TRIANGLE: str = "triangle"
-    XBOX: str = "x-box"
+    ARROW_DOWN = "arrow-down"
+    ARROW_LEFT = "arrow-left"
+    ARROW_RIGHT = "arrow-right"
+    ARROW_UP = "arrow-up"
+    CHECKBOX = "check-box"
+    CLOUD = "cloud"
+    DIAMOND = "diamond"
+    ELLIPSE = "ellipse"
+    HEXAGON = "hexagon"
+    NONE = ""
+    OVAL = "oval"
+    RECTANGLE = "rectangle"
+    RHOMBUS = "rhombus"
+    STAR = "star"
+    TRAPEZOID = "trapezoid"
+    TRIANGLE = "triangle"
+    XBOX = "x-box"
 
 
 def perimeter_of_ellipse(rx: float, ry: float) -> float:

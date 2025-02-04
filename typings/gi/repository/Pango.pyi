@@ -5,7 +5,7 @@
 """Internationalized text layout and rendering"""
 
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from gi.repository import GObject
 
@@ -353,36 +353,36 @@ class Alignment(Enum):
     the interpretation of :class:`Pango.Alignment` values.
     """
 
-    LEFT: int
+    LEFT = cast(int, ...)
     """Put all available space on the right"""
-    CENTER: int
+    CENTER = cast(int, ...)
     """Center the line within the available space"""
-    RIGHT: int
+    RIGHT = cast(int, ...)
     """Put all available space on the left"""
 
 class Direction(Enum):
     """PangoDirection represents a direction in the Unicode bidirectional algorithm."""
 
-    LTR: int
+    LTR = cast(int, ...)
     """A strong left-to-right direction."""
-    RTL: int
+    RTL = cast(int, ...)
     """A strong right-to-left direction."""
-    TTB_LTR: int
+    TTB_LTR = cast(int, ...)
     """Deprecated value; treated the same as `RTL`."""
-    TTB_RTL: int
+    TTB_RTL = cast(int, ...)
     """Deprecated value; treated the same as `LTR`."""
-    WEAK_LTR: int
+    WEAK_LTR = cast(int, ...)
     """A weak left-to-right direction."""
-    WEAK_RTL: int
+    WEAK_RTL = cast(int, ...)
     """A weak right-to-left direction."""
-    NEUTRAL: int
+    NEUTRAL = cast(int, ...)
     """No direction specified."""
 
 class EllipsizeMode(Enum):
-    NONE: int
-    START: int
-    MIDDLE: int
-    END: int
+    NONE = cast(int, ...)
+    START = cast(int, ...)
+    MIDDLE = cast(int, ...)
+    END = cast(int, ...)
 
 class Weight(Enum):
     """An enumeration specifying the weight (boldness) of a font.
@@ -390,29 +390,29 @@ class Weight(Enum):
     Weight is specified as a numeric value ranging from 100 to 1000.
     This enumeration simply provides some common, predefined values."""
 
-    THIN: int
+    THIN = 100
     """the thin weight (= 100) Since: 1.24"""
-    ULTRALIGHT: int
+    ULTRALIGHT = 200
     """the ultralight weight (= 200)"""
-    LIGHT: int
+    LIGHT = 300
     """the light weight (= 300)"""
-    SEMILIGHT: int
+    SEMILIGHT = 350
     """the semilight weight (= 350) Since: 1.36.7"""
-    BOOK: int
+    BOOK = 380
     """the book weight (= 380) Since: 1.24)"""
-    NORMAL: int
+    NORMAL = 400
     """the default weight (= 400)"""
-    MEDIUM: int
+    MEDIUM = 500
     """the medium weight (= 500) Since: 1.24"""
-    SEMIBOLD: int
+    SEMIBOLD = 600
     """the semibold weight (= 600)"""
-    BOLD: int
+    BOLD = 700
     """the bold weight (= 700)"""
-    ULTRABOLD: int
+    ULTRABOLD = 800
     """the ultrabold weight (= 800)"""
-    HEAVY: int
+    HEAVY = 900
     """the heavy weight (= 900)"""
-    ULTRAHEAVY: int
+    ULTRAHEAVY = 1000
     """the ultraheavy weight (= 1000) Since: 1.24"""
 
 class WrapMode(Enum):
@@ -425,11 +425,11 @@ class WrapMode(Enum):
     segmentation algorithm.
     """
 
-    WORD: int
+    WORD = cast(int, ...)
     """wrap lines at word boundaries."""
-    CHAR: int
+    CHAR = cast(int, ...)
     """wrap lines at character boundaries."""
-    WORD_CHAR: int
+    WORD_CHAR = cast(int, ...)
     """wrap lines at word boundaries, but fall back to
     character boundaries if there is not enough space for a full word.
     """
