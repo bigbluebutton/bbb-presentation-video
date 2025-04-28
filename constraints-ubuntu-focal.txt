@@ -1,9 +1,0 @@
-attrs == 19.3.0
-lxml == 4.5.0
-packaging == 20.3
-pycairo == 1.16.2
-pygobject == 3.36.0
-pyparsing == 2.4.6
-sortedcollections == 1.0.1
-sortedcontainers == 2.1.0
-six == 1.14.0
