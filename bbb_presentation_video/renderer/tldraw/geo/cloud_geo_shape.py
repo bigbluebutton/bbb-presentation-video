@@ -207,13 +207,19 @@ def get_cloud_arcs(
         )
         arcPoint = (arcPoint_x, arcPoint_y)
 
-        center_pos, _ = circle_from_three_points(
-            leftWigglePoint, rightWigglePoint, arcPoint
-        )
-        center = (center_pos[0], center_pos[1])
+        center: Optional[Position] = None
+        try:
+            center_pos, _ = circle_from_three_points(
+                leftWigglePoint, rightWigglePoint, arcPoint
+            )
+            center = Position(center_pos[0], center_pos[1])
+        except ZeroDivisionError:
+            # If the three points are collinear, we cannot find a unique circle.
+            # it can happen whe the cloud is too small
+            center = None
 
         radius = vec.dist(
-            center if center_pos else vec.med(leftWigglePoint, rightWigglePoint),
+            center if center else vec.med(leftWigglePoint, rightWigglePoint),
             leftWigglePoint,
         )
 
