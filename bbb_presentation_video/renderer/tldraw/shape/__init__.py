@@ -653,7 +653,7 @@ Shape = Union[
 ]
 
 
-def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
+def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Optional[Shape]:
     type = data["type"]
     is_tldraw_v2 = bbb_version >= Version("3.0.0")
 
@@ -726,7 +726,8 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Shape:
                 return ArrowGeoShape.from_data(data)
         raise Exception(f"Unknown geo shape: {type}")
     else:
-        raise Exception(f"Unknown shape type: {type}")
+        print(f"\tTldraw: Ignoring unknown shape of type '{type}'")
+        return None
 
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
