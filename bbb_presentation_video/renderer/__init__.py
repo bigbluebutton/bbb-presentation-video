@@ -50,7 +50,7 @@ class Encoder:
         self.thread.daemon = True
         self.thread.start()
 
-    def put(self, data: bytes) -> None:
+    def put(self, data: bytearray) -> None:
         buf = self.ret_queue.get()
         buf[:] = data
         self.queue.put(buf)
