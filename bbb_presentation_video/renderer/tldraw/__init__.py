@@ -213,7 +213,13 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             action = "updated"
         else:
             if "type" in data:
-                shape = parse_shape_from_data(data, self.bbb_version)
+                parsed_shape = parse_shape_from_data(data, self.bbb_version)
+                if parsed_shape is None:
+                    print(
+                        f'\tTldraw: Got add for shape: {id} with unknown "type" field'
+                    )
+                    return
+                shape = parsed_shape
                 self.shapes[presentation][slide][id] = shape
                 action = "added"
             else:
