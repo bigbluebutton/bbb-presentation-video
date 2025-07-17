@@ -82,7 +82,10 @@ def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShapeV2) ->
 def get_midpoint(start: Position, end: Position, bend: float) -> Position:
     mid = [(start.x + end.x) / 2, (start.y + end.y) / 2]
 
-    unit_vector = vec.uni([end.x - start.x, end.y - start.y])
+    try:
+        unit_vector = vec.uni([end.x - start.x, end.y - start.y])
+    except ZeroDivisionError:
+        return Position(mid[0], mid[1])
 
     unit_rotated = [unit_vector[1], -unit_vector[0]]
     bend_offset = [unit_rotated[0] * -bend, unit_rotated[1] * -bend]
