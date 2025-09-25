@@ -192,6 +192,24 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             f"scale: {self.trans.shapes_scale:.6f}"
         )
 
+    @property
+    def is_panned_outside(self) -> bool:
+        """Check if the viewport is showing areas outside the slide content."""
+        if self.page_size is None:
+            return False
+
+        # The size of the portion of the slide that will be shown
+        size = self.trans.size
+        # The top-left of the viewport on the slide
+        pos = self.trans.pos
+
+        return (
+            pos.x < 0
+            or pos.y < 0
+            or (pos.x + size.width) > self.page_size.width
+            or (pos.y + size.height) > self.page_size.height
+        )
+
     def update_presentation(self, event: events.PresentationEvent) -> None:
         if self.presentation == event["presentation"]:
             print("\tPresentation: presentation did not change")
