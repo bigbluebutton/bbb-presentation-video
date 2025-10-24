@@ -26,6 +26,7 @@ DRAWING_BG = Color.from_int(0xE2E8ED)
 class Codec(Enum):
     H264 = "h264"
     VP9 = "vp9"
+    RAW_VIDEO = "rawvideo"
 
 
 class Encoder:
@@ -60,7 +61,16 @@ class Encoder:
         self.queue.put(None)
         self.thread.join()
 
-    def run(self) -> None:
+    def output_raw(self) -> None:
+        with open(self.output, "wb") as f:
+            while True:
+                buf = self.queue.get()
+                if buf is None:
+                    break
+                f.write(buf)
+                self.ret_queue.put(buf)
+
+    def output_ffmpeg(self) -> None:
         if self.codec == Codec.H264:
             codec_opts = ["-c:v", "libx264", "-qp", "0", "-preset", "ultrafast"]
         elif self.codec == Codec.VP9:
@@ -127,6 +137,12 @@ class Encoder:
 
         if ffmpeg.returncode != 0:
             raise CalledProcessError(returncode=ffmpeg.returncode, cmd=ffmpeg_cmdline)
+
+    def run(self) -> None:
+        if self.codec == Codec.RAW_VIDEO:
+            self.output_raw()
+        else:
+            self.output_ffmpeg()
 
 
 class Renderer:
