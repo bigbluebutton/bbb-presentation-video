@@ -114,6 +114,12 @@ def main() -> None:
         help="generate video for a specific pod instead of default pod",
         default=DEFAULT_PRESENTATION_POD,
     )
+    parser.add_argument(
+        "--ignore-record-status",
+        action="store_true",
+        help="ignore recording start/stop events and generate video for the entire meeting",
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -159,6 +165,7 @@ def main() -> None:
         args.start,
         args.end,
         args.pod,
+        args.ignore_record_status,
     )
 
     renderer.render()

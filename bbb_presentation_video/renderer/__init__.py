@@ -155,6 +155,7 @@ class Renderer:
     framerate: Fraction
     codec: Codec
     pod_id: str
+    ignore_record_status: bool
 
     frame: int
     framestep: Fraction
@@ -173,6 +174,7 @@ class Renderer:
         start_time: Fraction,
         end_time: Fraction,
         pod_id: str,
+        ignore_record_status: bool,
     ):
         self.events = events
         self.input = input
@@ -182,22 +184,26 @@ class Renderer:
         self.framerate = framerate
         self.codec = codec
         self.pod_id = pod_id
+        self.ignore_record_status = ignore_record_status
 
         # Current video position state
         self.frame = 1
         self.framestep = 1 / framerate
         self.pts = Fraction(0)
-        self.recording = False
+        if self.ignore_record_status:
+            print("\tRenderer: ignoring record status events")
+            self.recording = True
+        else:
+            self.recording = False
 
         # Only the section of recording within the time range of start_time
         # through end_time will be included in the final video
         if start_time is not None:
             self.start_time = start_time
-        else:
-            self.start_time = 0
-        assert events.length is not None
         if end_time is not None and end_time < events.length:
             self.length = end_time
+        else:
+            self.length = events.length
 
         # Cairo rendering context
         self.surface = cairo.ImageSurface(cairo.FORMAT_RGB24, self.width, self.height)
@@ -209,10 +215,15 @@ class Renderer:
         font_options.set_hint_style(cairo.HINT_STYLE_NONE)
         self.ctx.set_font_options(font_options)
 
-    def update_record(self, event: RecordEvent) -> None:
+    def update_record(self, event: RecordEvent) -> bool:
+        if self.ignore_record_status:
+            return False
+
         if self.recording != event["status"]:
             self.recording = event["status"]
             print(f"\tRenderer: recording: {self.recording}")
+            return True
+        return False
 
     def render(self) -> None:
         cursor = CursorRenderer(
@@ -241,8 +252,7 @@ class Renderer:
         shapes_changed = False
         cursor_changed = False
         recording_changed = False
-        assert self.events.length is not None
-        while self.pts < self.events.length:
+        while self.pts < self.length:
             event_ts = Fraction(0)
             while True:
                 if len(self.events.events) == 0:
@@ -292,8 +302,8 @@ class Renderer:
                 elif name == "clear":
                     shapes.update_clear(cast(events.ClearEvent, event))
                 elif name == "record":
-                    self.update_record(cast(events.RecordEvent, event))
-                    recording_changed = True
+                    if self.update_record(cast(events.RecordEvent, event)):
+                        recording_changed = True
                 elif name == "presenter":
                     cursor.update_presenter(cast(events.PresenterEvent, event))
                 elif name == "join":
@@ -355,12 +365,12 @@ class Renderer:
                 # Output a frame
                 encoder.put(bytearray(self.surface.get_data()))
 
+                presentation_changed = False
+                shapes_changed = False
+                cursor_changed = False
+                recording_changed = False
+
             self.frame += 1
             self.pts += self.framestep
-
-            presentation_changed = False
-            shapes_changed = False
-            cursor_changed = False
-            recording_changed = False
 
         encoder.join()
