@@ -147,6 +147,7 @@ class Encoder:
 
 class Renderer:
     events: EventsInfo
+    start_time: Fraction = Fraction(0)
     length: Fraction
     input: str
     output: str
@@ -171,8 +172,8 @@ class Renderer:
         height: int,
         framerate: Fraction,
         codec: Codec,
-        start_time: Fraction,
-        end_time: Fraction,
+        start_time: Fraction | None,
+        end_time: Fraction | None,
         pod_id: str,
         ignore_record_status: bool,
     ):
@@ -198,6 +199,8 @@ class Renderer:
 
         # Only the section of recording within the time range of start_time
         # through end_time will be included in the final video
+        if events.length is None:
+            raise ValueError("Recording length cannot be determined from events.xml")
         if start_time is not None:
             self.start_time = start_time
         if end_time is not None and end_time < events.length:
