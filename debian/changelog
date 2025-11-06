@@ -1,3 +1,9 @@
+bbb-presentation-video (5.1.0~beta1) focal; urgency=medium
+
+  * Add support for raw video generation by @kepstin in #69
+
+ -- Calvin Walton <calvin.walton@blindsidenetworks.com>  Thu, 06 Nov 2025 10:06:38 -0500
+
 bbb-presentation-video (5.0.0~beta2) focal; urgency=medium
 
   * Support Tldraw poll shape
