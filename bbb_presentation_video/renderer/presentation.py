@@ -25,7 +25,10 @@ gi.require_version("Poppler", "0.18")
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Poppler
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events.helpers import Position, Size
+from bbb_presentation_video.events.helpers import Color, Position, Size
+
+# Background color for the infinite whiteboard (visible viewport without presentation content)
+TLDRAW_DRAWING_BG = Color.from_int(0xF9FAFB)
 
 
 class ImageType(Enum):
@@ -190,24 +193,6 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         print(
             f"\tPresentation: shapes size: {self.trans.shapes_size}, "
             f"scale: {self.trans.shapes_scale:.6f}"
-        )
-
-    @property
-    def is_panned_outside(self) -> bool:
-        """Check if the viewport is showing areas outside the slide content."""
-        if self.page_size is None:
-            return False
-
-        # The size of the portion of the slide that will be shown
-        size = self.trans.size
-        # The top-left of the viewport on the slide
-        pos = self.trans.pos
-
-        return (
-            pos.x < 0
-            or pos.y < 0
-            or (pos.x + size.width) > self.page_size.width
-            or (pos.y + size.height) > self.page_size.height
         )
 
     def update_presentation(self, event: events.PresentationEvent) -> None:
@@ -453,11 +438,29 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
     def render(self) -> None:
         """Composite the last-updated presentation image"""
+        ctx = self.ctx
+        ctx.save()
+
+        # Draw TLDRAW_DRAWING_BG within the clipped viewport region when using tldraw whiteboard
+        if self.tldraw_whiteboard:
+            # Fill the visible viewport area with the tldraw background color
+            ctx.translate(self.trans.padding.width, self.trans.padding.height)
+            ctx.rectangle(
+                0,
+                0,
+                self.trans.size.width * self.trans.scale,
+                self.trans.size.height * self.trans.scale,
+            )
+            ctx.set_source_rgb(*TLDRAW_DRAWING_BG)
+            ctx.fill()
+            # Reset transform
+            ctx.translate(-self.trans.padding.width, -self.trans.padding.height)
+
+        # Render the presentation content on top
         if self.pattern is not None:
-            ctx = self.ctx
-            ctx.save()
             ctx.set_source(self.pattern)
             ctx.paint()
-            ctx.restore()
         else:
             print("No pattern to render!")
+
+        ctx.restore()

@@ -21,7 +21,6 @@ from bbb_presentation_video.renderer.tldraw import TldrawRenderer
 from bbb_presentation_video.renderer.whiteboard import ShapesRenderer
 
 DRAWING_BG = Color.from_int(0xE2E8ED)
-TLDRAW_DRAWING_BG = Color.from_int(0xF9FAFB)
 
 
 class Codec(Enum):
@@ -313,14 +312,7 @@ class Renderer:
                     # Base background color
                     ctx = self.ctx
                     ctx.save()
-                    if presentation.tldraw_whiteboard and (
-                        presentation.zoom.width > 1.0 or presentation.is_panned_outside
-                    ):
-                        # when using infinite whiteboard, the view can be outside the slide
-                        # change background to tldraw bg color to match client
-                        ctx.set_source_rgb(*TLDRAW_DRAWING_BG)
-                    else:
-                        ctx.set_source_rgb(*DRAWING_BG)
+                    ctx.set_source_rgb(*DRAWING_BG)
                     ctx.paint()
                     ctx.restore()
 
