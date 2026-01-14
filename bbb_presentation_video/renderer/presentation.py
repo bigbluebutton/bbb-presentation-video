@@ -229,6 +229,20 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.pan_zoom_changed = True
         print(f"\tPresentation: pan: {self.pan} zoom: {self.zoom}")
 
+    def render_image(self) -> None:
+        assert isinstance(self.page, GdkPixbuf.Pixbuf)
+        assert self.page_size is not None
+
+        ctx = self.ctx
+
+        apply_slide_transform(ctx, self.trans)
+        # Render on an opaque white background (transparent PNGs...)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.rectangle(0, 0, self.page_size.width, self.page_size.height)
+        ctx.fill()
+        Gdk.cairo_set_source_pixbuf(ctx, self.page, 0, 0)
+        ctx.paint()
+
     def render_pdf(self) -> None:
         assert isinstance(self.page, Poppler.Page)
         assert self.page_size is not None
@@ -417,15 +431,16 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             ctx = self.ctx
             ctx.push_group()
 
+            # Draw the extended background for tldraw infinite whiteboard
+            ctx.save()
+            apply_slide_transform(ctx, self.trans)
+            ctx.set_source_rgb(*TLDRAW_DRAWING_BG)
+            ctx.paint()
+            ctx.restore()
+
             if self.page:
                 if self.filetype is ImageType.IMAGE:
-                    assert isinstance(self.page, GdkPixbuf.Pixbuf)
-                    apply_slide_transform(ctx, self.trans)
-                    # Render on an opaque white background (transparent PNGs...)
-                    ctx.set_source_rgb(1, 1, 1)
-                    ctx.paint()
-                    Gdk.cairo_set_source_pixbuf(ctx, self.page, 0, 0)
-                    ctx.paint()
+                    self.render_image()
                 elif self.filetype is ImageType.PDF:
                     self.render_pdf()
 
@@ -438,29 +453,11 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
     def render(self) -> None:
         """Composite the last-updated presentation image"""
-        ctx = self.ctx
-        ctx.save()
-
-        # Draw TLDRAW_DRAWING_BG within the clipped viewport region when using tldraw whiteboard
-        if self.tldraw_whiteboard:
-            # Fill the visible viewport area with the tldraw background color
-            ctx.translate(self.trans.padding.width, self.trans.padding.height)
-            ctx.rectangle(
-                0,
-                0,
-                self.trans.size.width * self.trans.scale,
-                self.trans.size.height * self.trans.scale,
-            )
-            ctx.set_source_rgb(*TLDRAW_DRAWING_BG)
-            ctx.fill()
-            # Reset transform
-            ctx.translate(-self.trans.padding.width, -self.trans.padding.height)
-
-        # Render the presentation content on top
         if self.pattern is not None:
+            ctx = self.ctx
+            ctx.save()
             ctx.set_source(self.pattern)
             ctx.paint()
+            ctx.restore()
         else:
             print("No pattern to render!")
-
-        ctx.restore()
