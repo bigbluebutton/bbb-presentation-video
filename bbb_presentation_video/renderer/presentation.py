@@ -25,7 +25,10 @@ gi.require_version("Poppler", "0.18")
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Poppler
 
 from bbb_presentation_video import events
-from bbb_presentation_video.events.helpers import Position, Size
+from bbb_presentation_video.events.helpers import Color, Position, Size
+
+# Background color for the infinite whiteboard (visible viewport without presentation content)
+TLDRAW_DRAWING_BG = Color.from_int(0xF9FAFB)
 
 
 class ImageType(Enum):
@@ -226,6 +229,20 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.pan_zoom_changed = True
         print(f"\tPresentation: pan: {self.pan} zoom: {self.zoom}")
 
+    def render_image(self) -> None:
+        assert isinstance(self.page, GdkPixbuf.Pixbuf)
+        assert self.page_size is not None
+
+        ctx = self.ctx
+
+        apply_slide_transform(ctx, self.trans)
+        # Render on an opaque white background (transparent PNGs...)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.rectangle(0, 0, self.page_size.width, self.page_size.height)
+        ctx.fill()
+        Gdk.cairo_set_source_pixbuf(ctx, self.page, 0, 0)
+        ctx.paint()
+
     def render_pdf(self) -> None:
         assert isinstance(self.page, Poppler.Page)
         assert self.page_size is not None
@@ -414,15 +431,16 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             ctx = self.ctx
             ctx.push_group()
 
+            # Draw the extended background for tldraw infinite whiteboard
+            ctx.save()
+            apply_slide_transform(ctx, self.trans)
+            ctx.set_source_rgb(*TLDRAW_DRAWING_BG)
+            ctx.paint()
+            ctx.restore()
+
             if self.page:
                 if self.filetype is ImageType.IMAGE:
-                    assert isinstance(self.page, GdkPixbuf.Pixbuf)
-                    apply_slide_transform(ctx, self.trans)
-                    # Render on an opaque white background (transparent PNGs...)
-                    ctx.set_source_rgb(1, 1, 1)
-                    ctx.paint()
-                    Gdk.cairo_set_source_pixbuf(ctx, self.page, 0, 0)
-                    ctx.paint()
+                    self.render_image()
                 elif self.filetype is ImageType.PDF:
                     self.render_pdf()
 
