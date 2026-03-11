@@ -49,12 +49,13 @@ STROKE_WIDTHS: Dict[SizeStyle, float] = {
 
 FONT_SIZES: Dict[SizeStyle, float] = {
     SizeStyle.SMALL: 28,
-    SizeStyle.S: 26,
     SizeStyle.MEDIUM: 48,
-    SizeStyle.M: 36,
     SizeStyle.LARGE: 96,
-    SizeStyle.L: 54,
-    SizeStyle.XL: 64,
+    # tldraw v2 text font sizes (from bbb-export-annotations/shapes/Shape.js)
+    SizeStyle.S: 18,
+    SizeStyle.M: 24,
+    SizeStyle.L: 36,
+    SizeStyle.XL: 44,
 }
 
 STICKY_FONT_SIZES: Dict[SizeStyle, float] = {
@@ -273,12 +274,13 @@ class FontStyle(Enum):
 
 FONT_FACES: Dict[FontStyle, str] = {
     FontStyle.SCRIPT: "Caveat Brush",
-    FontStyle.SANS: "Source Sans Pro",
     FontStyle.ERIF: "Crimson Pro",
-    FontStyle.SERIF: "Crimson Pro",
-    FontStyle.MONO: "Source Code Pro",
-    FontStyle.DRAW: "Caveat Brush",
     FontStyle.ARIAL: "Arial",
+    # tldraw v2 fonts (from bigbluebutton-html5 whiteboard/service.js)
+    FontStyle.SANS: "IBM Plex Sans",
+    FontStyle.SERIF: "IBM Plex Serif",
+    FontStyle.MONO: "IBM Plex Mono",
+    FontStyle.DRAW: "Shantell Sans",
 }
 
 

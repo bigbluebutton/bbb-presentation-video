@@ -34,6 +34,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 )
 
 TEXT_OUTLINE_WIDTH: float = 2.0
+# tldraw v2 line height multiplier (from bbb-export-annotations/shapes/TextShape.js)
+V2_LINE_HEIGHT: float = 1.35
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -53,7 +55,9 @@ def finalize_v2_text(
     # be blended with alpha afterwards
     ctx.push_group()
 
-    layout = create_pango_layout(ctx, style, font_size)
+    # Use the shape's width to constrain text wrapping, matching the tldraw client
+    text_width = shape.size.width if shape.size.width > 0 else None
+    layout = create_pango_layout(ctx, style, font_size, width=text_width)
     layout.set_text(shape.text, -1)
 
     # Draw text border (outside stroke)
@@ -61,13 +65,13 @@ def finalize_v2_text(
     ctx.set_source_rgb(*CANVAS)
     ctx.set_line_width(TEXT_OUTLINE_WIDTH * 2)
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-    show_layout_by_lines(ctx, layout, padding=4, do_path=True)
+    show_layout_by_lines(ctx, layout, padding=4, do_path=True, line_height_multiplier=V2_LINE_HEIGHT)
     ctx.stroke()
     ctx.restore()
 
     # Draw text
     ctx.set_source_rgb(*stroke)
-    show_layout_by_lines(ctx, layout, padding=4)
+    show_layout_by_lines(ctx, layout, padding=4, line_height_multiplier=V2_LINE_HEIGHT)
 
     # Composite result with opacity applied
     ctx.pop_group_to_source()
@@ -100,7 +104,7 @@ def finalize_v2_label(
     )
     layout.set_text(shape.label, -1)
 
-    label_size = get_layout_size(layout, padding=4)
+    label_size = get_layout_size(layout, padding=4, line_height_multiplier=V2_LINE_HEIGHT)
     bounds = shape.size
 
     if offset is None:
@@ -123,13 +127,13 @@ def finalize_v2_label(
     ctx.set_source_rgb(*CANVAS)
     ctx.set_line_width(TEXT_OUTLINE_WIDTH * 2)
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-    show_layout_by_lines(ctx, layout, padding=4, do_path=True)
+    show_layout_by_lines(ctx, layout, padding=4, do_path=True, line_height_multiplier=V2_LINE_HEIGHT)
     ctx.stroke()
     ctx.restore()
 
     # Draw the original text on top
     ctx.set_source_rgb(*stroke)
-    show_layout_by_lines(ctx, layout, padding=4)
+    show_layout_by_lines(ctx, layout, padding=4, line_height_multiplier=V2_LINE_HEIGHT)
 
     # Composite result with opacity applied
     ctx.pop_group_to_source()
@@ -166,14 +170,14 @@ def finalize_frame_name(
 
     layout.set_text(shape.label, -1)
 
-    label_size = get_layout_size(layout, padding=4)
+    label_size = get_layout_size(layout, padding=4, line_height_multiplier=V2_LINE_HEIGHT)
 
     x = 0
     y = -20
     ctx.translate(x, y)
     ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
 
-    show_layout_by_lines(ctx, layout, padding=4)
+    show_layout_by_lines(ctx, layout, padding=4, line_height_multiplier=V2_LINE_HEIGHT)
 
     ctx.restore()
 
@@ -200,7 +204,7 @@ def finalize_sticky_text_v2(
     layout.set_text(shape.text, -1)
 
     # Calculate vertical position to center the text
-    _, text_height = get_layout_size(layout, padding=STICKY_PADDING)
+    _, text_height = get_layout_size(layout, padding=STICKY_PADDING, line_height_multiplier=V2_LINE_HEIGHT)
     x, y = ctx.get_current_point()
 
     if shape.verticalAlign is AlignStyle.MIDDLE:
@@ -212,4 +216,4 @@ def finalize_sticky_text_v2(
     ctx.set_source_rgba(
         STICKY_TEXT_COLOR.r, STICKY_TEXT_COLOR.g, STICKY_TEXT_COLOR.b, style.opacity
     )
-    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING)
+    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING, line_height_multiplier=V2_LINE_HEIGHT)

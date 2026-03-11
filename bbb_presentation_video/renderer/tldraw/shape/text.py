@@ -99,13 +99,14 @@ def show_layout_by_lines(
     *,
     padding: float = 0,
     do_path: bool = False,
+    line_height_multiplier: float = 1.0,
 ) -> None:
     """Show a Pango Layout line by line to manually handle CSS-style line height."""
     # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
 
     font = layout.get_font_description()
-    # Assuming CSS "line-height: 1;" - i.e. line height = font size
-    line_height = font.get_size() / Pango.SCALE
+    # CSS line-height as a multiplier of font size (1.0 = tldraw v1, 1.35 = tldraw v2)
+    line_height = font.get_size() / Pango.SCALE * line_height_multiplier
 
     ctx.save()
     ctx.translate(padding, padding)
@@ -145,14 +146,16 @@ def show_layout_by_lines(
     ctx.restore()
 
 
-def get_layout_size(layout: Pango.Layout, *, padding: float = 0) -> Size:
+def get_layout_size(
+    layout: Pango.Layout, *, padding: float = 0, line_height_multiplier: float = 1.0
+) -> Size:
     # TODO: Once we switch to Pango 1.50 and use Pango.attr_line_height_new_absolute this can
     # be replaced with a call to layout.get_size()
     layout_size = layout.get_size()
     width = layout_size[0] / Pango.SCALE
     lines = layout.get_line_count()
     font = layout.get_font_description()
-    line_height = font.get_size() / Pango.SCALE
+    line_height = font.get_size() / Pango.SCALE * line_height_multiplier
     height = lines * line_height
     return Size(width + padding * 2, height + padding * 2)
 

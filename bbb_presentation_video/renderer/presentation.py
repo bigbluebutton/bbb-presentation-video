@@ -218,6 +218,10 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         if self.presentation is not None:
             self.presentation_slide[self.presentation] = self.slide
         self.slide_changed = True
+        # Pan and zoom resets when switching slides
+        self.pan = Position(0.0, 0.0)
+        self.zoom = Size(1.0, 1.0)
+        self.pan_zoom_changed = True
         print(f"\tPresentation: slide: {self.slide}")
 
     def update_pan_zoom(self, event: events.PanZoomEvent) -> None:
