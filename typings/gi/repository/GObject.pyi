@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 1998-1999, 2000-2001 Tim Janik and Red Hat, Inc.
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 class Object:
     """The base object type.
 

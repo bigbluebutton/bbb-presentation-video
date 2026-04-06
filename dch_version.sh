@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 BASH_COMPAT="4.2"
 
 # This is a tool to convert a semver 2.0.0 compatible version to a format which

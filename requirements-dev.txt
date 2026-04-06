@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Build system requires (keep in sync with pyproject.toml)
 setuptools >= 45.2
 setuptools_scm[toml] >= 3.4

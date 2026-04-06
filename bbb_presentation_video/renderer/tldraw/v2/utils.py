@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from __future__ import annotations
 
 from typing import Dict, List, TypeVar
@@ -14,6 +18,11 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     Style,
     get_perfect_dash_props,
 )
+
+# SPDX-SnippetBegin
+# SPDX-SnippetCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+# SPDX-SnippetCopyrightText: 2023 tldraw GB Ltd. <hello@tldraw.com>
+# SPDX-License-Identifier: GPL-3.0-or-later AND Apache-2.0
 
 # From tldraw shapes/shared/default-shape-constants.mjs
 LINE_HEIGHT: float = 1.35
@@ -120,6 +129,7 @@ FRAME_HEADING_BORDER_RADIUS: float = 4  # var(--radius-1)
 
 NOTE_BORDER_RADIUS: float = 6  # var(--radius-2)
 
+# SPDX-SnippetEnd
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
 attrs == 21.2.0
 lxml == 4.8.0
 packaging == 21.3
