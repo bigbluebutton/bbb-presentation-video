@@ -10,18 +10,20 @@ import cairo
 import perfect_freehand
 
 from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.geo.rectangle_geo_shape import (
-    rectangle_stroke_points,
-)
 from bbb_presentation_video.renderer.tldraw.shape import XBoxGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
-    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.rectangle_geo_shape import (
+    rectangle_stroke_points,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
     finalize_geo_path,
 )
 
@@ -29,7 +31,7 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def overlay_x_cross(ctx: cairo.Context[CairoSomeSurface], shape: XBoxGeoShape) -> None:
-    sw = STROKE_WIDTHS[shape.style.size]
+    sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
     w = max(0, shape.size.width)
@@ -60,8 +62,8 @@ def draw_x_box(
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
     stroke_points = rectangle_stroke_points(id, shape)
 
     if is_filled:
@@ -79,7 +81,7 @@ def draw_x_box(
 
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -111,6 +113,8 @@ def finalize_x_box(
 ) -> None:
     print(f"\tTldraw: Finalizing x-box: {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     if shape.style.dash is DashStyle.DRAW:
@@ -118,4 +122,7 @@ def finalize_x_box(
     else:
         dash_x_box(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

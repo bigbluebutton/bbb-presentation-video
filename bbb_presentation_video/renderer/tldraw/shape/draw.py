@@ -24,8 +24,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     draw_smooth_path,
     draw_smooth_stroke_point_path,
     draw_stroke_points,
-    pattern_fill,
 )
+from bbb_presentation_video.renderer.tldraw.v2.utils import pattern_fill
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -75,7 +75,7 @@ def finalize_draw(
             fill = COLORS[ColorStyle.SEMI]
             ctx.set_source_rgba(fill.r, fill.g, fill.b, style.opacity)
         elif style.fill is FillStyle.PATTERN:
-            pattern = pattern_fill(fill)
+            pattern = pattern_fill(style.color)
             ctx.set_source(pattern)
         else:
             # Solid fill

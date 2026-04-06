@@ -14,15 +14,17 @@ import perfect_freehand
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import ArrowGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
     GeoShape,
-    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
     finalize_geo_path,
 )
 
@@ -31,7 +33,7 @@ def arrow_geo_stroke_points(
     id: str, shape: ArrowGeoShape
 ) -> List[perfect_freehand.types.StrokePoint]:
     random = Random(id)
-    sw = STROKE_WIDTHS[shape.style.size]
+    sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
     w = max(0, shape.size.width)
@@ -210,8 +212,8 @@ def draw_geo_arrow(
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
 
     stroke_points = arrow_geo_stroke_points(id, shape)
 
@@ -229,7 +231,7 @@ def draw_geo_arrow(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -299,6 +301,8 @@ def finalize_geo_arrow(
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow (geo): {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     if shape.style.dash is DashStyle.DRAW:
@@ -306,4 +310,7 @@ def finalize_geo_arrow(
     else:
         dash_geo_arrow(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

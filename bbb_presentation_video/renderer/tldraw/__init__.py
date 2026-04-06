@@ -17,37 +17,6 @@ from bbb_presentation_video.renderer.presentation import (
     apply_shapes_transform,
 )
 from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
-from bbb_presentation_video.renderer.tldraw.geo.arrow_geo_shape import (
-    finalize_geo_arrow,
-)
-from bbb_presentation_video.renderer.tldraw.geo.checkbox_geo_shape import (
-    finalize_checkmark,
-)
-from bbb_presentation_video.renderer.tldraw.geo.cloud_geo_shape import finalize_cloud
-from bbb_presentation_video.renderer.tldraw.geo.diamond_geo_shape import (
-    finalize_diamond,
-)
-from bbb_presentation_video.renderer.tldraw.geo.ellipse_geo_shape import (
-    finalize_geo_ellipse,
-)
-from bbb_presentation_video.renderer.tldraw.geo.hexagon_geo_shape import (
-    finalize_hexagon,
-)
-from bbb_presentation_video.renderer.tldraw.geo.oval_geo_shape import finalize_oval
-from bbb_presentation_video.renderer.tldraw.geo.rectangle_geo_shape import (
-    finalize_geo_rectangle,
-)
-from bbb_presentation_video.renderer.tldraw.geo.rhombus_geo_shape import (
-    finalize_rhombus,
-)
-from bbb_presentation_video.renderer.tldraw.geo.star_geo_shape import finalize_star
-from bbb_presentation_video.renderer.tldraw.geo.trapezoid_geo_shape import (
-    finalize_trapezoid,
-)
-from bbb_presentation_video.renderer.tldraw.geo.triangle_geo_shape import (
-    finalize_geo_triangle,
-)
-from bbb_presentation_video.renderer.tldraw.geo.xbox_geo_shape import finalize_x_box
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowGeoShape,
     ArrowShape,
@@ -85,16 +54,57 @@ from bbb_presentation_video.renderer.tldraw.shape.arrow import finalize_arrow
 from bbb_presentation_video.renderer.tldraw.shape.arrow_v2 import finalize_arrow_v2
 from bbb_presentation_video.renderer.tldraw.shape.draw import finalize_draw
 from bbb_presentation_video.renderer.tldraw.shape.ellipse import finalize_ellipse
-from bbb_presentation_video.renderer.tldraw.shape.frame import finalize_frame
 from bbb_presentation_video.renderer.tldraw.shape.highlighter import finalize_highlight
 from bbb_presentation_video.renderer.tldraw.shape.line import finalize_line
 from bbb_presentation_video.renderer.tldraw.shape.poll import finalize_poll
 from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rectangle
 from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
-from bbb_presentation_video.renderer.tldraw.shape.sticky_v2 import finalize_sticky_v2
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
+from bbb_presentation_video.renderer.tldraw.v2.shape.arrow_geo_shape import (
+    finalize_geo_arrow,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.checkbox_geo_shape import (
+    finalize_checkmark,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.cloud_geo_shape import (
+    finalize_cloud,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.diamond_geo_shape import (
+    finalize_diamond,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.ellipse_geo_shape import (
+    finalize_geo_ellipse,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.frame import (
+    finalize_frame as finalize_v2_frame,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.hexagon_geo_shape import (
+    finalize_hexagon,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.oval_geo_shape import finalize_oval
+from bbb_presentation_video.renderer.tldraw.v2.shape.rectangle_geo_shape import (
+    finalize_geo_rectangle,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.rhombus_geo_shape import (
+    finalize_rhombus,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.star_geo_shape import finalize_star
+from bbb_presentation_video.renderer.tldraw.v2.shape.sticky import (
+    finalize_sticky as finalize_v2_sticky,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import (
+    finalize_text as finalize_v2_text,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.trapezoid_geo_shape import (
+    finalize_trapezoid,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.triangle_geo_shape import (
+    finalize_geo_triangle,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.xbox_geo_shape import (
+    finalize_x_box,
+)
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -299,7 +309,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             elif isinstance(shape, EllipseGeoShape):
                 finalize_geo_ellipse(ctx, id, shape)
             elif isinstance(shape, FrameShape):
-                finalize_frame(
+                finalize_v2_frame(
                     self,
                     ctx,
                     id,
@@ -341,7 +351,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             elif isinstance(shape, StickyShape):
                 finalize_sticky(ctx, shape)
             elif isinstance(shape, StickyShapeV2):
-                finalize_sticky_v2(ctx, shape)
+                finalize_v2_sticky(ctx, shape)
             elif isinstance(shape, XBoxGeoShape):
                 finalize_x_box(ctx, id, shape)
             else:

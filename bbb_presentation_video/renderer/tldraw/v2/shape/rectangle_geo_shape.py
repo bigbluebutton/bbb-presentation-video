@@ -18,14 +18,16 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     RectangleGeoShape,
     XBoxGeoShape,
 )
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
-    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
     finalize_geo_path,
 )
 
@@ -34,7 +36,7 @@ def rectangle_stroke_points(
     id: str, shape: Union[RectangleGeoShape, XBoxGeoShape, CheckBoxGeoShape]
 ) -> List[perfect_freehand.types.StrokePoint]:
     random = Random(id)
-    sw = STROKE_WIDTHS[shape.style.size]
+    sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
     w = max(0, shape.size.width)
@@ -108,8 +110,8 @@ def draw_rectangle(
 ) -> None:
     style = shape.style
     is_filled = style.isFilled
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
 
     stroke_points = rectangle_stroke_points(id, shape)
 
@@ -127,7 +129,7 @@ def draw_rectangle(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -153,6 +155,8 @@ def finalize_geo_rectangle(
 ) -> None:
     print(f"\tTldraw: Finalizing Rectangle (geo): {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     if shape.style.dash is DashStyle.DRAW:
@@ -160,4 +164,7 @@ def finalize_geo_rectangle(
     else:
         dash_rectangle(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

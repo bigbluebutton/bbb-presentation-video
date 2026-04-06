@@ -13,8 +13,8 @@ import cairo
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw.shape import FrameShape, Shape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_frame_name
-from bbb_presentation_video.renderer.tldraw.utils import COLORS, STROKES, ColorStyle
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_frame_name
+from bbb_presentation_video.renderer.tldraw.v2.utils import SOLID_COLOR, TEXT_COLOR
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -32,10 +32,6 @@ def dash_frame(
 
     points = [Position(0, 0), Position(w, 0), Position(w, h), Position(0, h)]
 
-    # Set up fill color
-    fill = COLORS[ColorStyle.SEMI]
-    ctx.set_source_rgba(fill.r, fill.g, fill.b, style.opacity)
-
     # Create path for both fill and stroke
     ctx.move_to(points[0].x, points[0].y)
     for point in points[1:]:
@@ -43,17 +39,14 @@ def dash_frame(
     ctx.close_path()
 
     # Fill the path with the fill color
+    ctx.set_source_rgb(*SOLID_COLOR)
     ctx.fill_preserve()
 
-    # Set up stroke
-    stroke = STROKES[ColorStyle.BLACK]
-    sw = 2
-    ctx.set_line_width(sw)
+    # Stroke the path
+    ctx.set_line_width(1)
     ctx.set_line_cap(cairo.LineCap.ROUND)
     ctx.set_line_join(cairo.LineJoin.ROUND)
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
-
-    # Stroke the path
+    ctx.set_source_rgb(*TEXT_COLOR)
     ctx.stroke()
 
     # Define the clipping path (same as the frame shape)
@@ -83,7 +76,12 @@ def finalize_frame(
 ) -> None:
     print(f"\tTldraw: Finalizing frame shape: {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
     dash_frame(self, ctx, shape, frame_map)
 
     finalize_frame_name(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

@@ -237,6 +237,58 @@ class FontDescription:
 
     def __init__(self) -> None:
         """Creates a new font description structure with all fields unset."""
+    @staticmethod
+    def from_string(description: str) -> FontDescription:
+        """Creates a new font description from a string representation.
+
+        The string must have the form
+            [FAMILY-LIST] [STYLE-OPTIONS] [SIZE] [VARIATIONS] [FEATURES]
+        where FAMILY-LIST is a comma-separated list of families optionally
+        terminated by a comma, STYLE_OPTIONS is a whitespace-separated list
+        of words where each word describes one of style, variant, weight,
+        stretch, or gravity, and SIZE is a decimal number (size in points)
+        or optionally followed by the unit modifier "px" for absolute size.
+
+        The following words are understood as styles:
+        "Normal", "Roman", "Oblique", "Italic".
+
+        The following words are understood as variants:
+        "Small-Caps", "All-Small-Caps", "Petite-Caps", "All-Petite-Caps",
+        "Unicase", "Title-Caps".
+
+        The following words are understood as weights:
+        "Thin", "Ultra-Light", "Extra-Light", "Light", "Semi-Light",
+        "Demi-Light", "Book", "Regular", "Medium", "Semi-Bold", "Demi-Bold",
+        "Bold", "Ultra-Bold", "Extra-Bold", "Heavy", "Black", "Ultra-Black",
+        "Extra-Black".
+
+        The following words are understood as stretch values:
+        "Ultra-Condensed", "Extra-Condensed", "Condensed", "Semi-Condensed",
+        "Semi-Expanded", "Expanded", "Extra-Expanded", "Ultra-Expanded".
+
+        The following words are understood as gravity values:
+        "Not-Rotated", "South", "Upside-Down", "North", "Rotated-Left",
+        "East", "Rotated-Right", "West".
+
+        The following words are understood as color values:
+        "With-Color", "Without-Color".
+
+        VARIATIONS is a comma-separated list of font variations
+        of the form @‍axis1=value,axis2=value,...
+
+        FEATURES is a comma-separated list of font features of the form
+        \#‍feature1=value,feature2=value,...
+        The =value part can be ommitted if the value is 1.
+
+        Any one of the options may be absent. If FAMILY-LIST is absent, then
+        the family_name field of the resulting font description will be
+        initialized to %NULL. If STYLE-OPTIONS is missing, then all style
+        options will be set to the default values. If SIZE is missing, the
+        size in the resulting font description will be set to 0.
+
+        A typical example:
+            Cantarell Italic Light 15 @‍wght=200 #‍tnum=1
+        """
     def get_size(self) -> int:
         """Gets the size field of a font description.
 

@@ -13,16 +13,18 @@ from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw.shape import StarGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
-    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
-    finalize_geo_path,
     get_polygon_draw_vertices,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
+    finalize_geo_path,
 )
 
 
@@ -53,7 +55,7 @@ def star_stroke_points(id: str, shape: StarGeoShape) -> List[StrokePoint]:
     width = size.width
     height = size.height
 
-    stroke_width = STROKE_WIDTHS[shape.style.size]
+    stroke_width = STROKE_SIZES[shape.style.size]
 
     width = max(0, shape.size.width)
     height = max(0, shape.size.height)
@@ -84,8 +86,8 @@ def draw_star(
 ) -> None:
     style = shape.style
 
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
 
     stroke_points = star_stroke_points(id, shape)
 
@@ -103,7 +105,7 @@ def draw_star(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -129,6 +131,8 @@ def finalize_star(
 
     style = shape.style
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
@@ -136,4 +140,7 @@ def finalize_star(
     else:
         dash_star(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

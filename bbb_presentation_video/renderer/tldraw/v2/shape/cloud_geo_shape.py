@@ -17,16 +17,18 @@ import cairo
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import CloudGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
     SizeStyle,
-    apply_geo_fill,
     circle_from_three_points,
     get_perfect_dash_props,
     get_point_on_circle,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
@@ -291,10 +293,10 @@ def dash_cloud(
     w = max(0, shape.size.width)
     h = max(0, shape.size.height)
 
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke_width = STROKE_SIZES[style.size]
     sw = 1 + stroke_width * 1.618
 
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     ctx.save()
 
@@ -336,7 +338,7 @@ def dash_cloud(
     )
 
     ctx.set_dash(dash_array, dash_offset)
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
 
     ctx.stroke()
     ctx.restore()
@@ -348,10 +350,10 @@ def draw_cloud(
     style = shape.style
     random = Random(id)
 
-    stroke_width = STROKE_WIDTHS[shape.style.size]
+    stroke_width = STROKE_SIZES[shape.style.size]
     sw = 1 + stroke_width * 1.618
 
-    stroke = STROKES[shape.style.color]
+    stroke = COLORS[shape.style.color]
     ctx.save()
 
     size_multipliers = {
@@ -417,7 +419,7 @@ def draw_cloud(
     )
 
     ctx.set_dash(dash_array, dash_offset)
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, shape.style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.stroke()
     ctx.restore()
 
@@ -427,6 +429,8 @@ def finalize_cloud(
 ) -> None:
     print(f"\tTldraw: Finalizing Cloud: {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     if shape.style.dash is DashStyle.DRAW:
@@ -434,4 +438,7 @@ def finalize_cloud(
     else:
         dash_cloud(ctx, shape, id)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)
