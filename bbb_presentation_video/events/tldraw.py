@@ -41,6 +41,7 @@ class PropsData(StyleData, total=False):
     align: str
     arrowheadEnd: str
     arrowheadStart: str
+    autoSize: bool
     bend: float
     end: HandleData
     geo: str

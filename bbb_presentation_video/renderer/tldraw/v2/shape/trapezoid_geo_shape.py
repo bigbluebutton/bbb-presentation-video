@@ -13,28 +13,32 @@ from perfect_freehand.types import StrokePoint
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
-from bbb_presentation_video.renderer.tldraw.shape import RhombusGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
+from bbb_presentation_video.renderer.tldraw.shape import TrapezoidGeoShape
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
     DashStyle,
-    apply_geo_fill,
     draw_smooth_path,
     draw_smooth_stroke_point_path,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
     finalize_geo_path,
 )
 
 
-def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
+def trapezoid_stroke_points(id: str, shape: TrapezoidGeoShape) -> List[StrokePoint]:
     random = Random(id)
     size = shape.size
 
     width = size.width
     height = size.height
 
-    x_offset = min(width * 0.38, height * 0.38)
-    stroke_width = STROKE_WIDTHS[shape.style.size]
+    top_width = width * 0.6
+    x_offset = (width - top_width) / 2
+
+    stroke_width = STROKE_SIZES[shape.style.size]
 
     # Corners with random offsets
     variation = stroke_width * 0.75
@@ -44,11 +48,11 @@ def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
         random.uniform(-variation, variation),
     )
     tr = (
-        width + random.uniform(-variation, variation),
+        x_offset + top_width + random.uniform(-variation, variation),
         0 + random.uniform(-variation, variation),
     )
     br = (
-        width - x_offset + random.uniform(-variation, variation),
+        width + random.uniform(-variation, variation),
         height + random.uniform(-variation, variation),
     )
     bl = (
@@ -58,7 +62,9 @@ def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
 
     # Which side to start drawing first
     rm = random.randrange(0, 3)
-
+    # Number of points per side
+    # Inset each line by the corner radii and let the freehand algo
+    # interpolate points for the corners.
     lines = [
         vec.points_between(tl, tr, 32),
         vec.points_between(tr, br, 32),
@@ -67,6 +73,11 @@ def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
     ]
     lines = lines[rm:] + lines[0:rm]
 
+    # For the final points, include the first half of the first line again,
+    # so that the line wraps around and avoids ending on a sharp corner.
+    # This has a bit of finesse and magic—if you change the points between
+    # function, then you'll likely need to change this one too.
+    # TODO: It actually includes the whole first line again, not just half?
     points = [*lines[0], *lines[1], *lines[2], *lines[3], *lines[0]]
 
     return perfect_freehand.get_stroke_points(
@@ -77,15 +88,15 @@ def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def draw_rhombus(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RhombusGeoShape
+def draw_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TrapezoidGeoShape
 ) -> None:
     style = shape.style
 
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
 
-    stroke_points = rhombus_stroke_points(id, shape)
+    stroke_points = trapezoid_stroke_points(id, shape)
 
     if style.isFilled:
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
@@ -101,7 +112,7 @@ def draw_rhombus(
     )
     draw_smooth_path(ctx, stroke_outline_points, closed=True)
 
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.fill_preserve()
     ctx.set_line_width(stroke_width)
     ctx.set_line_cap(cairo.LineCap.ROUND)
@@ -109,35 +120,43 @@ def draw_rhombus(
     ctx.stroke()
 
 
-def dash_rhombus(ctx: cairo.Context[CairoSomeSurface], shape: RhombusGeoShape) -> None:
+def dash_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], shape: TrapezoidGeoShape
+) -> None:
     style = shape.style
     width = max(0, shape.size.width)
     height = max(0, shape.size.height)
 
-    # Internal angle between adjacent sides varies with width and height
-    x_offset = min(width * 0.38, height * 0.38)
+    top_width = width * 0.6
+    x_offset = (width - top_width) / 2
+
     points = [
         Position(x_offset, 0),
-        Position(width, 0),
-        Position(width - x_offset, height),
+        Position(top_width + x_offset, 0),
+        Position(width, height),
         Position(0, height),
-        Position(x_offset, 0),
     ]
+
     finalize_geo_path(ctx, points, style)
 
 
-def finalize_rhombus(
-    ctx: cairo.Context[CairoSomeSurface], id: str, shape: RhombusGeoShape
+def finalize_trapezoid(
+    ctx: cairo.Context[CairoSomeSurface], id: str, shape: TrapezoidGeoShape
 ) -> None:
-    print(f"\tTldraw: Finalizing Rhombus: {id}")
+    print(f"\tTldraw: Finalizing Trapezoid: {id}")
 
     style = shape.style
+
+    ctx.push_group()
 
     ctx.rotate(shape.rotation)
 
     if style.dash is DashStyle.DRAW:
-        draw_rhombus(ctx, id, shape)
+        draw_trapezoid(ctx, id, shape)
     else:
-        dash_rhombus(ctx, shape)
+        dash_trapezoid(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

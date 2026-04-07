@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from math import ceil
-from typing import Callable, Optional, Tuple, TypeVar
+from typing import Callable, Dict, Optional, Tuple, TypeVar
 
 import cairo
 import gi
@@ -26,6 +26,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     STROKES,
     AlignStyle,
     ColorStyle,
+    SizeStyle,
     Style,
 )
 
@@ -42,19 +43,23 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 def create_pango_layout(
     ctx: cairo.Context[CairoSomeSurface],
     style: Style,
+    font_description: str,
     font_size: float,
     *,
     width: Optional[float] = None,
     padding: float = 0,
+    align: Optional[AlignStyle] = None,
+    wrap: bool = True,
+    letter_spacing: Optional[float] = LETTER_SPACING,
 ) -> Pango.Layout:
-    scale = style.scale
-
+    print(
+        f"\t\tPango layout: font_description={font_description}, font_size={font_size}, width={width}, padding={padding}, align={align}, wrap={wrap}"
+    )
     pctx = PangoCairo.create_context(ctx)
     pctx.set_round_glyph_positions(False)
 
-    font = Pango.FontDescription()
-    font.set_family(FONT_FACES[style.font])
-    font.set_size(round(font_size * scale * Pango.SCALE))
+    font = Pango.FontDescription.from_string(font_description)
+    font.set_size(round(font_size * style.scale * Pango.SCALE))
 
     fo = cairo.FontOptions()
     fo.set_antialias(cairo.Antialias.GRAY)
@@ -63,10 +68,11 @@ def create_pango_layout(
     PangoCairo.context_set_font_options(pctx, fo)
 
     attrs = Pango.AttrList()
-    letter_spacing_attr = Pango.attr_letter_spacing_new(
-        round(LETTER_SPACING * font_size * scale * Pango.SCALE)
-    )
-    attrs.insert(letter_spacing_attr)
+    if letter_spacing is not None:
+        letter_spacing_attr = Pango.attr_letter_spacing_new(
+            round(letter_spacing * font_size * style.scale * Pango.SCALE)
+        )
+        attrs.insert(letter_spacing_attr)
     insert_hyphens_attr = Pango.attr_insert_hyphens_new(insert_hyphens=False)
     attrs.insert(insert_hyphens_attr)
 
@@ -76,19 +82,27 @@ def create_pango_layout(
     layout.set_attributes(attrs)
     layout.set_font_description(font)
 
-    if style.textAlign == AlignStyle.START:
+    if align is None:
+        align = style.textAlign
+
+    if align == AlignStyle.START:
         layout.set_alignment(Pango.Alignment.LEFT)
-    elif style.textAlign == AlignStyle.MIDDLE:
+    elif align == AlignStyle.MIDDLE:
         layout.set_alignment(Pango.Alignment.CENTER)
-    elif style.textAlign == AlignStyle.END:
+    elif align == AlignStyle.END:
         layout.set_alignment(Pango.Alignment.RIGHT)
-    elif style.textAlign == AlignStyle.JUSTIFY:
+    elif align == AlignStyle.JUSTIFY:
         layout.set_alignment(Pango.Alignment.LEFT)
         layout.set_justify(True)
 
     if width is not None:
         layout.set_width(ceil((width - (padding * 2)) * Pango.SCALE))
-    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+
+    if wrap:
+        layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+    else:
+        layout.set_height(0)
+        layout.set_ellipsize(Pango.EllipsizeMode.END)
 
     return layout
 
@@ -99,13 +113,14 @@ def show_layout_by_lines(
     *,
     padding: float = 0,
     do_path: bool = False,
+    line_height: float = 1.0,
 ) -> None:
     """Show a Pango Layout line by line to manually handle CSS-style line height."""
     # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
 
     font = layout.get_font_description()
-    # Assuming CSS "line-height: 1;" - i.e. line height = font size
-    line_height = font.get_size() / Pango.SCALE
+    # Replicate CSS line-height being a multiplier of font size
+    line_height = font.get_size() / Pango.SCALE * line_height
 
     ctx.save()
     ctx.translate(padding, padding)
@@ -145,14 +160,16 @@ def show_layout_by_lines(
     ctx.restore()
 
 
-def get_layout_size(layout: Pango.Layout, *, padding: float = 0) -> Size:
+def get_layout_size(
+    layout: Pango.Layout, *, padding: float = 0, line_height: float = 1.0
+) -> Size:
     # TODO: Once we switch to Pango 1.50 and use Pango.attr_line_height_new_absolute this can
     # be replaced with a call to layout.get_size()
     layout_size = layout.get_size()
     width = layout_size[0] / Pango.SCALE
     lines = layout.get_line_count()
     font = layout.get_font_description()
-    line_height = font.get_size() / Pango.SCALE
+    line_height = font.get_size() / Pango.SCALE * line_height
     height = lines * line_height
     return Size(width + padding * 2, height + padding * 2)
 
@@ -166,9 +183,10 @@ def finalize_text(
 
     style = shape.style
     stroke = STROKES[style.color]
+    font_description = FONT_FACES[style.font]
     font_size = FONT_SIZES[style.size]
 
-    layout = create_pango_layout(ctx, style, font_size)
+    layout = create_pango_layout(ctx, style, font_description, font_size)
     layout.set_text(shape.text, -1)
 
     ctx.set_source_rgb(stroke.r, stroke.g, stroke.b)
@@ -191,11 +209,12 @@ def finalize_label(
     # Label text is always centered
     style.textAlign = AlignStyle.MIDDLE
     stroke = STROKES[style.color]
+    font_description = FONT_FACES[style.font]
     font_size = FONT_SIZES[style.size]
 
     ctx.save()
 
-    layout = create_pango_layout(ctx, style, font_size)
+    layout = create_pango_layout(ctx, style, font_description, font_size)
     layout.set_text(shape.label, -1)
 
     label_size = get_layout_size(layout, padding=4)
@@ -234,10 +253,16 @@ def finalize_sticky_text(
     print(f"\t\tFinalizing Sticky Text")
 
     style = shape.style
+    font_description = FONT_FACES[style.font]
     font_size = STICKY_FONT_SIZES[style.size]
 
     layout = create_pango_layout(
-        ctx, style, font_size, width=shape.size.width, padding=STICKY_PADDING
+        ctx,
+        style,
+        font_description,
+        font_size,
+        width=shape.size.width,
+        padding=STICKY_PADDING,
     )
     layout.set_text(shape.text, -1)
 

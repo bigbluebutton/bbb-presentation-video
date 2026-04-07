@@ -9,13 +9,15 @@ from typing import TypeVar
 import cairo
 
 from bbb_presentation_video.renderer.tldraw.shape import EllipseGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STROKE_WIDTHS,
-    STROKES,
-    apply_geo_fill,
     get_perfect_dash_props,
     perimeter_of_ellipse,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    COLORS,
+    STROKE_SIZES,
+    apply_geo_fill,
 )
 from bbb_presentation_video.renderer.utils import cairo_draw_ellipse
 
@@ -25,8 +27,8 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeoShape) -> None:
     radius = (shape.size.width / 2, shape.size.height / 2)
     style = shape.style
-    stroke = STROKES[style.color]
-    stroke_width = STROKE_WIDTHS[style.size]
+    stroke = COLORS[style.color]
+    stroke_width = STROKE_SIZES[style.size]
 
     sw = 1 + stroke_width * 1.618
     rx = max(0, radius[0] - sw / 2)
@@ -49,7 +51,7 @@ def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeoShape) -
     ctx.set_line_width(sw)
     ctx.set_line_cap(cairo.LineCap.ROUND)
     ctx.set_line_join(cairo.LineJoin.ROUND)
-    ctx.set_source_rgba(stroke.r, stroke.g, stroke.b, style.opacity)
+    ctx.set_source_rgb(*stroke)
     ctx.stroke()
 
 
@@ -60,8 +62,13 @@ def finalize_geo_ellipse(
 ) -> None:
     print(f"\tTldraw: Finalizing Ellipse (geo): {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     dash_ellipse(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)

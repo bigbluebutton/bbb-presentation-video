@@ -92,13 +92,17 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         if "props" in data:
             props = data["props"]
 
-            if "w" in props and "h" in props:
-                growY = 0.0
+            w = 0.0
+            h = 0.0
+            growY = 0.0
+            if "w" in props:
+                w = props["w"]
+            if "h" in props:
+                h = props["h"]
+            if "growY" in props:
+                growY = props["growY"]
 
-                if "growY" in props:
-                    growY = props["growY"]
-
-                self.size = Size(props["w"], props["h"] + growY)
+            self.size = Size(w, h + growY)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -328,12 +332,22 @@ class TextShape(RotatableShapeProto):
 class TextShapeV2(RotatableShapeProto):
     text: str = ""
 
+    align: AlignStyle = AlignStyle.MIDDLE
+    """Horizontal alignment of the label."""
+
+    auto_size: bool = False
+
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
 
         if "props" in data:
-            if "text" in data["props"]:
-                self.text = data["props"]["text"]
+            props = data["props"]
+            if "text" in props:
+                self.text = props["text"]
+            if "align" in props:
+                self.align = AlignStyle(props["align"])
+            if "autoSize" in props:
+                self.auto_size = props["autoSize"]
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)

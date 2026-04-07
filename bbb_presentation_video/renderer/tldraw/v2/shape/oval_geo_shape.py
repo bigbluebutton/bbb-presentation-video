@@ -11,8 +11,8 @@ import cairo
 
 from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw.shape import OvalGeoShape
-from bbb_presentation_video.renderer.tldraw.shape.text_v2 import finalize_v2_label
-from bbb_presentation_video.renderer.tldraw.utils import finalize_geo_path
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_label
+from bbb_presentation_video.renderer.tldraw.v2.utils import finalize_geo_path
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -60,8 +60,13 @@ def finalize_oval(
 ) -> None:
     print(f"\tTldraw: Finalizing Oval: {id}")
 
+    ctx.push_group()
+
     ctx.rotate(shape.rotation)
 
     dash_oval(ctx, shape)
 
-    finalize_v2_label(ctx, shape)
+    finalize_label(ctx, shape)
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)
