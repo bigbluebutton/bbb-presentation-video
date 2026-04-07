@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, List, Optional, TypeVar, cast
+from typing import Dict, Generic, List, Optional, TypeVar, cast
 
 import cairo
 from packaging.version import Version
@@ -18,35 +18,19 @@ from bbb_presentation_video.renderer.presentation import (
 )
 from bbb_presentation_video.renderer.tldraw.fonts import add_fontconfig_app_font_dir
 from bbb_presentation_video.renderer.tldraw.shape import (
-    ArrowGeoShape,
     ArrowShape,
     ArrowShapeV2,
-    CheckBoxGeoShape,
     CloudGeoShape,
-    DiamondGeoShape,
     DrawShape,
     EllipseGeoShape,
     EllipseShape,
-    FrameShape,
     GroupShape,
-    HexagonGeoShape,
     HighlighterShape,
     LineShape,
     OvalGeoShape,
     PollShape,
-    RectangleGeoShape,
     RectangleShape,
-    RhombusGeoShape,
-    Shape,
-    StarGeoShape,
-    StickyShape,
-    StickyShapeV2,
-    TextShape,
-    TextShapeV2,
-    TrapezoidGeoShape,
-    TriangleGeoShape,
     TriangleShape,
-    XBoxGeoShape,
     parse_shape_from_data,
     shape_sort_key,
 )
@@ -57,53 +41,41 @@ from bbb_presentation_video.renderer.tldraw.shape.ellipse import finalize_ellips
 from bbb_presentation_video.renderer.tldraw.shape.highlighter import finalize_highlight
 from bbb_presentation_video.renderer.tldraw.shape.line import finalize_line
 from bbb_presentation_video.renderer.tldraw.shape.poll import finalize_poll
+from bbb_presentation_video.renderer.tldraw.shape.proto import BaseShapeProto
 from bbb_presentation_video.renderer.tldraw.shape.rectangle import finalize_rectangle
-from bbb_presentation_video.renderer.tldraw.shape.sticky import finalize_sticky
-from bbb_presentation_video.renderer.tldraw.shape.text import finalize_text
+from bbb_presentation_video.renderer.tldraw.shape.sticky import (
+    StickyShape,
+    finalize_sticky,
+)
+from bbb_presentation_video.renderer.tldraw.shape.text import TextShape, finalize_text
 from bbb_presentation_video.renderer.tldraw.shape.triangle import finalize_triangle
-from bbb_presentation_video.renderer.tldraw.v2.shape.arrow_geo_shape import (
-    finalize_geo_arrow,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.checkbox_geo_shape import (
-    finalize_checkmark,
-)
 from bbb_presentation_video.renderer.tldraw.v2.shape.cloud_geo_shape import (
     finalize_cloud,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.diamond_geo_shape import (
-    finalize_diamond,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.ellipse_geo_shape import (
     finalize_geo_ellipse,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.frame import (
+    FrameShape,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.frame import (
     finalize_frame as finalize_v2_frame,
 )
-from bbb_presentation_video.renderer.tldraw.v2.shape.hexagon_geo_shape import (
-    finalize_hexagon,
+from bbb_presentation_video.renderer.tldraw.v2.shape.geo import (
+    GeoShapeProto,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.oval_geo_shape import finalize_oval
-from bbb_presentation_video.renderer.tldraw.v2.shape.rectangle_geo_shape import (
-    finalize_geo_rectangle,
+from bbb_presentation_video.renderer.tldraw.v2.shape.sticky import (
+    StickyShapeV2,
 )
-from bbb_presentation_video.renderer.tldraw.v2.shape.rhombus_geo_shape import (
-    finalize_rhombus,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.star_geo_shape import finalize_star
 from bbb_presentation_video.renderer.tldraw.v2.shape.sticky import (
     finalize_sticky as finalize_v2_sticky,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.text import (
+    TextShapeV2,
+)
+from bbb_presentation_video.renderer.tldraw.v2.shape.text import (
     finalize_text as finalize_v2_text,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.trapezoid_geo_shape import (
-    finalize_trapezoid,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.triangle_geo_shape import (
-    finalize_geo_triangle,
-)
-from bbb_presentation_video.renderer.tldraw.v2.shape.xbox_geo_shape import (
-    finalize_x_box,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
@@ -124,7 +96,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     presentation_slide: Dict[str, int]
     """The last shown slide on a given presentation."""
 
-    shapes: Dict[str, Dict[int, ValueSortedDict[str, Shape]]]
+    shapes: Dict[str, Dict[int, ValueSortedDict[str, BaseShapeProto]]]
     """The list of shapes, organized by presentation then slide."""
 
     shapes_changed: bool = False
@@ -218,7 +190,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         self.ensure_shape_structure(presentation, slide)
 
         if id in self.shapes[presentation][slide]:
-            shape = cast(Shape, self.shapes[presentation][slide][id])
+            shape = self.shapes[presentation][slide][id]
             shape.update_from_data(data)
             action = "updated"
         else:
@@ -282,26 +254,20 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         self,
         ctx: cairo.Context[CairoSomeSurface],
         id: str,
-        shape: Shape,
-        frame_map: Dict[str, List[Shape]],
+        shape: BaseShapeProto,
+        frame_map: Dict[str, List[BaseShapeProto]],
     ) -> None:
         if id in self.shape_patterns and not id in frame_map:
             print(f"\tTldraw: Cached {shape.__class__.__name__}: {id}")
         else:
             ctx.push_group()
             ctx.translate(*shape.point)
-            if isinstance(shape, ArrowGeoShape):
-                finalize_geo_arrow(ctx, id, shape)
-            elif isinstance(shape, ArrowShape):
+            if isinstance(shape, ArrowShape):
                 finalize_arrow(ctx, id, shape)
             elif isinstance(shape, ArrowShapeV2):
                 finalize_arrow_v2(ctx, id, shape)
-            elif isinstance(shape, CheckBoxGeoShape):
-                finalize_checkmark(ctx, id, shape)
             elif isinstance(shape, CloudGeoShape):
                 finalize_cloud(ctx, id, shape)
-            elif isinstance(shape, DiamondGeoShape):
-                finalize_diamond(ctx, id, shape)
             elif isinstance(shape, DrawShape):
                 finalize_draw(ctx, id, shape)
             elif isinstance(shape, EllipseShape):
@@ -320,8 +286,6 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 # Nothing to do? All group-related updates seem to be propagated to the
                 # individual shapes in the group.
                 pass
-            elif isinstance(shape, HexagonGeoShape):
-                finalize_hexagon(ctx, id, shape)
             elif isinstance(shape, HighlighterShape):
                 finalize_highlight(ctx, id, shape)
             elif isinstance(shape, LineShape):
@@ -332,18 +296,8 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 finalize_poll(ctx, id, shape)
             elif isinstance(shape, RectangleShape):
                 finalize_rectangle(ctx, id, shape)
-            elif isinstance(shape, RectangleGeoShape):
-                finalize_geo_rectangle(ctx, id, shape)
-            elif isinstance(shape, RhombusGeoShape):
-                finalize_rhombus(ctx, id, shape)
-            elif isinstance(shape, StarGeoShape):
-                finalize_star(ctx, id, shape)
-            elif isinstance(shape, TrapezoidGeoShape):
-                finalize_trapezoid(ctx, id, shape)
             elif isinstance(shape, TriangleShape):
                 finalize_triangle(ctx, id, shape)
-            elif isinstance(shape, TriangleGeoShape):
-                finalize_geo_triangle(ctx, id, shape)
             elif isinstance(shape, TextShape):
                 finalize_text(ctx, id, shape)
             elif isinstance(shape, TextShapeV2):
@@ -352,8 +306,8 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 finalize_sticky(ctx, shape)
             elif isinstance(shape, StickyShapeV2):
                 finalize_v2_sticky(ctx, shape)
-            elif isinstance(shape, XBoxGeoShape):
-                finalize_x_box(ctx, id, shape)
+            elif isinstance(shape, GeoShapeProto):
+                shape.finalize(ctx, id)
             else:
                 print(f"\tTldraw: Don't know how to render {shape}")
 
@@ -390,26 +344,24 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         apply_shapes_transform(ctx, transform)
 
         # Map to store frame shapes and their children
-        frame_map: Dict[str, List[Shape]] = {}
+        frame_map: Dict[str, List[BaseShapeProto]] = {}
 
         # First pass to identify frames and initialize them in the map
-        for id, s in shapes.items():
-            shape = cast(Shape, s)
-            if isinstance(s, FrameShape):
+        for id, shape in shapes.items():
+            if isinstance(shape, FrameShape):
                 frame_map[id] = []
 
         # Second pass to add children to frames
-        for id, s in shapes.items():
-            parent_id = s.parentId
+        for id, shape in shapes.items():
+            parent_id = shape.parentId
 
             # Check if the shape is in a frame
             if parent_id in frame_map:
                 shape.id = id
-                frame_map[parent_id].append(s)
+                frame_map[parent_id].append(shape)
 
-        for id, s in shapes.items():
-            parent_id = s.parentId
-            shape = cast(Shape, s)
+        for id, shape in shapes.items():
+            parent_id = shape.parentId
 
             if id in frame_map:
                 shape.children = frame_map[id]

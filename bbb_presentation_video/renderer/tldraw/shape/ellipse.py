@@ -15,7 +15,6 @@ from perfect_freehand.types import StrokePoint
 from bbb_presentation_video.renderer.tldraw.easings import ease_in_out_sine
 from bbb_presentation_video.renderer.tldraw.shape import (
     EllipseShape,
-    apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -142,7 +141,7 @@ def finalize_ellipse(
 ) -> None:
     print(f"\tTldraw: Finalizing Ellipse: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     style = shape.style
 

@@ -9,8 +9,7 @@ from typing import TypeVar
 import cairo
 from gi.repository import Pango, PangoCairo
 
-from bbb_presentation_video.events.helpers import Color
-from bbb_presentation_video.renderer.tldraw.shape import PollShape, apply_shape_rotation
+from bbb_presentation_video.renderer.tldraw.shape import PollShape
 from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
@@ -34,7 +33,7 @@ def finalize_poll(
     if len(shape.answers) == 0:
         return
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     width = shape.size.width
     height = shape.size.height

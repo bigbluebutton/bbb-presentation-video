@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from math import floor, pi, tau
+from math import floor, tau
 from random import Random
 from typing import Callable, List, Optional, Sequence, TypeVar
 
@@ -24,7 +24,6 @@ from bbb_presentation_video.renderer.tldraw.intersect import (
 )
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShape,
-    apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -314,7 +313,7 @@ def finalize_arrow(
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     start = shape.handles.start
     bend = shape.handles.bend

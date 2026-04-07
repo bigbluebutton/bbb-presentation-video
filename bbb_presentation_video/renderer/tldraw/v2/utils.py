@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from math import cos, inf, sin, tau
 from typing import Dict, List, TypeVar
 
 import cairo
@@ -216,3 +217,26 @@ def finalize_geo_path(
 
     ctx.set_dash(dash_array, dash_offset)
     ctx.stroke()
+
+
+def polygon_vertices(width: float, height: float, sides: int) -> List[vec.V]:
+    cx = width / 2
+    cy = height / 2
+    points_on_perimeter = []
+    min_x = inf
+    min_y = inf
+    for i in range(0, sides):
+        step = tau / sides
+        t = -tau / 4 + i * step
+        x = cx + cx * cos(t)
+        y = cy + cy * sin(t)
+        if x < min_x:
+            min_x = x
+        if y < min_y:
+            min_y = y
+        points_on_perimeter.append((x, y))
+
+    if min_x != 0 or min_y != 0:
+        points_on_perimeter = [(x - min_x, y - min_y) for (x, y) in points_on_perimeter]
+
+    return points_on_perimeter

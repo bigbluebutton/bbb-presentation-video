@@ -9,11 +9,8 @@ from typing import TypeVar
 
 import cairo
 
-from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
-    DrawShape,
     HighlighterShape,
-    apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     HIGHLIGHT_COLORS,
@@ -30,7 +27,7 @@ def finalize_highlight(
 ) -> None:
     print(f"\tTldraw: Finalizing Highlight: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     style = shape.style
     is_complete = shape.isComplete

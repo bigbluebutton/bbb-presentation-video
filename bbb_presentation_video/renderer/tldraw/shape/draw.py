@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 from math import tau
-from typing import Tuple, TypeVar, cast
+from typing import TypeVar
 
 import cairo
 import perfect_freehand
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.easings import ease_in_quad, ease_out_sine
-from bbb_presentation_video.renderer.tldraw.shape import DrawShape, apply_shape_rotation
+from bbb_presentation_video.renderer.tldraw.shape import DrawShape
 from bbb_presentation_video.renderer.tldraw.utils import (
     COLORS,
     FILLS,
@@ -35,7 +35,7 @@ def finalize_draw(
 ) -> None:
     print(f"\tTldraw: Finalizing Draw: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     points = shape.points
     style = shape.style
