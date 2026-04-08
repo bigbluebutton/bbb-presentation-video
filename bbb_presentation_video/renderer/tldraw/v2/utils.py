@@ -130,7 +130,7 @@ def pattern_fill(color: ColorStyle) -> cairo.SurfacePattern:
     ctx = cairo.Context(surface)
 
     ctx.set_source_rgb(*BACKGROUND_COLOR)
-    ctx.fill()
+    ctx.paint()
 
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
     ctx.set_source_rgb(*PATTERN_COLORS[color])
