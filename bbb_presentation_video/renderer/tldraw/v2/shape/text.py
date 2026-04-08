@@ -60,11 +60,8 @@ def finalize_text(
     ctx.push_group()
 
     width = None
-    wrap = False
-    if not shape.auto_size:
-        wrap = True
-        if shape.size.width > 0:
-            width = shape.size.width
+    if not shape.auto_size and shape.size.width > 0:
+        width = shape.size.width
 
     layout = create_pango_layout(
         ctx,
@@ -73,7 +70,6 @@ def finalize_text(
         FONT_SIZES[style.size],
         width=width,
         align=shape.align,
-        wrap=wrap,
         letter_spacing=None,
     )
     layout.set_text(shape.text, -1)
