@@ -6,27 +6,56 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, TypeVar
 
+import attr
+
+from bbb_presentation_video.renderer.tldraw.shape.proto import (
+    BaseShapeProto,
+    LabelledShapeProto,
+)
+from bbb_presentation_video.renderer.tldraw.utils import (
+    AlignStyle,
+    FontStyle,
+    create_pango_layout,
+    get_layout_size,
+    rounded_rect,
+    show_layout_by_lines,
+)
+
 if TYPE_CHECKING:
     from bbb_presentation_video.renderer.tldraw import TldrawRenderer
 
 import cairo
 
-from bbb_presentation_video.events.helpers import Position
-from bbb_presentation_video.renderer.tldraw.shape import FrameShape, Shape
-from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_frame_name
-from bbb_presentation_video.renderer.tldraw.v2.utils import SOLID_COLOR, TEXT_COLOR
+from bbb_presentation_video.events.helpers import Position, Size
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    BACKGROUND_COLOR,
+    FONT_FAMILIES,
+    FRAME_HEADING_BORDER_RADIUS,
+    FRAME_HEADING_FONT_SIZE,
+    FRAME_HEADING_PADDING,
+    SOLID_COLOR,
+    TEXT_COLOR,
+)
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class FrameShape(LabelledShapeProto):
+    # BaseShapeProto
+    children: List[BaseShapeProto] = []
+    # LabelledShapeProto
+    label: str = "Frame"
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
 
 
 def dash_frame(
     self: TldrawRenderer[Any],
     ctx: cairo.Context[CairoSomeSurface],
     shape: FrameShape,
-    frame_map: Dict[str, List[Shape]],
+    frame_map: Dict[str, List[BaseShapeProto]],
 ) -> None:
-    style = shape.style
-
     w = max(0, shape.size.width)
     h = max(0, shape.size.height)
 
@@ -67,12 +96,57 @@ def dash_frame(
     ctx.reset_clip()
 
 
+def finalize_frame_name(
+    ctx: cairo.Context[CairoSomeSurface],
+    shape: FrameShape,
+) -> Size:
+    if shape.label is None or shape.label == "":
+        return Size(0, 0)
+
+    print(f"\t\tFinalizing Frame name (v2)")
+
+    style = shape.style
+
+    ctx.save()
+
+    # Create layout aligning the text to the top left
+    layout = create_pango_layout(
+        ctx,
+        style,
+        FONT_FAMILIES[FontStyle.SANS],
+        FRAME_HEADING_FONT_SIZE,
+        width=shape.size.width,
+        padding=0,
+        align=AlignStyle.START,
+        letter_spacing=None,
+    )
+
+    layout.set_text(shape.label, -1)
+
+    label_size = get_layout_size(layout, padding=FRAME_HEADING_PADDING)
+
+    x = -FRAME_HEADING_PADDING
+    y = -label_size.height - (FRAME_HEADING_PADDING / 2)
+    ctx.translate(x, y)
+
+    ctx.set_source_rgb(*BACKGROUND_COLOR)
+    rounded_rect(ctx, label_size, FRAME_HEADING_BORDER_RADIUS)
+    ctx.fill()
+
+    ctx.set_source_rgb(*TEXT_COLOR)
+    show_layout_by_lines(ctx, layout, padding=FRAME_HEADING_PADDING)
+
+    ctx.restore()
+
+    return label_size
+
+
 def finalize_frame(
     self: TldrawRenderer[Any],
     ctx: cairo.Context[CairoSomeSurface],
     id: str,
     shape: FrameShape,
-    frame_map: Dict[str, List[Shape]],
+    frame_map: Dict[str, List[BaseShapeProto]],
 ) -> None:
     print(f"\tTldraw: Finalizing frame shape: {id}")
 

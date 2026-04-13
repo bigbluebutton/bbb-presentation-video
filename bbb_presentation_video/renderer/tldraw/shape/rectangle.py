@@ -14,7 +14,6 @@ import perfect_freehand
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
     RectangleShape,
-    apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -180,7 +179,7 @@ def finalize_rectangle(
 ) -> None:
     print(f"\tTldraw: Finalizing Rectangle: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     if shape.style.dash is DashStyle.DRAW:
         draw_rectangle(ctx, id, shape)

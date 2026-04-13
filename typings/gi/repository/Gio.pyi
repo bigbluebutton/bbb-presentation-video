@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2006-2007 Red Hat, Inc.
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 """Gio is a library providing useful classes for general purpose I/O, networking, IPC,
 settings, and other high level application functionality
 """

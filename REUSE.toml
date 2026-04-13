@@ -1,0 +1,10 @@
+version = 1
+SPDX-PackageName = "bbb-presentation-video"
+SPDX-PackageSupplier = "Calvin Walton <calvin.walton@blindsidenetworks.com>"
+SPDX-PackageDownloadLocation = "https://github.com/blindsidenetworks/bbb-presentation-video"
+
+[[annotations]]
+path = "debian/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 Calvin Walton"
+SPDX-License-Identifier = "MIT"

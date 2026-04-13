@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
 BigBlueButton Presentation Area Video Generator
 ===============================================
 

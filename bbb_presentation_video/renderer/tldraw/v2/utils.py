@@ -1,5 +1,10 @@
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from __future__ import annotations
 
+from math import cos, inf, sin, tau
 from typing import Dict, List, TypeVar
 
 import cairo
@@ -14,6 +19,11 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     Style,
     get_perfect_dash_props,
 )
+
+# SPDX-SnippetBegin
+# SPDX-SnippetCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+# SPDX-SnippetCopyrightText: 2023 tldraw GB Ltd. <hello@tldraw.com>
+# SPDX-License-Identifier: GPL-3.0-or-later AND Apache-2.0
 
 # From tldraw shapes/shared/default-shape-constants.mjs
 LINE_HEIGHT: float = 1.35
@@ -120,6 +130,7 @@ FRAME_HEADING_BORDER_RADIUS: float = 4  # var(--radius-1)
 
 NOTE_BORDER_RADIUS: float = 6  # var(--radius-2)
 
+# SPDX-SnippetEnd
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -206,3 +217,26 @@ def finalize_geo_path(
 
     ctx.set_dash(dash_array, dash_offset)
     ctx.stroke()
+
+
+def polygon_vertices(width: float, height: float, sides: int) -> List[vec.V]:
+    cx = width / 2
+    cy = height / 2
+    points_on_perimeter = []
+    min_x = inf
+    min_y = inf
+    for i in range(0, sides):
+        step = tau / sides
+        t = -tau / 4 + i * step
+        x = cx + cx * cos(t)
+        y = cy + cy * sin(t)
+        if x < min_x:
+            min_x = x
+        if y < min_y:
+            min_y = y
+        points_on_perimeter.append((x, y))
+
+    if min_x != 0 or min_y != 0:
+        points_on_perimeter = [(x - min_x, y - min_y) for (x, y) in points_on_perimeter]
+
+    return points_on_perimeter

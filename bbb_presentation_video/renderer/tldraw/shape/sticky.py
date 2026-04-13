@@ -6,25 +6,69 @@ from __future__ import annotations
 
 from typing import TypeVar
 
+import attr
 import cairo
 
 from bbb_presentation_video.events.helpers import Size
-from bbb_presentation_video.renderer.tldraw.shape import (
-    StickyShape,
-    apply_shape_rotation,
-)
-from bbb_presentation_video.renderer.tldraw.shape.text import finalize_sticky_text
+from bbb_presentation_video.events.tldraw import ShapeData
+from bbb_presentation_video.renderer.tldraw.shape.proto import RotatableShapeProto
 from bbb_presentation_video.renderer.tldraw.utils import (
+    FONT_FACES,
     STICKY_FILLS,
+    STICKY_FONT_SIZES,
+    STICKY_PADDING,
+    STICKY_TEXT_COLOR,
     ColorStyle,
+    create_pango_layout,
     rounded_rect,
+    show_layout_by_lines,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
+@attr.s(order=False, slots=True, auto_attribs=True)
+class StickyShape(RotatableShapeProto):
+    text: str = ""
+
+    # SizedShapeProto
+    size: Size = Size(200.0, 200.0)
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "text" in data:
+            self.text = data["text"]
+
+
+def finalize_sticky_text(
+    ctx: cairo.Context[CairoSomeSurface], shape: StickyShape
+) -> None:
+    if shape.text is None or shape.text == "":
+        return
+
+    print(f"\t\tFinalizing Sticky Text")
+
+    style = shape.style
+    font_description = FONT_FACES[style.font]
+    font_size = STICKY_FONT_SIZES[style.size]
+
+    layout = create_pango_layout(
+        ctx,
+        style,
+        font_description,
+        font_size,
+        width=shape.size.width,
+        padding=STICKY_PADDING,
+    )
+    layout.set_text(shape.text, -1)
+
+    ctx.set_source_rgb(STICKY_TEXT_COLOR.r, STICKY_TEXT_COLOR.g, STICKY_TEXT_COLOR.b)
+    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING)
+
+
 def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShape) -> None:
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     style = shape.style
     if style.color is ColorStyle.WHITE or style.color is ColorStyle.BLACK:

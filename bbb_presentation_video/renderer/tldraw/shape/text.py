@@ -3,175 +3,41 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-from math import ceil
-from typing import Callable, Dict, Optional, Tuple, TypeVar
+from typing import Callable, Optional, Tuple, TypeVar
 
+import attr
 import cairo
 import gi
+from gi.repository import PangoCairo
 
 from bbb_presentation_video.events.helpers import Position, Size
-from bbb_presentation_video.renderer.tldraw.shape import (
+from bbb_presentation_video.events.tldraw import ShapeData
+from bbb_presentation_video.renderer.tldraw.shape.proto import (
     LabelledShapeProto,
-    StickyShape,
-    TextShape,
-    apply_shape_rotation,
+    RotatableShapeProto,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     FONT_FACES,
     FONT_SIZES,
-    LETTER_SPACING,
-    STICKY_FONT_SIZES,
-    STICKY_PADDING,
-    STICKY_TEXT_COLOR,
     STROKES,
     AlignStyle,
-    ColorStyle,
-    SizeStyle,
-    Style,
+    create_pango_layout,
+    get_layout_size,
+    show_layout_by_lines,
 )
-
-gi.require_version("Pango", "1.0")
-gi.require_version("PangoCairo", "1.0")
-from gi.repository import Pango, PangoCairo
-
-# Set DPI to "72" so we're working directly in Pango point units.
-DPI: float = 72.0
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
-def create_pango_layout(
-    ctx: cairo.Context[CairoSomeSurface],
-    style: Style,
-    font_description: str,
-    font_size: float,
-    *,
-    width: Optional[float] = None,
-    padding: float = 0,
-    align: Optional[AlignStyle] = None,
-    wrap: bool = True,
-    letter_spacing: Optional[float] = LETTER_SPACING,
-) -> Pango.Layout:
-    print(
-        f"\t\tPango layout: font_description={font_description}, font_size={font_size}, width={width}, padding={padding}, align={align}, wrap={wrap}"
-    )
-    pctx = PangoCairo.create_context(ctx)
-    pctx.set_round_glyph_positions(False)
+@attr.s(order=False, slots=True, auto_attribs=True)
+class TextShape(RotatableShapeProto):
+    text: str = ""
 
-    font = Pango.FontDescription.from_string(font_description)
-    font.set_size(round(font_size * style.scale * Pango.SCALE))
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
 
-    fo = cairo.FontOptions()
-    fo.set_antialias(cairo.Antialias.GRAY)
-    fo.set_hint_metrics(cairo.HintMetrics.OFF)
-    fo.set_hint_style(cairo.HintStyle.NONE)
-    PangoCairo.context_set_font_options(pctx, fo)
-
-    attrs = Pango.AttrList()
-    if letter_spacing is not None:
-        letter_spacing_attr = Pango.attr_letter_spacing_new(
-            round(letter_spacing * font_size * style.scale * Pango.SCALE)
-        )
-        attrs.insert(letter_spacing_attr)
-    insert_hyphens_attr = Pango.attr_insert_hyphens_new(insert_hyphens=False)
-    attrs.insert(insert_hyphens_attr)
-
-    layout = Pango.Layout(pctx)
-    PangoCairo.context_set_resolution(pctx, DPI)
-    layout.set_auto_dir(True)
-    layout.set_attributes(attrs)
-    layout.set_font_description(font)
-
-    if align is None:
-        align = style.textAlign
-
-    if align == AlignStyle.START:
-        layout.set_alignment(Pango.Alignment.LEFT)
-    elif align == AlignStyle.MIDDLE:
-        layout.set_alignment(Pango.Alignment.CENTER)
-    elif align == AlignStyle.END:
-        layout.set_alignment(Pango.Alignment.RIGHT)
-    elif align == AlignStyle.JUSTIFY:
-        layout.set_alignment(Pango.Alignment.LEFT)
-        layout.set_justify(True)
-
-    if width is not None:
-        layout.set_width(ceil((width - (padding * 2)) * Pango.SCALE))
-
-    if wrap:
-        layout.set_wrap(Pango.WrapMode.WORD_CHAR)
-    else:
-        layout.set_height(0)
-        layout.set_ellipsize(Pango.EllipsizeMode.END)
-
-    return layout
-
-
-def show_layout_by_lines(
-    ctx: cairo.Context[CairoSomeSurface],
-    layout: Pango.Layout,
-    *,
-    padding: float = 0,
-    do_path: bool = False,
-    line_height: float = 1.0,
-) -> None:
-    """Show a Pango Layout line by line to manually handle CSS-style line height."""
-    # TODO: With Pango 1.50 this can be replaced with Pango.attr_line_height_new_absolute
-
-    font = layout.get_font_description()
-    # Replicate CSS line-height being a multiplier of font size
-    line_height = font.get_size() / Pango.SCALE * line_height
-
-    ctx.save()
-    ctx.translate(padding, padding)
-    iter = layout.get_iter()
-    while True:
-        # Get the layout iter's line extents for horizontal positioning
-        _ink_rect, logical_rect = iter.get_line_extents()
-        offset_x = logical_rect.x / Pango.SCALE
-
-        # Get the line's extents for vertical positioning
-        line = iter.get_line_readonly()
-        # With show_layout_line, text origin is at baseline. y is a negative number that
-        # indicates how far the font extends above baseline, and height is a positive number
-        # which is the font's natural line height.
-        _ink_rect, logical_rect = line.get_extents()
-        logical_y = logical_rect.y / Pango.SCALE
-        logical_height = logical_rect.height / Pango.SCALE
-        # For CSS line height adjustments, the "leading" value (difference between set line
-        # height and font's natural line height) is split in half - half is added above, and
-        # half below.
-        # To get the baseline in the right position, we offset by the font ascent plus the
-        # half-leading value.
-        offset_y = (-logical_y) + (line_height - logical_height) / 2
-
-        ctx.save()
-        ctx.translate(offset_x, offset_y)
-        if do_path:
-            PangoCairo.layout_line_path(ctx, line)
-        else:
-            PangoCairo.show_layout_line(ctx, line)
-        ctx.restore()
-
-        ctx.translate(0, line_height)
-        if not iter.next_line():
-            break
-
-    ctx.restore()
-
-
-def get_layout_size(
-    layout: Pango.Layout, *, padding: float = 0, line_height: float = 1.0
-) -> Size:
-    # TODO: Once we switch to Pango 1.50 and use Pango.attr_line_height_new_absolute this can
-    # be replaced with a call to layout.get_size()
-    layout_size = layout.get_size()
-    width = layout_size[0] / Pango.SCALE
-    lines = layout.get_line_count()
-    font = layout.get_font_description()
-    line_height = font.get_size() / Pango.SCALE * line_height
-    height = lines * line_height
-    return Size(width + padding * 2, height + padding * 2)
+        if "text" in data:
+            self.text = data["text"]
 
 
 def finalize_text(
@@ -179,7 +45,7 @@ def finalize_text(
 ) -> None:
     print(f"\tTldraw: Finalizing Text: {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     style = shape.style
     stroke = STROKES[style.color]
@@ -242,29 +108,3 @@ def finalize_label(
     ctx.restore()
 
     return (label_size, scale_adj)
-
-
-def finalize_sticky_text(
-    ctx: cairo.Context[CairoSomeSurface], shape: StickyShape
-) -> None:
-    if shape.text is None or shape.text == "":
-        return
-
-    print(f"\t\tFinalizing Sticky Text")
-
-    style = shape.style
-    font_description = FONT_FACES[style.font]
-    font_size = STICKY_FONT_SIZES[style.size]
-
-    layout = create_pango_layout(
-        ctx,
-        style,
-        font_description,
-        font_size,
-        width=shape.size.width,
-        padding=STICKY_PADDING,
-    )
-    layout.set_text(shape.text, -1)
-
-    ctx.set_source_rgb(STICKY_TEXT_COLOR.r, STICKY_TEXT_COLOR.g, STICKY_TEXT_COLOR.b)
-    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING)

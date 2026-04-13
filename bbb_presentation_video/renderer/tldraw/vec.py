@@ -22,6 +22,10 @@ def sub(a: S, b: S) -> V:
     return (a[0] - b[0], a[1] - b[1])
 
 
+def neg(a: S) -> V:
+    return (a[0] * -1, a[1] * -1)
+
+
 def vec(a: S, b: S) -> V:
     """Get the vector from vectors A to B."""
     return (b[0] - a[0], b[1] - a[1])

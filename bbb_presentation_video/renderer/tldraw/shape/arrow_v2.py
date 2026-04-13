@@ -12,7 +12,6 @@ from bbb_presentation_video.events.helpers import Position
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShapeV2,
-    apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.shape.arrow import (
     curved_arrow_head,
@@ -164,7 +163,7 @@ def finalize_arrow_v2(
 ) -> None:
     print(f"\tTldraw: Finalizing Arrow (v2): {id}")
 
-    apply_shape_rotation(ctx, shape)
+    shape.apply_shape_rotation(ctx)
 
     start = shape.handles.start
     end = shape.handles.end

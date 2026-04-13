@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import ShapeData
 from bbb_presentation_video.renderer.tldraw.shape import (

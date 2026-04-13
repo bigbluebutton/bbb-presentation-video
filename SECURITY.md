@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 BigBlueButton Inc. and by respective authors
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+
 # Security Policy
 
 ## Supported Versions

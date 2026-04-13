@@ -3,47 +3,59 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-from typing import Dict, Optional, TypeVar
+from typing import Optional, TypeVar
 
+import attr
 import cairo
-import gi
 
 from bbb_presentation_video.events.helpers import Position, Size
-from bbb_presentation_video.renderer.tldraw.shape import (
-    FrameShape,
+from bbb_presentation_video.events.tldraw import ShapeData
+from bbb_presentation_video.renderer.tldraw.shape.proto import (
     LabelledShapeProto,
-    StickyShapeV2,
-    TextShapeV2,
+    RotatableShapeProto,
 )
-from bbb_presentation_video.renderer.tldraw.shape.text import (
+from bbb_presentation_video.renderer.tldraw.utils import (
+    AlignStyle,
+    ColorStyle,
     create_pango_layout,
     get_layout_size,
     show_layout_by_lines,
-)
-from bbb_presentation_video.renderer.tldraw.utils import (
-    STICKY_PADDING,
-    AlignStyle,
-    ColorStyle,
-    FontStyle,
-    rounded_rect,
 )
 from bbb_presentation_video.renderer.tldraw.v2.utils import (
     BACKGROUND_COLOR,
     COLORS,
     FONT_FAMILIES,
     FONT_SIZES,
-    FRAME_HEADING_BORDER_RADIUS,
-    FRAME_HEADING_FONT_SIZE,
-    FRAME_HEADING_PADDING,
     LABEL_FONT_SIZES,
     LINE_HEIGHT,
-    TEXT_COLOR,
 )
 
 TEXT_OUTLINE_WIDTH: float = 1.0
 LABEL_PADDING: float = 16.0
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class TextShapeV2(RotatableShapeProto):
+    text: str = ""
+
+    align: AlignStyle = AlignStyle.MIDDLE
+    """Horizontal alignment of the label."""
+
+    auto_size: bool = False
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "props" in data:
+            props = data["props"]
+            if "text" in props:
+                self.text = props["text"]
+            if "align" in props:
+                self.align = AlignStyle(props["align"])
+            if "autoSize" in props:
+                self.auto_size = props["autoSize"]
 
 
 def finalize_text(
@@ -154,85 +166,3 @@ def finalize_label(
     ctx.restore()
 
     return label_size
-
-
-def finalize_frame_name(
-    ctx: cairo.Context[CairoSomeSurface],
-    shape: FrameShape,
-) -> Size:
-    if shape.label is None or shape.label == "":
-        return Size(0, 0)
-
-    print(f"\t\tFinalizing Frame name (v2)")
-
-    style = shape.style
-
-    ctx.save()
-
-    # Create layout aligning the text to the top left
-    layout = create_pango_layout(
-        ctx,
-        style,
-        FONT_FAMILIES[FontStyle.SANS],
-        FRAME_HEADING_FONT_SIZE,
-        width=shape.size.width,
-        padding=0,
-        align=AlignStyle.START,
-        letter_spacing=None,
-    )
-
-    layout.set_text(shape.label, -1)
-
-    label_size = get_layout_size(layout, padding=FRAME_HEADING_PADDING)
-
-    x = -FRAME_HEADING_PADDING
-    y = -label_size.height - (FRAME_HEADING_PADDING / 2)
-    ctx.translate(x, y)
-
-    ctx.set_source_rgb(*BACKGROUND_COLOR)
-    rounded_rect(ctx, label_size, FRAME_HEADING_BORDER_RADIUS)
-    ctx.fill()
-
-    ctx.set_source_rgb(*TEXT_COLOR)
-    show_layout_by_lines(ctx, layout, padding=FRAME_HEADING_PADDING)
-
-    ctx.restore()
-
-    return label_size
-
-
-def finalize_sticky_text(
-    ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2
-) -> None:
-    if shape.text is None or shape.text == "":
-        return
-
-    print(f"\t\tFinalizing Sticky Text (v2)")
-
-    style = shape.style
-
-    layout = create_pango_layout(
-        ctx,
-        style,
-        FONT_FAMILIES[style.font],
-        LABEL_FONT_SIZES[style.size],
-        width=shape.size.width,
-        padding=STICKY_PADDING,
-        align=shape.align,
-    )
-    layout.set_text(shape.text, -1)
-
-    # Calculate vertical position to center the text
-    _, text_height = get_layout_size(
-        layout, padding=STICKY_PADDING, line_height=LINE_HEIGHT
-    )
-    x, y = ctx.get_current_point()
-
-    if shape.verticalAlign is AlignStyle.MIDDLE:
-        y = (shape.size.height - text_height) / 2
-    elif shape.verticalAlign is AlignStyle.END:
-        y = shape.size.height - text_height
-    ctx.translate(x, y)
-
-    ctx.set_source_rgb(*COLORS[ColorStyle.BLACK])
-    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING, line_height=LINE_HEIGHT)
