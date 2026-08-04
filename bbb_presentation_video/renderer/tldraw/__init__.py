@@ -31,6 +31,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     GroupShape,
     HexagonGeoShape,
     HighlighterShape,
+    ImageShape,
     LineShape,
     OvalGeoShape,
     PollShape,
@@ -82,6 +83,7 @@ from bbb_presentation_video.renderer.tldraw.v2.shape.frame import (
 from bbb_presentation_video.renderer.tldraw.v2.shape.hexagon_geo_shape import (
     finalize_hexagon,
 )
+from bbb_presentation_video.renderer.tldraw.v2.shape.image import finalize_image
 from bbb_presentation_video.renderer.tldraw.v2.shape.oval_geo_shape import finalize_oval
 from bbb_presentation_video.renderer.tldraw.v2.shape.rectangle_geo_shape import (
     finalize_geo_rectangle,
@@ -115,6 +117,9 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     ctx: cairo.Context[CairoSomeSurface]
     """The cairo rendering context for drawing the whiteboard."""
 
+    directory: str
+    """The directory of the recording, which holds the uploaded image files."""
+
     presentation: Optional[str] = None
     """The current presentation."""
 
@@ -144,10 +149,12 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     def __init__(
         self,
         ctx: cairo.Context[CairoSomeSurface],
+        directory: str,
         transform: Transform,
         bbb_version: Version,
     ):
         self.ctx = ctx
+        self.directory = directory
         self.presentation_slide = {}
         self.shapes = {}
         self.shape_patterns = {}
@@ -210,10 +217,6 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         slide = event["slide"]
         id = event["id"]
         data = event["data"]
-
-        if "type" in data and data["type"] == "image":
-            print(f"\tTldraw: ignoring image shape type: {id}")
-            return
 
         self.ensure_shape_structure(presentation, slide)
 
@@ -324,6 +327,8 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                 finalize_hexagon(ctx, id, shape)
             elif isinstance(shape, HighlighterShape):
                 finalize_highlight(ctx, id, shape)
+            elif isinstance(shape, ImageShape):
+                finalize_image(ctx, id, shape, self.directory)
             elif isinstance(shape, LineShape):
                 finalize_line(ctx, id, shape)
             elif isinstance(shape, OvalGeoShape):
