@@ -244,7 +244,7 @@ class Renderer:
         )
         shapes = ShapesRenderer(self.ctx, presentation.transform)
         tldraw = TldrawRenderer(
-            self.ctx, presentation.transform, self.events.bbb_version
+            self.ctx, self.input, presentation.transform, self.events.bbb_version
         )
 
         encoder = Encoder(

@@ -4,7 +4,17 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 import cairo
@@ -20,6 +30,9 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     SplineType,
     Style,
 )
+
+if TYPE_CHECKING:
+    from gi.repository import GdkPixbuf
 
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 
@@ -247,6 +260,32 @@ class HighlighterShape(RotatableShapeProto):
             self.isComplete = data["isComplete"]
         elif "props" in data and "isComplete" in data["props"]:
             self.isComplete = data["props"]["isComplete"]
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
+class ImageShape(RotatableShapeProto):
+    src: Optional[str] = None
+    """Location of the image, as recorded by the whiteboard client."""
+
+    pixbuf: Optional[GdkPixbuf.Pixbuf] = None
+    """The decoded image, cached after the first render."""
+
+    pixbuf_loaded: bool = False
+    """Whether loading the image has been attempted, successfully or not."""
+
+    # SizedShapeProto
+    size: Size = Size(1.0, 1.0)
+
+    def update_from_data(self, data: ShapeData) -> None:
+        super().update_from_data(data)
+
+        if "meta" in data and "bbbImageSrc" in data["meta"]:
+            src = data["meta"]["bbbImageSrc"]
+            # Moving or resizing a shape must not discard the decoded image
+            if src != self.src:
+                self.src = src
+                self.pixbuf = None
+                self.pixbuf_loaded = False
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -649,6 +688,7 @@ Shape = Union[
     GroupShape,
     HexagonGeoShape,
     HighlighterShape,
+    ImageShape,
     LineShape,
     OvalGeoShape,
     RectangleGeoShape,
@@ -703,6 +743,8 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Optional[Sha
         return FrameShape.from_data(data)
     elif type == "poll":
         return PollShape.from_data(data)
+    elif type == "image":
+        return ImageShape.from_data(data)
     elif type == "geo":
         if "geo" in data["props"]:
             geo_type = GeoShape(data["props"]["geo"])
