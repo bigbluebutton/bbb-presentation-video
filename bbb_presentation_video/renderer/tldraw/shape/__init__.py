@@ -268,7 +268,7 @@ class ImageShape(RotatableShapeProto):
     """Location of the image, as recorded by the whiteboard client."""
 
     pixbuf: Optional[GdkPixbuf.Pixbuf] = None
-    """The decoded image, cached after the first render."""
+    """The decoded image, shared with the other shapes given the same file."""
 
     pixbuf_loaded: bool = False
     """Whether loading the image has been attempted, successfully or not."""

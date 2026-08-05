@@ -5,6 +5,7 @@ import cairo
 from bbb_presentation_video.events.helpers import Size
 from bbb_presentation_video.renderer.tldraw.shape import ImageShape
 from bbb_presentation_video.renderer.tldraw.v2.shape.image import (
+    MAX_IMAGE_PIXELS,
     finalize_image,
     load_pixbuf,
     upload_filename,
@@ -12,7 +13,7 @@ from bbb_presentation_video.renderer.tldraw.v2.shape.image import (
 
 
 def test_upload_filename_accepts_supported_types() -> None:
-    for extension in ["png", "PNG", "jpg", "jpeg", "gif", "webp"]:
+    for extension in ["png", "PNG", "jpg", "jpeg", "gif"]:
         src = f"/bigbluebutton/fileUpload/meeting-id/44c71706.{extension}"
         assert upload_filename(src) == f"44c71706.{extension}"
 
@@ -21,6 +22,11 @@ def test_upload_filename_rejects_unsupported_types() -> None:
     assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706.svg") is None
     assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706") is None
     assert upload_filename("") is None
+
+
+def test_upload_filename_rejects_webp() -> None:
+    """There is no webp loader to decode it with, so it is not accepted."""
+    assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706.webp") is None
 
 
 def test_upload_filename_strips_directories() -> None:
@@ -79,3 +85,32 @@ def test_finalize_image_with_a_size(tmp_path: Path) -> None:
 
     # The image really was readable, so the skip above was the size check
     assert shape.pixbuf is not None
+
+
+def test_shapes_sharing_a_file_share_one_decoded_image(tmp_path: Path) -> None:
+    """Pasting the same upload many times must not decode it many times."""
+    write_upload(tmp_path)
+
+    first = load_pixbuf(image_shape(Size(4, 3)), str(tmp_path))
+    second = load_pixbuf(image_shape(Size(9, 9)), str(tmp_path))
+
+    assert first is not None
+    assert first is second
+
+
+def test_load_pixbuf_with_excessive_dimensions(tmp_path: Path) -> None:
+    """A file small enough to archive can still decode to gigabytes."""
+    uploads = tmp_path / "uploads"
+    uploads.mkdir()
+    # Written rather than committed, since the repository keeps no binary
+    # fixtures. Just over the limit, so a missing check would decode it.
+    side = 4097
+    assert side * side > MAX_IMAGE_PIXELS
+    cairo.ImageSurface(cairo.FORMAT_ARGB32, side, side).write_to_png(
+        str(uploads / "44c71706.png")
+    )
+
+    shape = image_shape(Size(4, 3))
+
+    assert load_pixbuf(shape, str(tmp_path)) is None
+    assert shape.pixbuf is None
