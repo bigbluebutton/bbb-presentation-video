@@ -261,6 +261,11 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         if self.presentation is None or self.page_key is None:
             return False
 
+        # Composite fallback keys are "<presentation>/<number>"; they never
+        # name a slide file, and no key may reach outside the svgs directory.
+        if "/" in self.page_key or "\\" in self.page_key or ".." in self.page_key:
+            return False
+
         filename = (
             f"{self.directory}/presentation/{self.presentation}"
             f"/svgs/slide{self.page_key}.svg"
@@ -304,7 +309,8 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         viewport.y = 0.0
         viewport.width = self.page_size.width
         viewport.height = self.page_size.height
-        self.page.render_document(ctx, viewport)
+        if not self.page.render_document(ctx, viewport):
+            print("Svg page failed to render; it may be drawn incompletely")
 
     def render_image(self) -> None:
         assert isinstance(self.page, GdkPixbuf.Pixbuf)
