@@ -7,7 +7,11 @@ from typing import Any, Collection, Dict, List, Optional, Sequence, TypedDict, U
 
 from lxml import etree
 
-from bbb_presentation_video.events.helpers import Position, xml_subelement
+from bbb_presentation_video.events.helpers import (
+    Position,
+    xml_subelement,
+    xml_subelement_opt,
+)
 
 
 class StyleData(TypedDict, total=False):
@@ -100,6 +104,8 @@ class AddShapeEvent(TypedDict):
     id: str
     presentation: str
     slide: int
+    page_id: Optional[str]
+    page_key: str
     user_id: str
     data: ShapeData
 
@@ -109,6 +115,7 @@ def parse_add_shape(event: AddShapeEvent, element: etree._Element) -> None:
     event["id"] = xml_subelement(element, name, "shapeId")
     event["presentation"] = xml_subelement(element, name, "presentation")
     event["slide"] = int(xml_subelement(element, name, "pageNumber"))
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
     event["user_id"] = xml_subelement(element, name, "userId")
     event["data"] = json.loads(xml_subelement(element, name, "shapeData"))
     event["name"] = "tldraw.add_shape"
@@ -119,6 +126,8 @@ class DeleteShapeEvent(TypedDict):
     id: str
     presentation: str
     slide: int
+    page_id: Optional[str]
+    page_key: str
     user_id: str
 
 
@@ -127,6 +136,7 @@ def parse_delete_shape(event: DeleteShapeEvent, element: etree._Element) -> None
     event["id"] = xml_subelement(element, name, "shapeId")
     event["presentation"] = xml_subelement(element, name, "presentation")
     event["slide"] = int(xml_subelement(element, name, "pageNumber"))
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
     event["user_id"] = xml_subelement(element, name, "userId")
     event["name"] = "tldraw.delete_shape"
 
