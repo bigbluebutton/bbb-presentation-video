@@ -386,3 +386,24 @@ def test_image_from_data() -> None:
     assert image.rotation == 0
     assert image.pixbuf is None
     assert image.pixbuf_loaded == False
+
+
+def test_image_update_keeps_the_decoded_image_unless_the_source_changes() -> None:
+    data: ShapeData = {
+        "type": "image",
+        "meta": {"bbbImageSrc": "/bigbluebutton/fileUpload/meeting-id/a.png"},
+        "props": {"w": 400, "h": 300},
+    }
+    image = ImageShape.from_data(data)
+    image.pixbuf_loaded = True
+
+    # Moving or resizing the shape must not discard the decoded image
+    image.update_from_data({"props": {"w": 200, "h": 150}})
+    assert image.pixbuf_loaded == True
+
+    # A different source must
+    image.update_from_data(
+        {"meta": {"bbbImageSrc": "/bigbluebutton/fileUpload/meeting-id/b.png"}}
+    )
+    assert image.pixbuf_loaded == False
+    assert image.src == "/bigbluebutton/fileUpload/meeting-id/b.png"
