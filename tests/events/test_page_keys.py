@@ -133,6 +133,36 @@ def test_page_shown_at_the_start_is_named_by_its_annotations(tmp_path: Path) -> 
     assert keys_of(events) == [PAGE_1, PAGE_1]
 
 
+def test_returning_to_a_presentation_restores_its_page(tmp_path: Path) -> None:
+    """Sharing a presentation again returns to its last viewed page.
+
+    The renderers restore that page, so an event that names no page of its own
+    right after the switch must resolve against it, not against the page the
+    previous presentation was left on.
+    """
+    events: List[Event] = [
+        event("presentation", presentation="pres-a"),
+        event("slide", slide=2, page_id=None),
+        event("presentation", presentation="pres-b"),
+        event("cursor_v2", page_id=None),
+        event("presentation", presentation="pres-a"),
+        event("cursor_v2", page_id=None),
+    ]
+
+    resolve_page_keys(events, str(tmp_path))
+
+    assert keys_of(events) == [
+        "pres-a/1",
+        "pres-a/3",
+        # pres-b has never been shown, so it opens on its first page.
+        "pres-b/1",
+        "pres-b/1",
+        # pres-a returns on the page it was left on.
+        "pres-a/3",
+        "pres-a/3",
+    ]
+
+
 def test_recording_without_page_ids_keys_by_number(tmp_path: Path) -> None:
     """Older recordings carry no ids anywhere and keep per-number behaviour."""
     events: List[Event] = [

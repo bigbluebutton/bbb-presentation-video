@@ -79,9 +79,7 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
         self.presentation = event["presentation"]
         self.shapes_changed = True
         # Restore the last viewed page from this presentation
-        self.page_key = self.presentation_page.get(
-            self.presentation, event["page_key"]
-        )
+        self.page_key = self.presentation_page.get(self.presentation, event["page_key"])
         print(f"\tShapes: presentation: {self.presentation}")
         print(f"\tShapes: page: {self.page_key}")
 

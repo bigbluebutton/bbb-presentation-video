@@ -447,6 +447,9 @@ def iter_event_pages(
     so that has to be tracked while walking the list.
     """
     presentation: Optional[str] = None
+    # The renderers restore the last viewed page when a presentation is shown
+    # again, so the same has to be remembered here for the keys to agree.
+    presentation_slides: Dict[str, int] = {}
     slide = 0
 
     for event in events:
@@ -457,9 +460,10 @@ def iter_event_pages(
 
         if name == "presentation":
             presentation = fields["presentation"]
-            # A presentation that has not been shown before opens on its first
-            # page, so that is the page this event refers to.
-            yield fields, presentation, 0
+            # A presentation opens on its first page when it has not been shown
+            # before, and on its last viewed page when it has.
+            slide = presentation_slides.get(presentation, 0)
+            yield fields, presentation, slide
             continue
 
         if name not in PAGE_EVENTS:
@@ -467,6 +471,8 @@ def iter_event_pages(
 
         if name == "slide":
             slide = fields["slide"]
+            if presentation is not None:
+                presentation_slides[presentation] = slide
 
         event_slide = fields.get("slide")
         if event_slide is None:
