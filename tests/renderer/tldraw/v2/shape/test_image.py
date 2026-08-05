@@ -1,3 +1,4 @@
+import struct
 from pathlib import Path
 
 import cairo
@@ -85,6 +86,33 @@ def test_finalize_image_with_a_size(tmp_path: Path) -> None:
 
     # The image really was readable, so the skip above was the size check
     assert shape.pixbuf is not None
+
+
+def test_finalize_image_draws_for_every_shape_sharing_the_image(tmp_path: Path) -> None:
+    """A shared decoded image has to draw for the second shape as much as the first."""
+    uploads = tmp_path / "uploads"
+    uploads.mkdir()
+    upload = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+    painter = cairo.Context(upload)
+    painter.set_source_rgb(1, 0, 0)
+    painter.paint()
+    upload.write_to_png(str(uploads / "44c71706.png"))
+
+    for _ in range(2):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        finalize_image(
+            cairo.Context(surface),
+            "shape:test",
+            image_shape(Size(10, 10)),
+            str(tmp_path),
+        )
+        surface.flush()
+
+        # Away from the edges, where scaling a two pixel image blends towards
+        # transparent. Cairo keeps ARGB32 as native byte order, premultiplied.
+        centre = 5 * surface.get_stride() + 5 * 4
+        (pixel,) = struct.unpack_from("=I", bytes(surface.get_data()), centre)
+        assert pixel == 0xFFFF0000, "expected opaque red"
 
 
 def test_shapes_sharing_a_file_share_one_decoded_image(tmp_path: Path) -> None:
