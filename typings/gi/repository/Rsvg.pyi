@@ -16,13 +16,11 @@ class Handle:
     @classmethod
     def new_from_file(cls, file_name: str) -> Optional[Handle]:
         """Loads the SVG specified by @file_name."""
-
     def get_intrinsic_size_in_pixels(self) -> Tuple[bool, float, float]:
         """Converts an SVG document's intrinsic dimensions to pixels.
 
         Returns whether the document has both width and height in pixel units,
         followed by those dimensions."""
-
     def render_document(
         self, cr: cairo.Context[cairo._SomeSurface], viewport: Rectangle
     ) -> bool:
