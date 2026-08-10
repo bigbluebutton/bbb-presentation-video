@@ -31,13 +31,13 @@ def test_upload_filename_rejects_webp() -> None:
 
 
 def test_upload_filename_strips_directories() -> None:
-    """A source can only ever name a file directly inside the uploads directory."""
+    """A source can only ever name a file directly inside the file-uploads directory."""
     assert upload_filename("../../../etc/shadow.png") == "shadow.png"
     assert upload_filename("/etc/ssl/private/server.png") == "server.png"
     assert upload_filename("../../../etc/shadow") is None
 
 
-def test_load_pixbuf_without_uploads_directory(tmp_path: Path) -> None:
+def test_load_pixbuf_without_file_uploads_directory(tmp_path: Path) -> None:
     """Recordings made before pasted images were archived still have to render."""
     shape = ImageShape()
     shape.src = "/bigbluebutton/fileUpload/meeting-id/44c71706.png"
@@ -55,10 +55,10 @@ def test_load_pixbuf_without_source(tmp_path: Path) -> None:
 
 def write_upload(directory: Path) -> None:
     """Put a readable one pixel image where an archived upload would be."""
-    uploads = directory / "uploads"
-    uploads.mkdir()
+    file_uploads = directory / "file-uploads"
+    file_uploads.mkdir()
     cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1).write_to_png(
-        str(uploads / "44c71706.png")
+        str(file_uploads / "44c71706.png")
     )
 
 
@@ -90,13 +90,13 @@ def test_finalize_image_with_a_size(tmp_path: Path) -> None:
 
 def test_finalize_image_draws_for_every_shape_sharing_the_image(tmp_path: Path) -> None:
     """A shared decoded image has to draw for the second shape as much as the first."""
-    uploads = tmp_path / "uploads"
-    uploads.mkdir()
+    file_uploads = tmp_path / "file-uploads"
+    file_uploads.mkdir()
     upload = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
     painter = cairo.Context(upload)
     painter.set_source_rgb(1, 0, 0)
     painter.paint()
-    upload.write_to_png(str(uploads / "44c71706.png"))
+    upload.write_to_png(str(file_uploads / "44c71706.png"))
 
     for _ in range(2):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
@@ -128,14 +128,14 @@ def test_shapes_sharing_a_file_share_one_decoded_image(tmp_path: Path) -> None:
 
 def test_load_pixbuf_with_excessive_dimensions(tmp_path: Path) -> None:
     """A file small enough to archive can still decode to gigabytes."""
-    uploads = tmp_path / "uploads"
-    uploads.mkdir()
+    file_uploads = tmp_path / "file-uploads"
+    file_uploads.mkdir()
     # Written rather than committed, since the repository keeps no binary
     # fixtures. Just over the limit, so a missing check would decode it.
     side = 4097
     assert side * side > MAX_IMAGE_PIXELS
     cairo.ImageSurface(cairo.FORMAT_ARGB32, side, side).write_to_png(
-        str(uploads / "44c71706.png")
+        str(file_uploads / "44c71706.png")
     )
 
     shape = image_shape(Size(4, 3))
