@@ -48,11 +48,11 @@ retried once per shape.
 
 
 def upload_filename(src: str) -> Optional[str]:
-    """Resolve an image source to a file name within the uploads directory.
+    """Resolve an image source to a file name within the file-uploads directory.
 
     Only the base name is kept, so a source crafted by a presenter cannot
-    escape the uploads directory, and the extension has to be one this renderer
-    can decode.
+    escape the file-uploads directory, and the extension has to be one this
+    renderer can decode.
     """
     filename = path.basename(src)
     extension = path.splitext(filename)[1][1:].lower()
@@ -62,9 +62,9 @@ def upload_filename(src: str) -> Optional[str]:
 
 
 def read_pixbuf(filepath: str) -> Optional[GdkPixbuf.Pixbuf]:
-    """Read an image from the uploads directory.
+    """Read an image from the file-uploads directory.
 
-    Recordings made before pasted images were archived have no uploads
+    Recordings made before pasted images were archived have no file-uploads
     directory, so an image that cannot be read is reported and skipped instead
     of interrupting the rendering.
     """
@@ -101,7 +101,10 @@ def load_pixbuf(shape: ImageShape, directory: str) -> Optional[GdkPixbuf.Pixbuf]
         print(f"\tTldraw: image has an unsupported source: {shape.src}")
         return None
 
-    filepath = path.join(directory, "uploads", filename)
+    # The file-uploads directory name is part of the recording format.
+    # Must match bbb-file-upload, bbb-shared-notes-server, the bbb-file-upload
+    # nginx template, the record-and-playback scripts and bbb-playback.
+    filepath = path.join(directory, "file-uploads", filename)
     if filepath not in _PIXBUF_CACHE:
         _PIXBUF_CACHE[filepath] = read_pixbuf(filepath)
 
