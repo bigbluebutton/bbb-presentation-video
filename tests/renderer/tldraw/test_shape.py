@@ -5,9 +5,11 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     DrawShape,
     HighlighterShape,
     LineShape,
+    StickyShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     HIGHLIGHT_COLORS,
+    AlignStyle,
     ColorStyle,
     DashStyle,
     Decoration,
@@ -265,6 +267,58 @@ def test_line_from_data() -> None:
     assert line.handles.start == Position(0, 0)
     assert line.handles.controlPoint == Position(-71, 216)
     assert line.handles.end == Position(-229, 377)
+
+
+def _note_data(grow_y: float) -> ShapeData:
+    # A tldraw v2 "note" (sticky) shape. Note shapes carry NO w/h props: the box
+    # is a fixed NOTE_SIZE (200) square on the client that grows vertically by
+    # growY. The `size` prop is the font size ("m"), not a geometry size.
+    return {
+        "x": 100,
+        "y": 200,
+        "rotation": 0,
+        "typeName": "shape",
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a1",
+        "id": "shape:noteExample",
+        "type": "note",
+        "props": {
+            "color": "yellow",
+            "size": "m",
+            "text": "Hello",
+            "font": "draw",
+            "align": "middle",
+            "verticalAlign": "middle",
+            "growY": grow_y,
+            "url": "",
+        },
+    }
+
+
+def test_sticky_v2_defaults() -> None:
+    sticky = StickyShapeV2()
+    assert sticky.size == Size(200, 200)
+    assert sticky.text == ""
+    assert sticky.align == AlignStyle.MIDDLE
+    assert sticky.verticalAlign == AlignStyle.MIDDLE
+
+
+def test_sticky_v2_from_data_no_grow() -> None:
+    # Regression: a note with no vertical growth must keep the full 200x200 box.
+    # The bug collapsed width to 0 (naked text spilling right in the VIDEO format).
+    sticky = StickyShapeV2.from_data(_note_data(grow_y=0))
+    assert sticky.text == "Hello"
+    assert sticky.align == AlignStyle.MIDDLE
+    assert sticky.size == Size(200, 200)
+
+
+def test_sticky_v2_from_data_grown() -> None:
+    # Regression: growY must be applied exactly once, on top of the base height.
+    # The bug both collapsed width to 0 and double-counted growY (200,320 -> 0,240).
+    sticky = StickyShapeV2.from_data(_note_data(grow_y=120))
+    assert sticky.size == Size(200, 320)
+    assert sticky.verticalAlign == AlignStyle.START
 
 
 def test_highlight_from_data() -> None:

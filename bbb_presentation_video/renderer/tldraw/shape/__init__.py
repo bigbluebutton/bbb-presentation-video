@@ -92,17 +92,13 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         if "props" in data:
             props = data["props"]
 
-            w = 0.0
-            h = 0.0
-            growY = 0.0
-            if "w" in props:
-                w = props["w"]
-            if "h" in props:
-                h = props["h"]
-            if "growY" in props:
-                growY = props["growY"]
+            if "w" in props and "h" in props:
+                w, h = props["w"], props["h"]
+            else:
+                w, h = self.size.width, self.size.height
 
-            self.size = Size(w, h + growY)
+            grow_y = props["growY"] if "growY" in props else 0.0
+            self.size = Size(w, h + grow_y)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -435,10 +431,8 @@ class StickyShapeV2(RotatableShapeProto):
                 self.align = AlignStyle(props["align"])
             if "verticalAlign" in props:
                 self.verticalAlign = AlignStyle(props["verticalAlign"])
-            if "growY" in props:
-                self.size = Size(self.size.width, self.size.height + props["growY"])
-                if props["growY"] != 0:
-                    self.verticalAlign = AlignStyle.START
+            if "growY" in props and props["growY"] != 0:
+                self.verticalAlign = AlignStyle.START
 
 
 @attr.s(order=False, slots=True, auto_attribs=True, init=False)
