@@ -21,13 +21,6 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     Style,
 )
 
-NOTE_SIZE = 200.0
-"""Side length of a tldraw v2 note (sticky) shape.
-
-Note shapes are a fixed square of this size on the client (tldraw's NOTE_SIZE
-constant). Unlike geo shapes they carry no w/h props; they only grow vertically
-via the growY prop."""
-
 BaseShapeSelf = TypeVar("BaseShapeSelf", bound="BaseShapeProto")
 
 
@@ -99,17 +92,13 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         if "props" in data:
             props = data["props"]
 
-            w = 0.0
-            h = 0.0
-            growY = 0.0
-            if "w" in props:
-                w = props["w"]
-            if "h" in props:
-                h = props["h"]
-            if "growY" in props:
-                growY = props["growY"]
+            if "w" in props and "h" in props:
+                w, h = props["w"], props["h"]
+            else:
+                w, h = self.size.width, self.size.height
 
-            self.size = Size(w, h + growY)
+            grow_y = props["growY"] if "growY" in props else 0.0
+            self.size = Size(w, h + grow_y)
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -429,7 +418,7 @@ class StickyShapeV2(RotatableShapeProto):
     text: str = ""
     align: AlignStyle = AlignStyle.MIDDLE
     verticalAlign: AlignStyle = AlignStyle.MIDDLE
-    size: Size = Size(NOTE_SIZE, NOTE_SIZE)
+    size: Size = Size(200.0, 200.0)
 
     def update_from_data(self, data: ShapeData) -> None:
         super().update_from_data(data)
@@ -442,14 +431,7 @@ class StickyShapeV2(RotatableShapeProto):
                 self.align = AlignStyle(props["align"])
             if "verticalAlign" in props:
                 self.verticalAlign = AlignStyle(props["verticalAlign"])
-
-            # Note shapes carry no w/h props, so SizedShapeProto collapsed the
-            # size to Size(0, growY). Override it with the fixed NOTE_SIZE square
-            # that grows vertically by growY, applied exactly once (not on top of
-            # the value the parent already added).
-            grow_y = props["growY"] if "growY" in props else 0.0
-            self.size = Size(NOTE_SIZE, NOTE_SIZE + grow_y)
-            if grow_y != 0:
+            if "growY" in props and props["growY"] != 0:
                 self.verticalAlign = AlignStyle.START
 
 
