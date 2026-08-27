@@ -51,8 +51,9 @@ pip install --require-virtualenv --upgrade -r requirements-dev.txt -c constraint
 Testing
 -------
 
-`bbb-presentation-video` does not currently have any test suite to run, but
-we do enforce typing correctness using
+`bbb-presentation-video` has a [pytest](https://docs.pytest.org/) test suite
+covering event parsing; run `pytest` in the root of the project checkout to
+execute it. We also enforce typing correctness using
 [mypy](https://mypy.readthedocs.io/en/stable/).
 
 To run the type checking, run `mypy` in the root of the project checkout with
