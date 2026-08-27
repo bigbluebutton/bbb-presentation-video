@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from bbb_presentation_video.events.helpers import Position, Size
 from bbb_presentation_video.events.tldraw import ShapeData
 from bbb_presentation_video.renderer.tldraw.shape import (
@@ -5,6 +7,8 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     DrawShape,
     HighlighterShape,
     LineShape,
+    PollShape,
+    PollShapeAnswer,
     StickyShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -349,3 +353,80 @@ def test_highlight_from_data() -> None:
 
     assert highlight.point == Position(354, 140)
     assert highlight.rotation == 0
+
+
+def _poll_data(answers: List[Dict[str, Any]]) -> ShapeData:
+    # A poll result shape as recorded by akka-apps in events.xml. Since BBB
+    # 3.0.11 each answer carries "isCorrectAnswer" (true only when the poll is
+    # a quiz and the presenter chose to reveal the correct answer); recordings
+    # made before that have no such key.
+    return {
+        "x": 511.7,
+        "y": 296.3,
+        "rotation": 0,
+        "typeName": "shape",
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a1",
+        "id": "shape:poll-result-example",
+        "type": "poll",
+        "props": {
+            "answers": answers,
+            "color": "black",
+            "fill": "semi",
+            "h": 111.6,
+            "w": 300.0,
+            "numRespondents": 2,
+            "numResponders": 2,
+            "question": "",
+            "questionText": "What is 2+2?",
+            "questionType": "CUSTOM",
+        },
+    }
+
+
+def test_poll_answer_defaults() -> None:
+    answer = PollShapeAnswer(key="A", numVotes=0)
+    assert answer.isCorrectAnswer is False
+
+
+def test_poll_from_data_correct_answer() -> None:
+    # A quiz with the correct answer revealed: the flags must survive parsing.
+    poll = PollShape.from_data(
+        _poll_data(
+            [
+                {"id": 0, "key": "3", "numVotes": 0, "isCorrectAnswer": False},
+                {"id": 1, "key": "4", "numVotes": 2, "isCorrectAnswer": True},
+                {"id": 2, "key": "5", "numVotes": 0, "isCorrectAnswer": False},
+            ]
+        )
+    )
+    assert [answer.isCorrectAnswer for answer in poll.answers] == [False, True, False]
+
+
+def test_poll_from_data_no_correct_answer() -> None:
+    # A regular poll (not a quiz): the field is present but false everywhere.
+    poll = PollShape.from_data(
+        _poll_data(
+            [
+                {"id": 0, "key": "Yes", "numVotes": 1, "isCorrectAnswer": False},
+                {"id": 1, "key": "No", "numVotes": 1, "isCorrectAnswer": False},
+            ]
+        )
+    )
+    assert not any(answer.isCorrectAnswer for answer in poll.answers)
+
+
+def test_poll_from_data_legacy_answers() -> None:
+    # Recordings made before BBB 3.0.11 have no "isCorrectAnswer" key at all;
+    # they must keep parsing, with no answer marked as correct.
+    poll = PollShape.from_data(
+        _poll_data(
+            [
+                {"id": 0, "key": "Yes", "numVotes": 1},
+                {"id": 1, "key": "No", "numVotes": 1},
+            ]
+        )
+    )
+    assert len(poll.answers) == 2
+    assert not any(answer.isCorrectAnswer for answer in poll.answers)
