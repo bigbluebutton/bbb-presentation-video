@@ -16,6 +16,9 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     V2_TEXT_COLOR,
     ColorStyle,
 )
+from bbb_presentation_video.renderer.tldraw.v2.shape.checkbox_geo_shape import (
+    get_check_box_lines,
+)
 
 FONT_FAMILY = "Arial"
 POLL_LINE_WIDTH = 2.0
@@ -24,6 +27,24 @@ POLL_VPADDING = 12.0
 POLL_HPADDING = 12.0
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+
+def draw_correct_answer_check(
+    ctx: cairo.Context[CairoSomeSurface], x: float, y: float, size: float
+) -> None:
+    """Draw the quiz correct-answer checkmark in a size x size box at (x, y)."""
+    lines = get_check_box_lines(size, size)
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.set_source_rgb(*V2_COLORS[ColorStyle.GREEN].solid)
+    ctx.set_line_width(POLL_LINE_WIDTH)
+    ctx.set_line_cap(cairo.LineCap.ROUND)
+    ctx.set_line_join(cairo.LineJoin.ROUND)
+    ctx.move_to(*lines[0][0])
+    for _start, end in lines:
+        ctx.line_to(*end)
+    ctx.stroke()
+    ctx.restore()
 
 
 def finalize_poll(
@@ -94,8 +115,21 @@ def finalize_poll(
     bar_height = (height - POLL_VPADDING - title_height) / len(
         shape.answers
     ) - POLL_VPADDING
-    bar_width = width - 4 * POLL_HPADDING - max_label_width - max_percent_width
-    bar_x = 2 * POLL_HPADDING + max_label_width
+
+    # When the poll is a quiz with a revealed correct answer, reserve a column
+    # on the left for the checkmark. Regular polls keep their exact layout.
+    has_correct_answer = any(answer.isCorrectAnswer for answer in shape.answers)
+    checkmark_size = min(POLL_FONT_SIZE, bar_height) if has_correct_answer else 0.0
+    checkmark_column = checkmark_size + POLL_HPADDING if has_correct_answer else 0.0
+
+    bar_width = (
+        width
+        - 4 * POLL_HPADDING
+        - max_label_width
+        - max_percent_width
+        - checkmark_column
+    )
+    bar_x = 2 * POLL_HPADDING + max_label_width + checkmark_column
 
     # All sizes are calculated, so draw the poll
     layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -125,6 +159,14 @@ def finalize_poll(
         percent = "{}%".format(int(result_ratio * 100))
 
         bar_x2 = bar_x + (bar_width * result_ratio)
+
+        if answer.isCorrectAnswer:
+            draw_correct_answer_check(
+                ctx,
+                POLL_HPADDING,
+                bar_y + (bar_height - checkmark_size) / 2,
+                checkmark_size,
+            )
 
         # Draw the bar
         ctx.set_line_width(POLL_LINE_WIDTH)
