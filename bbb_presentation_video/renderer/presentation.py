@@ -9,7 +9,7 @@ from enum import Enum
 from importlib import resources
 from math import ceil, floor
 from os import PathLike, fspath, path
-from typing import Any, Dict, Generic, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, Tuple, TypeVar, Union
 
 import attr
 import cairo
@@ -21,8 +21,9 @@ gi.require_version("GdkPixbuf", "2.0")
 gi.require_version("GLib", "2.0")
 gi.require_version("Gio", "2.0")
 gi.require_version("Poppler", "0.18")
+gi.require_version("Rsvg", "2.0")
 
-from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Poppler
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Poppler, Rsvg
 
 from bbb_presentation_video import events
 from bbb_presentation_video.events.helpers import Color, Position, Size
@@ -35,6 +36,7 @@ class ImageType(Enum):
     MISSING = 0
     PDF = 1
     IMAGE = 2
+    SVG = 3
 
 
 TYPE_MAP = {
@@ -101,8 +103,10 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
     hide_logo: bool
 
     presentation: Optional[str]
-    presentation_slide: Dict[str, int]
+    # The page each presentation was last shown at, as (number, page key).
+    presentation_page: Dict[str, Tuple[int, str]]
     slide: int
+    page_key: Optional[str]
     pan: Position
     zoom: Size
 
@@ -116,7 +120,11 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
     filename: Optional[Union[str, bytes, PathLike[Any]]]
     filetype: ImageType
     source: Optional[Union[Poppler.Document, GdkPixbuf.Pixbuf]]
-    page: Optional[Union[Poppler.Page, GdkPixbuf.Pixbuf]]
+    page: Optional[Union[Poppler.Page, GdkPixbuf.Pixbuf, Rsvg.Handle]]
+    # How to draw the current page, which is not always how the presentation as
+    # a whole is stored: a page can come from its own svg while the rest of the
+    # presentation is a pdf.
+    page_type: ImageType
     page_size: Optional[Size]
     pattern: Optional[cairo.Pattern]
 
@@ -147,8 +155,9 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         )
 
         self.presentation = None
-        self.presentation_slide = {}
+        self.presentation_page = {}
         self.slide = 0
+        self.page_key = None
         self.pan = Position(-0.0, -0.0)
         self.zoom = Size(1.0, 1.0)
 
@@ -160,6 +169,7 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.filetype = ImageType.MISSING
         self.source = None
         self.page = None
+        self.page_type = ImageType.MISSING
         self.page_size = None
         self.pattern = None
 
@@ -202,23 +212,29 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.presentation = event["presentation"]
         self.presentation_changed = True
         # Restore the last viewed page from this presentation
-        self.slide = self.presentation_slide.get(self.presentation, 0)
+        self.slide, self.page_key = self.presentation_page.get(
+            self.presentation, (0, event["page_key"])
+        )
         # Pan and zoom resets when a presentation is shared
         self.pan = Position(0.0, 0.0)
         self.zoom = Size(1.0, 1.0)
         self.pan_zoom_changed = True
         print(f"\tPresentation: presentation: {self.presentation}")
-        print(f"\tPresentation: slide: {self.slide}")
+        print(f"\tPresentation: slide: {self.slide} ({self.page_key})")
 
     def update_slide(self, event: events.SlideEvent) -> None:
-        if self.slide == event["slide"]:
+        page_key = event["page_key"]
+        # An insert can put a different page under a number that is already
+        # being shown, so the number alone does not say the page is unchanged.
+        if self.slide == event["slide"] and self.page_key == page_key:
             print("\tPresentation: slide did not change")
             return
         self.slide = event["slide"]
+        self.page_key = page_key
         if self.presentation is not None:
-            self.presentation_slide[self.presentation] = self.slide
+            self.presentation_page[self.presentation] = (self.slide, page_key)
         self.slide_changed = True
-        print(f"\tPresentation: slide: {self.slide}")
+        print(f"\tPresentation: slide: {self.slide} ({self.page_key})")
 
     def update_pan_zoom(self, event: events.PanZoomEvent) -> None:
         if self.pan == event["pan"] and self.zoom == event["zoom"]:
@@ -228,6 +244,73 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
         self.zoom = event["zoom"]
         self.pan_zoom_changed = True
         print(f"\tPresentation: pan: {self.pan} zoom: {self.zoom}")
+
+    def load_page_svg(self) -> bool:
+        """Load the current page from the svg named after its page id.
+
+        Slide files are named by page id, and the combined per-presentation pdf
+        is deliberately left alone when pages are inserted (see
+        InsertPagesSplicer in bigbluebutton), so its page order stops matching
+        the presentation as soon as an insert happens. The per-page svg is the
+        only asset that always is the page that was on screen, and it is what
+        the presentation playback draws too.
+
+        Recordings from before slide files were named this way have no such
+        file, and keep using the pdf.
+        """
+        if self.presentation is None or self.page_key is None:
+            return False
+
+        # Composite fallback keys are "<presentation>/<number>"; they never
+        # name a slide file, and no key may reach outside the svgs directory.
+        if "/" in self.page_key or "\\" in self.page_key or ".." in self.page_key:
+            return False
+
+        filename = (
+            f"{self.directory}/presentation/{self.presentation}"
+            f"/svgs/slide{self.page_key}.svg"
+        )
+        if not path.exists(filename):
+            return False
+
+        try:
+            handle = Rsvg.Handle.new_from_file(filename)
+        except GLib.Error as error:
+            print(f"Failed to read svg: {error}")
+            return False
+        if handle is None:
+            return False
+
+        has_size, width, height = handle.get_intrinsic_size_in_pixels()
+        if not has_size or width <= 0 or height <= 0:
+            print(f"Svg has no usable intrinsic size: {filename}")
+            return False
+
+        self.page = handle
+        self.page_type = ImageType.SVG
+        self.page_size = Size(width, height)
+        print(f"\tPresentation: page svg: {filename}")
+        return True
+
+    def render_svg(self) -> None:
+        assert isinstance(self.page, Rsvg.Handle)
+        assert self.page_size is not None
+
+        ctx = self.ctx
+
+        apply_slide_transform(ctx, self.trans)
+        # Render on an opaque white background (svgs can be transparent)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.rectangle(0, 0, self.page_size.width, self.page_size.height)
+        ctx.fill()
+
+        viewport = Rsvg.Rectangle()
+        viewport.x = 0.0
+        viewport.y = 0.0
+        viewport.width = self.page_size.width
+        viewport.height = self.page_size.height
+        if not self.page.render_document(ctx, viewport):
+            print("Svg page failed to render; it may be drawn incompletely")
 
     def render_image(self) -> None:
         assert isinstance(self.page, GdkPixbuf.Pixbuf)
@@ -354,27 +437,31 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
 
         if self.slide_changed or needs_render:
             needs_render = True
-            # Load the correct page
-            if self.filetype is ImageType.IMAGE:
-                assert isinstance(self.source, GdkPixbuf.Pixbuf)
-                if self.slide == 0:
-                    self.page = self.source
-                    self.page_size = Size(self.page.get_width(), self.page.get_height())
+            # Load the correct page, preferring the page's own svg
+            if not self.load_page_svg():
+                self.page_type = self.filetype
+                if self.filetype is ImageType.IMAGE:
+                    assert isinstance(self.source, GdkPixbuf.Pixbuf)
+                    if self.slide == 0:
+                        self.page = self.source
+                        self.page_size = Size(
+                            self.page.get_width(), self.page.get_height()
+                        )
+                    else:
+                        self.page = None
+                        self.page_size = None
+                elif self.filetype is ImageType.PDF:
+                    assert isinstance(self.source, Poppler.Document)
+                    if 0 <= self.slide < self.source.get_n_pages():
+                        self.page = self.source.get_page(self.slide)
+                    else:
+                        self.page = None
+                    if self.page is not None:
+                        self.page_size = Size(self.page.get_size())
+                    else:
+                        self.page_size = None
                 else:
                     self.page = None
-                    self.page_size = None
-            elif self.filetype is ImageType.PDF:
-                assert isinstance(self.source, Poppler.Document)
-                if 0 <= self.slide < self.source.get_n_pages():
-                    self.page = self.source.get_page(self.slide)
-                else:
-                    self.page = None
-                if self.page is not None:
-                    self.page_size = Size(self.page.get_size())
-                else:
-                    self.page_size = None
-            else:
-                self.page = None
             print(f"\tPresentation: page size: {self.page_size}")
 
         if self.pan_zoom_changed or needs_render:
@@ -439,10 +526,12 @@ class PresentationRenderer(Generic[CairoSomeSurface]):
             ctx.restore()
 
             if self.page:
-                if self.filetype is ImageType.IMAGE:
+                if self.page_type is ImageType.IMAGE:
                     self.render_image()
-                elif self.filetype is ImageType.PDF:
+                elif self.page_type is ImageType.PDF:
                     self.render_pdf()
+                elif self.page_type is ImageType.SVG:
+                    self.render_svg()
 
             self.pattern = ctx.pop_group()
 

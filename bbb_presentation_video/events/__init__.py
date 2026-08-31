@@ -6,7 +6,18 @@ import json
 from collections import deque
 from enum import Enum
 from fractions import Fraction
-from typing import Any, Deque, List, Optional, Tuple, TypedDict, cast
+from typing import (
+    Any,
+    Deque,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypedDict,
+    cast,
+)
 
 import attr
 from lxml import etree
@@ -22,6 +33,7 @@ from bbb_presentation_video.events.helpers import (
     xml_subelement_opt,
     xml_subelement_shape_slide,
 )
+from bbb_presentation_video.events.page_keys import PageKeyResolver
 
 MAGIC_MYSTERY_NUMBER = 2.0
 DEFAULT_PRESENTATION_POD = "DEFAULT_PRESENTATION_POD"
@@ -72,6 +84,8 @@ def parse_cursor(event: CursorEvent, element: etree._Element) -> None:
 class WhiteboardCursorEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
+    page_id: Optional[str]
+    page_key: str
     cursor: Optional[Position]
     user_id: str
 
@@ -84,6 +98,8 @@ def parse_whiteboard_cursor(
     slide = xml_subelement_opt(element, "pageNumber")
     if slide is not None:
         event["slide"] = int(slide)
+
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
 
     x_offset = float(xml_subelement(element, event["name"], "xOffset"))
     y_offset = float(xml_subelement(element, event["name"], "yOffset"))
@@ -159,10 +175,13 @@ def parse_pan_zoom(
 
 class SlideEvent(PerPodEvent):
     slide: int
+    page_id: Optional[str]
+    page_key: str
 
 
 def parse_slide(event: SlideEvent, element: etree._Element) -> None:
     event["slide"] = int(xml_subelement(element, event["name"], "slide"))
+    event["page_id"] = xml_subelement_opt(element, "id")
 
     pod_id = xml_subelement_opt(element, "podId")
     event["pod_id"] = pod_id if pod_id is not None else DEFAULT_PRESENTATION_POD
@@ -172,6 +191,7 @@ def parse_slide(event: SlideEvent, element: etree._Element) -> None:
 
 class PresentationEvent(PerPodEvent):
     presentation: str
+    page_key: str
 
 
 def parse_presentation(event: PresentationEvent, element: etree._Element) -> None:
@@ -189,6 +209,8 @@ class ShapeEvent(Event):
     shape_status: Optional[ShapeStatus]
     presentation: Optional[str]
     slide: Optional[int]
+    page_id: Optional[str]
+    page_key: str
     user_id: Optional[str]
     points: List[Position]
     # Drawn shapes
@@ -227,6 +249,7 @@ def parse_shape(
     event["presentation"] = xml_subelement_opt(element, "presentation")
     event["shape_type"] = shape_type = xml_subelement(element, name, "type")
     event["slide"] = xml_subelement_shape_slide(element, shape_slide_off_by_one)
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
 
     status = xml_subelement_opt(element, "status")
     if status is not None:
@@ -315,6 +338,8 @@ def parse_shape(
 class UndoEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
+    page_id: Optional[str]
+    page_key: str
     user_id: Optional[str]
     shape_id: Optional[str]
 
@@ -324,6 +349,7 @@ def parse_undo(
 ) -> None:
     event["presentation"] = xml_subelement_opt(element, "presentation")
     event["slide"] = xml_subelement_shape_slide(element, shape_slide_off_by_one)
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
     event["user_id"] = xml_subelement_opt(element, "userId")
     event["shape_id"] = xml_subelement_opt(element, "shapeId")
     event["name"] = "undo"
@@ -332,6 +358,8 @@ def parse_undo(
 class ClearEvent(Event):
     presentation: Optional[str]
     slide: Optional[int]
+    page_id: Optional[str]
+    page_key: str
     user_id: Optional[str]
     full_clear: Optional[bool]
 
@@ -341,6 +369,7 @@ def parse_clear(
 ) -> None:
     event["presentation"] = xml_subelement_opt(element, "presentation")
     event["slide"] = xml_subelement_shape_slide(element, shape_slide_off_by_one)
+    event["page_id"] = xml_subelement_opt(element, "whiteboardId")
     event["user_id"] = xml_subelement_opt(element, "userId")
     full_clear = xml_subelement_opt(element, "fullClear")
     if full_clear is not None:
@@ -393,6 +422,81 @@ class LeftEvent(Event):
 def parse_left(event: LeftEvent, element: etree._Element) -> None:
     event["user_id"] = xml_subelement(element, event["name"], "userId")
     event["name"] = "left"
+
+
+# Events that act on one page of a presentation, and so need to know which.
+PAGE_EVENTS = frozenset(
+    {
+        "slide",
+        "shape",
+        "undo",
+        "clear",
+        "cursor_v2",
+        "tldraw.add_shape",
+        "tldraw.delete_shape",
+    }
+)
+
+
+def iter_event_pages(
+    events: Iterable[Event],
+) -> Iterator[Tuple[Dict[str, Any], Optional[str], int]]:
+    """Yield each page-scoped event with the presentation and page number it acts on.
+
+    Events that don't name a presentation or page act on whichever is current,
+    so that has to be tracked while walking the list.
+    """
+    presentation: Optional[str] = None
+    # The renderers restore the last viewed page when a presentation is shown
+    # again, so the same has to be remembered here for the keys to agree.
+    presentation_slides: Dict[str, int] = {}
+    slide = 0
+
+    for event in events:
+        # TypedDict members are only known per event type, and this walks all of
+        # them; the parsers above are where the field types are enforced.
+        fields = cast(Dict[str, Any], event)
+        name = fields["name"]
+
+        if name == "presentation":
+            presentation = fields["presentation"]
+            # A presentation opens on its first page when it has not been shown
+            # before, and on its last viewed page when it has.
+            slide = presentation_slides.get(presentation, 0)
+            yield fields, presentation, slide
+            continue
+
+        if name not in PAGE_EVENTS:
+            continue
+
+        if name == "slide":
+            slide = fields["slide"]
+            if presentation is not None:
+                presentation_slides[presentation] = slide
+
+        event_slide = fields.get("slide")
+        if event_slide is None:
+            event_slide = slide
+
+        yield fields, fields.get("presentation") or presentation, event_slide
+
+
+def resolve_page_keys(events: Iterable[Event], directory: str) -> None:
+    """Attach the stable page identity to every event that acts on a page.
+
+    Two passes, because the id of a page can first appear on a later event than
+    one that needs it: the page shown when a recording starts has no
+    GotoSlideEvent of its own, but the annotations drawn on it name it.
+    """
+    resolver = PageKeyResolver(directory)
+
+    for fields, presentation, slide in iter_event_pages(events):
+        resolver.learn(presentation, slide, fields.get("page_id"))
+
+    for fields, presentation, slide in iter_event_pages(events):
+        fields["page_key"] = resolver.resolve(
+            presentation, slide, fields.get("page_id")
+        )
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -562,6 +666,8 @@ def parse_events(
             "status": True,
         }
         events.appendleft(start_record)
+
+    resolve_page_keys(events, directory)
 
     return EventsInfo(
         bbb_version,

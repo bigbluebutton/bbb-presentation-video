@@ -47,9 +47,10 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
     ctx: cairo.Context[CairoSomeSurface]
 
     presentation: Optional[str]
-    presentation_slide: Dict[str, int]
-    slide: int
-    shapes: Dict[str, Dict[int, Deque[ShapeEvent]]]
+    # The page each presentation was last shown at, by page key.
+    presentation_page: Dict[str, str]
+    page_key: Optional[str]
+    shapes: Dict[str, Dict[str, Deque[ShapeEvent]]]
 
     transform: Transform
 
@@ -61,8 +62,8 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
         self.ctx = ctx
 
         self.presentation = None
-        self.presentation_slide = {}
-        self.slide = 0
+        self.presentation_page = {}
+        self.page_key = None
         self.shapes = {}
 
         self.transform = transform
@@ -78,35 +79,39 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
         self.presentation = event["presentation"]
         self.shapes_changed = True
         # Restore the last viewed page from this presentation
-        self.slide = self.presentation_slide.get(self.presentation, 0)
+        self.page_key = self.presentation_page.get(self.presentation, event["page_key"])
         print(f"\tShapes: presentation: {self.presentation}")
-        print(f"\tShapes: slide: {self.slide}")
+        print(f"\tShapes: page: {self.page_key}")
 
     def update_slide(self, event: SlideEvent) -> None:
-        if self.slide == event["slide"]:
+        page_key = event["page_key"]
+        if self.page_key == page_key:
             print("\tShapes: slide did not change")
             return
-        self.slide = event["slide"]
+        self.page_key = page_key
         if self.presentation is not None:
-            self.presentation_slide[self.presentation] = self.slide
+            self.presentation_page[self.presentation] = page_key
         self.shapes_changed = True
-        print(f"\tShapes: slide: {self.slide}")
+        print(f"\tShapes: page: {self.page_key}")
 
-    def ensure_shapes_structure(self, presentation: str, slide: int) -> None:
+    def ensure_shapes_structure(self, presentation: str, page_key: str) -> None:
         if not presentation in self.shapes:
             self.shapes[presentation] = {}
-        if not slide in self.shapes[presentation]:
-            self.shapes[presentation][slide] = deque()
+        if not page_key in self.shapes[presentation]:
+            self.shapes[presentation][page_key] = deque()
 
     def update_shape(self, event: ShapeEvent) -> None:
         presentation = event.get("presentation", self.presentation)
-        slide = event.get("slide", self.slide)
+        # Keyed by page identity, but still dropped when the event named no
+        # page at all, exactly as before.
+        slide = event.get("slide")
+        page_key = event["page_key"]
 
         if presentation is None or slide is None:
             # Can't render a shape if there's nothing to render it on
             return
 
-        self.ensure_shapes_structure(presentation, slide)
+        self.ensure_shapes_structure(presentation, page_key)
 
         if (
             "slide" not in event
@@ -125,7 +130,7 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
             prev_index = next(
                 (
                     i
-                    for i, x in enumerate(self.shapes[presentation][slide])
+                    for i, x in enumerate(self.shapes[presentation][page_key])
                     if x["shape_id"] == event["shape_id"]
                 ),
                 None,
@@ -136,8 +141,8 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
                 )
         else:
             # Horrible hack to support old recordings
-            if len(self.shapes[presentation][slide]) > 0:
-                prev_shape = self.shapes[presentation][slide][-1]
+            if len(self.shapes[presentation][page_key]) > 0:
+                prev_shape = self.shapes[presentation][page_key][-1]
                 if (
                     prev_shape["points"][0] == event["points"][0]
                     and prev_shape["shape_type"] == event["shape_type"]
@@ -154,37 +159,40 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
                 event["shape_type"] == "pencil"
                 and event.get("shape_status") == ShapeStatus.DRAW_UPDATE
             ):
-                prev_shape = self.shapes[presentation][slide][prev_index]
+                prev_shape = self.shapes[presentation][page_key][prev_index]
                 new_points = list(prev_shape["points"])
                 new_points.extend(event["points"])
                 event["points"] = new_points
 
-            self.shapes[presentation][slide][prev_index] = event
+            self.shapes[presentation][page_key][prev_index] = event
         else:
-            self.shapes[presentation][slide].append(event)
+            self.shapes[presentation][page_key].append(event)
         print(
             f"\tShapes: add {event['shape_type']} id: {event['shape_id']} "
-            f"presentation: {presentation} slide: {slide} points: {event['points']}"
+            f"presentation: {presentation} page: {page_key} points: {event['points']}"
         )
         self.shapes_changed = True
 
     def update_undo(self, event: UndoEvent) -> None:
         presentation = event.get("presentation", self.presentation)
-        slide = event.get("slide", self.slide)
+        # Keyed by page identity, but still dropped when the event named no
+        # page at all, exactly as before.
+        slide = event.get("slide")
+        page_key = event["page_key"]
 
         if presentation is None or slide is None:
             # Can't render a shape if there's nothing to render it on
             return
 
-        self.ensure_shapes_structure(presentation, slide)
+        self.ensure_shapes_structure(presentation, page_key)
 
         # If the undo event has a shape id, use that to lookup the shape
         shape_id = event.get("shape_id")
         if shape_id is not None:
-            self.shapes[presentation][slide] = deque(
+            self.shapes[presentation][page_key] = deque(
                 [
                     x
-                    for x in self.shapes[presentation][slide]
+                    for x in self.shapes[presentation][page_key]
                     if x["shape_id"] != shape_id
                 ]
             )
@@ -193,8 +201,8 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
 
         # Undo without a shape id just removes the most recently added shape
         else:
-            if len(self.shapes[presentation][slide]) > 0:
-                shape = self.shapes[presentation][slide].pop()
+            if len(self.shapes[presentation][page_key]) > 0:
+                shape = self.shapes[presentation][page_key].pop()
                 self.shapes_changed = True
                 print(
                     f"\tShapes: undo removed last added shape, id: {shape['shape_id']}"
@@ -202,27 +210,30 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
 
     def update_clear(self, event: ClearEvent) -> None:
         presentation = event.get("presentation", self.presentation)
-        slide = event.get("slide", self.slide)
+        # Keyed by page identity, but still dropped when the event named no
+        # page at all, exactly as before.
+        slide = event.get("slide")
+        page_key = event["page_key"]
 
         if presentation is None or slide is None:
             # Can't render a shape if there's nothing to render it on
             return
 
-        self.ensure_shapes_structure(presentation, slide)
+        self.ensure_shapes_structure(presentation, page_key)
 
         # When the full_clear status is set, or if the recording does not have
         # that attribute, simply remove all shapes
         if event.get("full_clear", True):
-            self.shapes[presentation][slide] = deque()
+            self.shapes[presentation][page_key] = deque()
             self.shapes_changed = True
             print("\tShapes: cleared all shapes")
 
         # Otherwise we have to remove only shapes for a specific user
         else:
-            self.shapes[presentation][slide] = deque(
+            self.shapes[presentation][page_key] = deque(
                 [
                     x
-                    for x in self.shapes[presentation][slide]
+                    for x in self.shapes[presentation][page_key]
                     if x["user_id"] != event["user_id"]
                 ]
             )
@@ -602,8 +613,9 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
 
             if (
                 self.presentation is None
+                or self.page_key is None
                 or not self.presentation in self.shapes
-                or not self.slide in self.shapes[self.presentation]
+                or not self.page_key in self.shapes[self.presentation]
             ):
                 if self.pattern:
                     print("\tShapes: no shapes to render")
@@ -613,14 +625,14 @@ class ShapesRenderer(Generic[CairoSomeSurface]):
                     return False
 
             print(
-                f"\tShapes: rendering {len(self.shapes[self.presentation][self.slide])} shapes"
+                f"\tShapes: rendering {len(self.shapes[self.presentation][self.page_key])} shapes"
             )
 
             ctx = self.ctx
             ctx.push_group()
             apply_shapes_transform(ctx, self.transform)
 
-            for shape in self.shapes[self.presentation][self.slide]:
+            for shape in self.shapes[self.presentation][self.page_key]:
                 ctx.save()
                 type = shape["shape_type"]
                 if type == "pencil":

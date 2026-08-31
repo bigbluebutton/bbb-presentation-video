@@ -118,14 +118,14 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     presentation: Optional[str] = None
     """The current presentation."""
 
-    slide: Optional[int] = None
-    """The current slide."""
+    page_key: Optional[str] = None
+    """The identity of the current page."""
 
-    presentation_slide: Dict[str, int]
-    """The last shown slide on a given presentation."""
+    presentation_page: Dict[str, str]
+    """The last shown page on a given presentation."""
 
-    shapes: Dict[str, Dict[int, ValueSortedDict[str, Shape]]]
-    """The list of shapes, organized by presentation then slide."""
+    shapes: Dict[str, Dict[str, ValueSortedDict[str, Shape]]]
+    """The list of shapes, organized by presentation then page."""
 
     shapes_changed: bool = False
     """Whether there have been changes to rendered shapes since the last frame."""
@@ -137,7 +137,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
     """Cached rendered whiteboard."""
 
     shape_patterns: Dict[str, cairo.SurfacePattern]
-    """Cached rendered individual shapes for current presentation/slide."""
+    """Cached rendered individual shapes for current presentation/page."""
 
     bbb_version: Version
 
@@ -148,7 +148,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         bbb_version: Version,
     ):
         self.ctx = ctx
-        self.presentation_slide = {}
+        self.presentation_page = {}
         self.shapes = {}
         self.shape_patterns = {}
         self.transform = transform
@@ -156,16 +156,16 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
 
         add_fontconfig_app_font_dir()
 
-    def ensure_shape_structure(self, presentation: str, slide: int) -> None:
-        """Create the nested dict entries for storing shapes per presentation and slide."""
+    def ensure_shape_structure(self, presentation: str, page_key: str) -> None:
+        """Create the nested dict entries for storing shapes per presentation and page."""
         try:
             p = self.shapes[presentation]
         except KeyError:
             p = self.shapes[presentation] = {}
         try:
-            p[slide]
+            p[page_key]
         except KeyError:
-            p[slide] = ValueSortedDict(shape_sort_key)
+            p[page_key] = ValueSortedDict(shape_sort_key)
 
     def presentation_event(self, event: events.PresentationEvent) -> None:
         """Handler for PresentationEvent updates."""
@@ -174,13 +174,13 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             print("\tTldraw: presentation did not change")
             return
 
-        # Only keep cached shape patterns for the current presentation/slide
+        # Only keep cached shape patterns for the current presentation/page
         self.shape_patterns.clear()
 
         self.presentation = presentation
-        self.slide = self.presentation_slide.get(presentation, 0)
+        self.page_key = self.presentation_page.get(presentation, event["page_key"])
         self.shapes_changed = True
-        print(f"\tTldraw: presentation: {self.presentation}, slide: {self.slide}")
+        print(f"\tTldraw: presentation: {self.presentation}, page: {self.page_key}")
 
     def slide_event(self, event: events.SlideEvent) -> None:
         """Handler for SlideEvent updates."""
@@ -191,23 +191,25 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             )
             return
 
-        slide = event["slide"]
-        if self.slide == slide:
+        page_key = event["page_key"]
+        # An insert can put a different page under a number that is already
+        # being shown, so this compares identities rather than numbers.
+        if self.page_key == page_key:
             print("\tTldraw: slide did not change")
             return
 
-        # Only keep cached shape patterns for the current presentation/slide
+        # Only keep cached shape patterns for the current presentation/page
         self.shape_patterns.clear()
 
-        self.slide = slide
-        self.presentation_slide[presentation] = slide
+        self.page_key = page_key
+        self.presentation_page[presentation] = page_key
         self.shapes_changed = True
-        print(f"\tTldraw: presentation: {presentation}, slide: {slide}")
+        print(f"\tTldraw: presentation: {presentation}, page: {page_key}")
 
     def add_shape_event(self, event: tldraw.AddShapeEvent) -> None:
         """Handler for tldraw AddShapeEvent updates."""
         presentation = event["presentation"]
-        slide = event["slide"]
+        page_key = event["page_key"]
         id = event["id"]
         data = event["data"]
 
@@ -215,10 +217,10 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             print(f"\tTldraw: ignoring image shape type: {id}")
             return
 
-        self.ensure_shape_structure(presentation, slide)
+        self.ensure_shape_structure(presentation, page_key)
 
-        if id in self.shapes[presentation][slide]:
-            shape = cast(Shape, self.shapes[presentation][slide][id])
+        if id in self.shapes[presentation][page_key]:
+            shape = cast(Shape, self.shapes[presentation][page_key][id])
             shape.update_from_data(data)
             action = "updated"
         else:
@@ -230,7 +232,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
                     )
                     return
                 shape = parsed_shape
-                self.shapes[presentation][slide][id] = shape
+                self.shapes[presentation][page_key][id] = shape
                 action = "added"
             else:
                 print(f'\tTldraw: Got add for shape: {id} with missing "type" field')
@@ -243,16 +245,16 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
 
         self.shapes_changed = True
         print(
-            f"\tTldraw: {action} shape: {id}, presentation: {presentation}, slide: {slide}, {repr(shape)}"
+            f"\tTldraw: {action} shape: {id}, presentation: {presentation}, page: {page_key}, {repr(shape)}"
         )
 
     def delete_shape_event(self, event: tldraw.DeleteShapeEvent) -> None:
         id = event["id"]
         presentation = event["presentation"]
-        slide = event["slide"]
+        page_key = event["page_key"]
 
         try:
-            del self.shapes[presentation][slide][id]
+            del self.shapes[presentation][page_key][id]
         except KeyError:
             return
         except ValueError:
@@ -265,7 +267,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
 
         self.shapes_changed = True
         print(
-            f"\tTldraw: deleted shape: {id}, presentation: {presentation}, slide: {slide}"
+            f"\tTldraw: deleted shape: {id}, presentation: {presentation}, page: {page_key}"
         )
 
     def update(self, event: Event) -> None:
@@ -368,12 +370,12 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
             return False
         self.transform = transform
         presentation = self.presentation
-        slide = self.slide
+        page_key = self.page_key
         if (
             presentation is None
-            or slide is None
+            or page_key is None
             or not presentation in self.shapes
-            or not slide in self.shapes[presentation]
+            or not page_key in self.shapes[presentation]
         ):
             self.pattern = None
             return False
@@ -381,7 +383,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         if transform_changed:
             self.shape_patterns.clear()
 
-        shapes = self.shapes[presentation][slide]
+        shapes = self.shapes[presentation][page_key]
         print(f"\tTldraw: Rendering {len(shapes)} shapes.")
 
         ctx = self.ctx

@@ -63,8 +63,9 @@ class CursorRenderer(Generic[CairoSomeSurface]):
     tldraw_whiteboard: bool
 
     presentation: Optional[str]
-    presentation_slide: Dict[str, int]
-    slide: int
+    # The page each presentation was last shown at, by page key.
+    presentation_page: Dict[str, str]
+    page_key: Optional[str]
 
     pattern: Optional[cairo.Pattern]
     radius: float
@@ -84,10 +85,10 @@ class CursorRenderer(Generic[CairoSomeSurface]):
         self.transform = None
         self.tldraw_whiteboard = tldraw_whiteboard
 
-        # Multi-pod cursors need to track presentation/slide
+        # Multi-pod cursors need to track presentation/page
         self.presentation = None
-        self.presentation_slide = {}
-        self.slide = 0
+        self.presentation_page = {}
+        self.page_key = None
 
         self.pattern = None
         self.radius = CURSOR_RADIUS * sqrt(
@@ -102,7 +103,7 @@ class CursorRenderer(Generic[CairoSomeSurface]):
         self.presentation = presentation
 
         # Restore the last viewed page from this presentation
-        self.slide = self.presentation_slide.get(presentation, 0)
+        self.page_key = self.presentation_page.get(presentation, event["page_key"])
 
         # All cursors are hidden on presentation/slide switch
         for user_id, cursor in self.cursors.items():
@@ -111,15 +112,16 @@ class CursorRenderer(Generic[CairoSomeSurface]):
         print("\tCursor: all cursors moved offscreen")
 
         print(f"\tCursor: presentation: {self.presentation}")
-        print(f"\tCursor: slide: {self.slide}")
+        print(f"\tCursor: page: {self.page_key}")
 
     def update_slide(self, event: SlideEvent) -> None:
-        if self.slide == event["slide"]:
+        page_key = event["page_key"]
+        if self.page_key == page_key:
             print("\tCursor: slide did not change")
             return
-        self.slide = event["slide"]
+        self.page_key = page_key
         if self.presentation is not None:
-            self.presentation_slide[self.presentation] = self.slide
+            self.presentation_page[self.presentation] = page_key
 
         # All cursors are hidden on presentation/slide switch
         for cursor in self.cursors.values():
@@ -127,7 +129,7 @@ class CursorRenderer(Generic[CairoSomeSurface]):
         print("\tCursor: all cursors moved offscreen")
         self.cursors_changed = True
 
-        print(f"\tCursor: slide: {self.slide}")
+        print(f"\tCursor: page: {self.page_key}")
 
     def update_presenter(self, event: PresenterEvent) -> None:
         if self.presenter == event["user_id"]:
@@ -160,12 +162,14 @@ class CursorRenderer(Generic[CairoSomeSurface]):
 
     def update_cursor_v2(self, event: WhiteboardCursorEvent) -> None:
         # Ignore cursor updates from other pods by checking against the
-        # current presentation and slide.
+        # current presentation and page.
         presentation = event.get("presentation")
         slide = event.get("slide")
+        # Only filter on what the event itself said; a page key is resolved for
+        # every event, including the ones that named no page at all.
         if presentation is not None or slide is not None:
-            if presentation != self.presentation or slide != self.slide:
-                print("\tCursor: not on current presentation/slide, skipping")
+            if presentation != self.presentation or event["page_key"] != self.page_key:
+                print("\tCursor: not on current presentation/page, skipping")
                 return
 
         user_id = event["user_id"]
@@ -196,8 +200,11 @@ class CursorRenderer(Generic[CairoSomeSurface]):
         if user_id is None:
             return
 
-        # Check that it's on the current presentation/slide
-        if event["presentation"] != self.presentation or event["slide"] != self.slide:
+        # Check that it's on the current presentation/page
+        if (
+            event["presentation"] != self.presentation
+            or event["page_key"] != self.page_key
+        ):
             return
 
         # And they already have a cursor visible
