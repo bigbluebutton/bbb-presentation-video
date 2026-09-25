@@ -5,6 +5,8 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     DrawShape,
     HighlighterShape,
     LineShape,
+    PollShape,
+    PollShapeAnswer,
     StickyShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -349,3 +351,38 @@ def test_highlight_from_data() -> None:
 
     assert highlight.point == Position(354, 140)
     assert highlight.rotation == 0
+
+
+def test_poll_from_data() -> None:
+    data: ShapeData = {
+        "x": 1140.0,
+        "y": 610.0,
+        "rotation": 0,
+        "type": "poll",
+        "props": {
+            "question": "gnffnsd bsg sgesrg",
+            "numResponders": 5,
+            "fill": "black",
+            "numRespondents": 5,
+            "questionType": "TF",
+            "h": 200,
+            "w": 300,
+            "questionText": "gnffnsd bsg sgesrg",
+            "color": "black",
+            "answers": [
+                {"id": 0, "key": "True", "numVotes": 2, "isCorrectAnswer": True},
+                {"id": 1, "key": "False", "numVotes": 3},
+            ],
+        },
+    }
+    poll = PollShape.from_data(data)
+    assert poll.size == Size(300, 200)
+    assert poll.style.color == ColorStyle.BLACK
+    assert poll.questionText == "gnffnsd bsg sgesrg"
+    assert poll.questionType == "TF"
+    assert poll.numResponders == 5
+    assert poll.numRespondents == 5
+    assert poll.answers == [
+        PollShapeAnswer(key="True", numVotes=2, isCorrectAnswer=True),
+        PollShapeAnswer(key="False", numVotes=3, isCorrectAnswer=False),
+    ]

@@ -2,28 +2,386 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""Render the tldraw ``poll`` shape.
+
+The BigBlueButton client and bbb-playback draw this shape with a recharts
+``<BarChart layout="vertical">`` inside a bordered box (``PollShapeUtil.tsx``
+and ``poll-content.tsx`` in ``@bigbluebutton/tldraw``). The layout below mirrors
+that component and the recharts defaults it relies on, so the video recording
+format shows the same chart as the live session and the presentation format.
+"""
+
 from __future__ import annotations
 
-from typing import TypeVar
+import math
+from decimal import Decimal
+from math import tau
+from typing import List, Sequence, Tuple, TypeVar
 
 import cairo
 from gi.repository import Pango, PangoCairo
 
 from bbb_presentation_video.events.helpers import Color
-from bbb_presentation_video.renderer.tldraw.shape import PollShape, apply_shape_rotation
+from bbb_presentation_video.renderer.tldraw.shape import (
+    PollShape,
+    PollShapeAnswer,
+    apply_shape_rotation,
+)
 from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
     ColorStyle,
 )
 
-FONT_FAMILY = "Arial"
-POLL_LINE_WIDTH = 2.0
-POLL_FONT_SIZE = 18
-POLL_VPADDING = 12.0
-POLL_HPADDING = 12.0
-
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+FONT_FAMILY = "Arial"
+
+# Shape container: PollShapeUtil.tsx <HTMLContainer style={...}>
+BORDER_COLOR = Color.from_int(0x8B9AA8)
+BORDER_WIDTH = 1.0
+BORDER_RADIUS = 4.0
+# box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.20)
+SHADOW_BLUR = 4.0
+SHADOW_ALPHA = 0.2
+
+# Question text: styles.ts PollText
+TITLE_FONT_SIZE = 20.0  # 1.25rem
+TITLE_MARGIN_TOP = 8.0  # 0.5rem
+TITLE_MARGIN_BOTTOM = 8.0  # 0.5rem
+TITLE_MARGIN_LEFT = 44.0  # 2.75rem
+# PollShapeUtil.tsx: adjustedHeight = height - 75 when there is a question
+TITLE_RESERVED_HEIGHT = 75.0
+
+# Chart: poll-content.tsx and recharts defaults
+CHART_WIDTH_RATIO = 0.9  # <ResponsiveContainer width="90%">
+CHART_MARGIN = 5.0  # BarChart default margin, every side
+X_AXIS_HEIGHT = 30.0  # XAxis default height
+Y_AXIS_WIDTH = 80.0  # <YAxis width={80}>; half the shape width for typed polls
+X_AXIS_TICK_COUNT = 5  # XAxis default tickCount
+TICK_SIZE = 6.0  # recharts default tickSize
+TICK_MARGIN = 2.0  # recharts default tickMargin
+TICK_FONT_SIZE = 12.0  # inherited from .tl-container
+TICK_LABEL_DY = 0.71  # recharts puts bottom tick labels at dy="0.71em"
+AXIS_COLOR = Color.from_int(0x666666)
+BAR_COLOR = Color.from_int(0x0C57A7)
+BAR_CATEGORY_GAP = 0.1  # recharts default barCategoryGap "10%"
+LABEL_ELLIPSIS = "..."
+# CustomizedAxisTick.tsx measures "0" on a canvas whose font assignment is not
+# a valid CSS font shorthand, so the browser default canvas font (10px) applies
+LABEL_MEASURE_FONT_SIZE = 10.0
+# The client prefixes correct quiz answers with an emoji check mark; use a
+# glyph that the fonts shipped with this package can render
+CORRECT_ANSWER_MARK = "✔ "
+
+
+def _digit_count(value: float) -> int:
+    if value == 0:
+        return 1
+    return math.floor(math.log10(abs(value))) + 1
+
+
+def _format_step(
+    rough_step: Decimal, allow_decimals: bool, correction_factor: int
+) -> Decimal:
+    if rough_step <= 0:
+        return Decimal(0)
+    digit_count = _digit_count(float(rough_step))
+    digit_count_value = Decimal(10) ** digit_count
+    step_ratio = rough_step / digit_count_value
+    step_ratio_scale = Decimal("0.05") if digit_count != 1 else Decimal("0.1")
+    amend_step_ratio = (
+        Decimal(math.ceil(step_ratio / step_ratio_scale)) + correction_factor
+    ) * step_ratio_scale
+    format_step = amend_step_ratio * digit_count_value
+    return format_step if allow_decimals else Decimal(math.ceil(format_step))
+
+
+def _ticks_of_single_value(
+    value: float, tick_count: int, allow_decimals: bool
+) -> List[Decimal]:
+    step = Decimal(1)
+    middle = Decimal(value)
+    if middle != middle.to_integral_value() and allow_decimals:
+        abs_value = abs(value)
+        if abs_value < 1:
+            step = Decimal(10) ** (_digit_count(value) - 1)
+            middle = Decimal(math.floor(middle / step)) * step
+        elif abs_value > 1:
+            middle = Decimal(math.floor(value))
+    elif value == 0:
+        middle = Decimal(math.floor((tick_count - 1) / 2))
+    elif not allow_decimals:
+        middle = Decimal(math.floor(value))
+    middle_index = math.floor((tick_count - 1) / 2)
+    return [middle + (n - middle_index) * step for n in range(tick_count)]
+
+
+def _calculate_step(
+    minimum: float,
+    maximum: float,
+    tick_count: int,
+    allow_decimals: bool,
+    correction_factor: int = 0,
+) -> Tuple[Decimal, Decimal, Decimal]:
+    rough_step = (Decimal(maximum) - Decimal(minimum)) / (tick_count - 1)
+    step = _format_step(rough_step, allow_decimals, correction_factor)
+    if minimum <= 0 <= maximum:
+        middle = Decimal(0)
+    else:
+        middle = (Decimal(minimum) + Decimal(maximum)) / 2
+        middle = middle - middle % step
+    below_count = math.ceil((middle - Decimal(minimum)) / step)
+    up_count = math.ceil((Decimal(maximum) - middle) / step)
+    scale_count = below_count + up_count + 1
+    if scale_count > tick_count:
+        return _calculate_step(
+            minimum, maximum, tick_count, allow_decimals, correction_factor + 1
+        )
+    if scale_count < tick_count:
+        if maximum > 0:
+            up_count += tick_count - scale_count
+        else:
+            below_count += tick_count - scale_count
+    return step, middle - below_count * step, middle + up_count * step
+
+
+def nice_tick_values(
+    domain: Tuple[float, float], tick_count: int = 6, allow_decimals: bool = True
+) -> List[Decimal]:
+    """Port of ``getNiceTickValues`` from recharts-scale.
+
+    recharts uses it to pick the ticks of a numeric axis with an automatic
+    domain, and then extends the axis domain to cover the ticks.
+    """
+    count = max(tick_count, 2)
+    minimum, maximum = sorted(domain)
+    if minimum == maximum:
+        values = _ticks_of_single_value(minimum, tick_count, allow_decimals)
+    else:
+        step, tick_min, tick_max = _calculate_step(
+            minimum, maximum, count, allow_decimals
+        )
+        values = []
+        value = tick_min
+        end = tick_max + Decimal("0.1") * step
+        while value < end:
+            values.append(value)
+            value += step
+    return values if domain[0] <= domain[1] else list(reversed(values))
+
+
+def merge_answers(answers: Sequence[PollShapeAnswer]) -> List[PollShapeAnswer]:
+    """Combine answers whose keys differ only by case.
+
+    Mirrors ``caseInsensitiveReducer`` in poll-content.tsx: the votes are added
+    up and the spelling of the answer with more votes wins.
+    """
+    merged: List[PollShapeAnswer] = []
+    for answer in answers:
+        for index, existing in enumerate(merged):
+            if existing.key.lower() != answer.key.lower():
+                continue
+            winner = existing if existing.numVotes >= answer.numVotes else answer
+            merged[index] = PollShapeAnswer(
+                key=winner.key,
+                numVotes=existing.numVotes + answer.numVotes,
+                isCorrectAnswer=winner.isCorrectAnswer,
+            )
+            break
+        else:
+            merged.append(answer)
+    return merged
+
+
+def truncate_label(label: str, axis_width: float, char_width: float) -> str:
+    """Shorten a category label the way CustomizedAxisTick.tsx does."""
+    max_chars = math.floor((axis_width - TICK_SIZE) / char_width)
+    if len(label) <= max_chars:
+        return label
+    return label[: max(max_chars - len(LABEL_ELLIPSIS), 0)] + LABEL_ELLIPSIS
+
+
+def _format_tick(value: Decimal) -> str:
+    return f"{value.normalize():f}"
+
+
+def _rounded_rect_path(
+    ctx: cairo.Context[CairoSomeSurface],
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    radius: float,
+) -> None:
+    radius = min(radius, width / 2, height / 2)
+    ctx.new_sub_path()
+    ctx.arc(x + width - radius, y + radius, radius, -tau / 4, 0)
+    ctx.arc(x + width - radius, y + height - radius, radius, 0, tau / 4)
+    ctx.arc(x + radius, y + height - radius, radius, tau / 4, tau / 2)
+    ctx.arc(x + radius, y + radius, radius, tau / 2, 3 * tau / 4)
+    ctx.close_path()
+
+
+def _text_layout(
+    ctx: cairo.Context[CairoSomeSurface],
+    size: float,
+    weight: Pango.Weight = Pango.Weight.NORMAL,
+) -> Pango.Layout:
+    font = Pango.FontDescription()
+    font.set_family(FONT_FAMILY)
+    font.set_absolute_size(int(size * Pango.SCALE))
+    font.set_weight(weight)
+    layout = Pango.Layout(PangoCairo.create_context(ctx))
+    layout.set_font_description(font)
+    return layout
+
+
+def _show_text_at_baseline(
+    ctx: cairo.Context[CairoSomeSurface],
+    layout: Pango.Layout,
+    x: float,
+    baseline_y: float,
+    anchor: str,
+) -> None:
+    """Place text like an SVG <text> element: ``x`` honours text-anchor and
+    ``baseline_y`` is the alphabetic baseline."""
+    width, _height = layout.get_pixel_size()
+    if anchor == "middle":
+        x -= width / 2
+    elif anchor == "end":
+        x -= width
+    ctx.move_to(x, baseline_y - layout.get_baseline() / Pango.SCALE)
+    PangoCairo.show_layout(ctx, layout)
+
+
+def _draw_container(
+    ctx: cairo.Context[CairoSomeSurface], width: float, height: float, fill: Color
+) -> None:
+    # Approximate the blurred drop shadow with a few fading rings
+    ring_count = int(SHADOW_BLUR)
+    ctx.set_line_width(1.0)
+    for ring in range(ring_count):
+        offset = ring + 0.5
+        alpha = SHADOW_ALPHA * (1 - offset / SHADOW_BLUR) / 2
+        ctx.set_source_rgba(0, 0, 0, alpha)
+        _rounded_rect_path(
+            ctx,
+            -offset,
+            -offset,
+            width + 2 * offset,
+            height + 2 * offset,
+            BORDER_RADIUS + offset,
+        )
+        ctx.stroke()
+
+    _rounded_rect_path(ctx, 0, 0, width, height, BORDER_RADIUS)
+    ctx.set_source_rgb(*fill)
+    ctx.fill()
+
+    half_bw = BORDER_WIDTH / 2
+    ctx.set_line_width(BORDER_WIDTH)
+    _rounded_rect_path(
+        ctx,
+        half_bw,
+        half_bw,
+        width - BORDER_WIDTH,
+        height - BORDER_WIDTH,
+        BORDER_RADIUS - half_bw,
+    )
+    ctx.set_source_rgb(*BORDER_COLOR)
+    ctx.stroke()
+
+
+def _draw_chart(
+    ctx: cairo.Context[CairoSomeSurface],
+    shape: PollShape,
+    answers: Sequence[PollShapeAnswer],
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    shape_width: float,
+) -> None:
+    is_typed_poll = shape.questionType.startswith("R-")
+    y_axis_width = math.floor(shape_width / 2) if is_typed_poll else Y_AXIS_WIDTH
+    plot_left = x + CHART_MARGIN + y_axis_width
+    plot_right = x + width - CHART_MARGIN
+    plot_top = y + CHART_MARGIN
+    plot_bottom = y + height - CHART_MARGIN - X_AXIS_HEIGHT
+    if plot_right <= plot_left or plot_bottom <= plot_top:
+        return
+
+    max_votes = max(answer.numVotes for answer in answers)
+    ticks = nice_tick_values((0, max_votes), X_AXIS_TICK_COUNT, allow_decimals=False)
+    domain_min = min(ticks)
+    domain_max = max(ticks)
+
+    def value_x(value: float) -> float:
+        if domain_max == domain_min:
+            return plot_left
+        ratio = float((Decimal(value) - domain_min) / (domain_max - domain_min))
+        return plot_left + ratio * (plot_right - plot_left)
+
+    band = (plot_bottom - plot_top) / len(answers)
+
+    # Axes and tick marks
+    ctx.set_line_width(1.0)
+    ctx.set_source_rgb(*AXIS_COLOR)
+    ctx.move_to(plot_left, plot_bottom)
+    ctx.line_to(plot_right, plot_bottom)
+    ctx.move_to(plot_left, plot_top)
+    ctx.line_to(plot_left, plot_bottom)
+    for tick in ticks:
+        tick_x = value_x(float(tick))
+        ctx.move_to(tick_x, plot_bottom)
+        ctx.line_to(tick_x, plot_bottom + TICK_SIZE)
+    for index in range(len(answers)):
+        center_y = plot_top + band * (index + 0.5)
+        ctx.move_to(plot_left - TICK_SIZE, center_y)
+        ctx.line_to(plot_left, center_y)
+    ctx.stroke()
+
+    # Tick labels on the numeric axis
+    tick_layout = _text_layout(ctx, TICK_FONT_SIZE)
+    tick_baseline = (
+        plot_bottom + TICK_SIZE + TICK_MARGIN + TICK_LABEL_DY * TICK_FONT_SIZE
+    )
+    for tick in ticks:
+        tick_layout.set_text(_format_tick(tick), -1)
+        _show_text_at_baseline(
+            ctx, tick_layout, value_x(float(tick)), tick_baseline, "middle"
+        )
+
+    # Category labels; the client's tick component ignores verticalAnchor, so
+    # the baseline sits on the band center
+    measure_layout = _text_layout(ctx, LABEL_MEASURE_FONT_SIZE)
+    measure_layout.set_text("0", -1)
+    char_width = measure_layout.get_size()[0] / Pango.SCALE or 6.0
+    label_layout = _text_layout(ctx, TICK_FONT_SIZE)
+    for index, answer in enumerate(answers):
+        label = (CORRECT_ANSWER_MARK if answer.isCorrectAnswer else "") + answer.key
+        label_layout.set_text(truncate_label(label, y_axis_width, char_width), -1)
+        _show_text_at_baseline(
+            ctx,
+            label_layout,
+            plot_left - TICK_SIZE - TICK_MARGIN,
+            plot_top + band * (index + 0.5),
+            "end",
+        )
+
+    # Bars
+    bar_offset = band * BAR_CATEGORY_GAP
+    bar_height = band - 2 * bar_offset
+    ctx.set_source_rgb(*BAR_COLOR)
+    for index, answer in enumerate(answers):
+        bar_width = value_x(answer.numVotes) - plot_left
+        if bar_width <= 0:
+            continue
+        ctx.rectangle(
+            plot_left, plot_top + band * index + bar_offset, bar_width, bar_height
+        )
+        ctx.fill()
 
 
 def finalize_poll(
@@ -40,139 +398,41 @@ def finalize_poll(
     height = shape.size.height
     color = V2_COLORS.get(shape.style.color, V2_COLORS[ColorStyle.BLACK])
 
-    ctx.set_line_join(cairo.LINE_JOIN_MITER)
-    ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
+    _draw_container(ctx, width, height, color.semi)
 
-    # Draw the background and poll outline
-    half_lw = POLL_LINE_WIDTH / 2
-    ctx.set_line_width(POLL_LINE_WIDTH)
-    ctx.move_to(half_lw, half_lw)
-    ctx.line_to(width - half_lw, half_lw)
-    ctx.line_to(width - half_lw, height - half_lw)
-    ctx.line_to(half_lw, height - half_lw)
-    ctx.close_path()
-    ctx.set_source_rgb(*color.semi)
-    ctx.fill_preserve()
-    ctx.set_source_rgb(*color.solid)
-    ctx.stroke()
+    # The content box sits inside the border and clips its children
+    ctx.save()
+    ctx.rectangle(0, BORDER_WIDTH, width, height - 2 * BORDER_WIDTH)
+    ctx.clip()
 
-    font = Pango.FontDescription()
-    font.set_family(FONT_FAMILY)
-    font.set_absolute_size(int(POLL_FONT_SIZE * Pango.SCALE))
-
-    # Use Pango to calculate the label width space needed
-    pctx = PangoCairo.create_context(ctx)
-    layout = Pango.Layout(pctx)
-    layout.set_font_description(font)
-
-    max_label_width = 0.0
-    max_percent_width = 0.0
-    for answer in shape.answers:
-        layout.set_text(answer.key, -1)
-        (label_width, _) = layout.get_pixel_size()
-        if label_width > max_label_width:
-            max_label_width = label_width
-        percent: str
-        if shape.numResponders > 0:
-            percent = "{}%".format(
-                int(float(answer.numVotes) / float(shape.numResponders) * 100)
-            )
-        else:
-            percent = "0%"
-        layout.set_text(percent, -1)
-        (percent_width, _) = layout.get_pixel_size()
-        if percent_width > max_percent_width:
-            max_percent_width = percent_width
-
-    max_label_width = min(max_label_width, width * 0.3)
-    max_percent_width = min(max_percent_width, width * 0.3)
-
-    title_height = 0.0
+    # The title's top margin collapses through its wrapper, so the content
+    # starts one margin below the border even when there is no question
+    content_top = BORDER_WIDTH + TITLE_MARGIN_TOP
     if shape.questionText != "":
-        title_height = POLL_FONT_SIZE + POLL_VPADDING
-
-    bar_height = (height - POLL_VPADDING - title_height) / len(
-        shape.answers
-    ) - POLL_VPADDING
-    bar_width = width - 4 * POLL_HPADDING - max_label_width - max_percent_width
-    bar_x = 2 * POLL_HPADDING + max_label_width
-
-    # All sizes are calculated, so draw the poll
-    layout.set_ellipsize(Pango.EllipsizeMode.END)
-    if shape.questionText != "":
-        title_font = Pango.FontDescription()
-        title_font.set_family(FONT_FAMILY)
-        title_font.set_absolute_size(int(POLL_FONT_SIZE * Pango.SCALE))
-        title_font.set_weight(Pango.Weight.BOLD)
-        layout.set_font_description(title_font)
-        layout.set_width(int(width - 2 * POLL_HPADDING) * Pango.SCALE)
-        layout.set_text(shape.questionText, -1)
-        _label_width, label_height = layout.get_pixel_size()
-        ctx.move_to(
-            POLL_HPADDING,
-            (POLL_FONT_SIZE - label_height) / 2 + POLL_VPADDING,
-        )
+        title_layout = _text_layout(ctx, TITLE_FONT_SIZE, Pango.Weight.MEDIUM)
+        title_layout.set_width(int((width - TITLE_MARGIN_LEFT) * Pango.SCALE))
+        title_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+        title_layout.set_text(shape.questionText, -1)
+        _title_width, title_height = title_layout.get_pixel_size()
+        ctx.move_to(TITLE_MARGIN_LEFT, content_top)
         ctx.set_source_rgb(*V2_TEXT_COLOR)
-        PangoCairo.show_layout(ctx, layout)
-        layout.set_font_description(font)
+        PangoCairo.show_layout(ctx, title_layout)
+        chart_top = content_top + title_height + TITLE_MARGIN_BOTTOM
+        chart_height = height - TITLE_RESERVED_HEIGHT
+    else:
+        chart_top = content_top
+        chart_height = height
 
-    for i, answer in enumerate(shape.answers):
-        bar_y = (bar_height + POLL_VPADDING) * i + POLL_VPADDING + title_height
-        if shape.numResponders > 0:
-            result_ratio = float(answer.numVotes) / float(shape.numResponders)
-        else:
-            result_ratio = 0.0
-        percent = "{}%".format(int(result_ratio * 100))
-
-        bar_x2 = bar_x + (bar_width * result_ratio)
-
-        # Draw the bar
-        ctx.set_line_width(POLL_LINE_WIDTH)
-        ctx.move_to(bar_x + half_lw, bar_y + half_lw)
-        ctx.line_to(max(bar_x + half_lw, bar_x2 - half_lw), bar_y + half_lw)
-        ctx.line_to(
-            max(bar_x + half_lw, bar_x2 - half_lw), bar_y + bar_height - half_lw
+    if chart_height > 0:
+        _draw_chart(
+            ctx,
+            shape,
+            merge_answers(shape.answers),
+            x=0,
+            y=chart_top,
+            width=width * CHART_WIDTH_RATIO,
+            height=chart_height,
+            shape_width=width,
         )
-        ctx.line_to(bar_x + half_lw, bar_y + bar_height - half_lw)
-        ctx.close_path()
-        ctx.set_source_rgb(*color.solid)
-        ctx.fill_preserve()
-        ctx.stroke()
 
-        # Draw the label and percentage
-        ctx.set_source_rgb(*V2_TEXT_COLOR)
-        layout.set_width(int(max_label_width * Pango.SCALE))
-        layout.set_text(answer.key, -1)
-        label_width, label_height = layout.get_pixel_size()
-        ctx.move_to(
-            bar_x - POLL_HPADDING - label_width,
-            bar_y + (bar_height - label_height) / 2,
-        )
-        PangoCairo.show_layout(ctx, layout)
-        layout.set_width(int(max_percent_width * Pango.SCALE))
-        layout.set_text(percent, -1)
-        percent_width, percent_height = layout.get_pixel_size()
-        ctx.move_to(
-            width - POLL_HPADDING - percent_width,
-            bar_y + (bar_height - percent_height) / 2,
-        )
-        PangoCairo.show_layout(ctx, layout)
-
-        # Draw the result count
-        layout.set_ellipsize(Pango.EllipsizeMode.NONE)
-        layout.set_width(-1)
-        layout.set_text(str(answer.numVotes), -1)
-        votes_width, votes_height = layout.get_pixel_size()
-        if votes_width < (bar_x2 - bar_x - 2 * POLL_HPADDING):
-            # Votes fit in the bar
-            ctx.move_to(
-                bar_x + (bar_x2 - bar_x - votes_width) / 2,
-                bar_y + (bar_height - votes_height) / 2,
-            )
-            ctx.set_source_rgb(*color.semi)
-            PangoCairo.show_layout(ctx, layout)
-        else:
-            # Votes do not fit in the bar, so put them after
-            ctx.move_to(bar_x2 + POLL_HPADDING, bar_y + (bar_height - votes_height) / 2)
-            ctx.set_source_rgb(*V2_TEXT_COLOR)
-            PangoCairo.show_layout(ctx, layout)
+    ctx.restore()
