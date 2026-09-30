@@ -84,11 +84,7 @@ def truncate_label(label: str, axis_width: float, char_width: float) -> str:
     return label[: max(max_chars - len(LABEL_ELLIPSIS), 0)] + LABEL_ELLIPSIS
 
 
-def _format_tick(value: Decimal) -> str:
-    return f"{value.normalize():f}"
-
-
-def _text_layout(
+def text_layout(
     ctx: cairo.Context[CairoSomeSurface],
     size: float,
     weight: Pango.Weight = Pango.Weight.NORMAL,
@@ -102,25 +98,7 @@ def _text_layout(
     return layout
 
 
-def _show_text_at_baseline(
-    ctx: cairo.Context[CairoSomeSurface],
-    layout: Pango.Layout,
-    x: float,
-    baseline_y: float,
-    anchor: str,
-) -> None:
-    """Place text like an SVG <text> element: ``x`` honours text-anchor and
-    ``baseline_y`` is the alphabetic baseline."""
-    width, _height = layout.get_pixel_size()
-    if anchor == "middle":
-        x -= width / 2
-    elif anchor == "end":
-        x -= width
-    ctx.move_to(x, baseline_y - layout.get_baseline() / Pango.SCALE)
-    PangoCairo.show_layout(ctx, layout)
-
-
-def _draw_container(
+def draw_container(
     ctx: cairo.Context[CairoSomeSurface], size: Size, fill: Color
 ) -> None:
     # Shadow. Doing blurred shadow is hard, so this is a two-layer drop shadow instead
@@ -148,7 +126,7 @@ def _draw_container(
     ctx.stroke()
 
 
-def _draw_chart(
+def draw_chart(
     ctx: cairo.Context[CairoSomeSurface],
     shape: PollShape,
     x: float,
@@ -199,33 +177,36 @@ def _draw_chart(
         ctx.line_to(plot_left, center_y)
     ctx.stroke()
 
-    # Tick labels on the numeric axis
-    tick_layout = _text_layout(ctx, TICK_FONT_SIZE)
+    # Tick labels on the numeric axis, centered on their tick. Like the SVG text
+    # elements of the client, the labels are positioned by their baseline.
+    tick_layout = text_layout(ctx, TICK_FONT_SIZE)
     tick_baseline = (
         plot_bottom + TICK_SIZE + TICK_MARGIN + TICK_LABEL_DY * TICK_FONT_SIZE
     )
     for tick in ticks:
-        tick_layout.set_text(_format_tick(tick), -1)
-        _show_text_at_baseline(
-            ctx, tick_layout, value_x(float(tick)), tick_baseline, "middle"
+        tick_layout.set_text(f"{tick.normalize():f}", -1)
+        tick_width, _ = tick_layout.get_pixel_size()
+        ctx.move_to(
+            value_x(float(tick)) - tick_width / 2,
+            tick_baseline - tick_layout.get_baseline() / Pango.SCALE,
         )
+        PangoCairo.show_layout(ctx, tick_layout)
 
-    # Category labels; the client's tick component ignores verticalAnchor, so
-    # the baseline sits on the band center
-    measure_layout = _text_layout(ctx, LABEL_MEASURE_FONT_SIZE)
+    # Category labels, ending at their tick; the client's tick component ignores
+    # verticalAnchor, so the baseline sits on the band center
+    measure_layout = text_layout(ctx, LABEL_MEASURE_FONT_SIZE)
     measure_layout.set_text("0", -1)
     char_width = measure_layout.get_size()[0] / Pango.SCALE or 6.0
-    label_layout = _text_layout(ctx, TICK_FONT_SIZE)
+    label_layout = text_layout(ctx, TICK_FONT_SIZE)
     for index, answer in enumerate(answers):
         label = (CORRECT_ANSWER_MARK if answer.isCorrectAnswer else "") + answer.key
         label_layout.set_text(truncate_label(label, y_axis_width, char_width), -1)
-        _show_text_at_baseline(
-            ctx,
-            label_layout,
-            plot_left - TICK_SIZE - TICK_MARGIN,
-            plot_top + band * (index + 0.5),
-            "end",
+        label_width, _ = label_layout.get_pixel_size()
+        ctx.move_to(
+            plot_left - TICK_SIZE - TICK_MARGIN - label_width,
+            plot_top + band * (index + 0.5) - label_layout.get_baseline() / Pango.SCALE,
         )
+        PangoCairo.show_layout(ctx, label_layout)
 
     # Bars
     bar_offset = band * BAR_CATEGORY_GAP
@@ -255,7 +236,7 @@ def finalize_poll(
     height = shape.size.height
     color = V2_COLORS.get(shape.style.color, V2_COLORS[ColorStyle.BLACK])
 
-    _draw_container(ctx, shape.size, color.semi)
+    draw_container(ctx, shape.size, color.semi)
 
     # The content box sits inside the border and clips its children
     ctx.save()
@@ -266,11 +247,11 @@ def finalize_poll(
     # starts one margin below the border even when there is no question
     content_top = BORDER_WIDTH + TITLE_MARGIN_TOP
     if shape.questionText != "":
-        title_layout = _text_layout(ctx, TITLE_FONT_SIZE, Pango.Weight.MEDIUM)
+        title_layout = text_layout(ctx, TITLE_FONT_SIZE, Pango.Weight.MEDIUM)
         title_layout.set_width(int((width - TITLE_MARGIN_LEFT) * Pango.SCALE))
         title_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
         title_layout.set_text(shape.questionText, -1)
-        _title_width, title_height = title_layout.get_pixel_size()
+        _, title_height = title_layout.get_pixel_size()
         ctx.move_to(TITLE_MARGIN_LEFT, content_top)
         ctx.set_source_rgb(*V2_TEXT_COLOR)
         PangoCairo.show_layout(ctx, title_layout)
@@ -281,7 +262,7 @@ def finalize_poll(
         chart_height = height
 
     if chart_height > 0:
-        _draw_chart(
+        draw_chart(
             ctx,
             shape,
             x=0,
