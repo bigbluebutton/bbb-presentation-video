@@ -528,6 +528,33 @@ def rounded_rect(
     ctx.close_path()
 
 
+def rounded_rect_shadow(
+    ctx: cairo.Context[CairoSomeSurface],
+    size: Size,
+    radius: float,
+    alpha: float,
+    *,
+    spread: float = 0.0,
+    offset: Tuple[float, float] = (0.0, 0.0),
+) -> None:
+    """Fill one layer of a drop shadow for a rounded rectangle.
+
+    Doing blurred shadow is hard, so shapes stack a couple of these flat layers
+    instead. The layer extends past the rectangle by spread on every side, and is
+    moved by offset.
+    """
+    ctx.save()
+    ctx.translate(offset[0] - spread, offset[1] - spread)
+    rounded_rect(
+        ctx,
+        Size(size.width + spread * 2, size.height + spread * 2),
+        radius + spread,
+    )
+    ctx.set_source_rgba(0, 0, 0, alpha)
+    ctx.fill()
+    ctx.restore()
+
+
 def draw_smooth_path(
     ctx: cairo.Context[CairoSomeSurface],
     points: Sequence[Tuple[float, float]],

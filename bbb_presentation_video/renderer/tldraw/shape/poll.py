@@ -15,13 +15,12 @@ from __future__ import annotations
 
 import math
 from decimal import Decimal
-from math import tau
 from typing import TypeVar
 
 import cairo
 from gi.repository import Pango, PangoCairo
 
-from bbb_presentation_video.events.helpers import Color
+from bbb_presentation_video.events.helpers import Color, Size
 from bbb_presentation_video.renderer.tldraw.recharts_scale import get_nice_tick_values
 from bbb_presentation_video.renderer.tldraw.shape import (
     PollShape,
@@ -31,6 +30,8 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
     ColorStyle,
+    rounded_rect,
+    rounded_rect_shadow,
 )
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
@@ -87,23 +88,6 @@ def _format_tick(value: Decimal) -> str:
     return f"{value.normalize():f}"
 
 
-def _rounded_rect_path(
-    ctx: cairo.Context[CairoSomeSurface],
-    x: float,
-    y: float,
-    width: float,
-    height: float,
-    radius: float,
-) -> None:
-    radius = min(radius, width / 2, height / 2)
-    ctx.new_sub_path()
-    ctx.arc(x + width - radius, y + radius, radius, -tau / 4, 0)
-    ctx.arc(x + width - radius, y + height - radius, radius, 0, tau / 4)
-    ctx.arc(x + radius, y + height - radius, radius, tau / 4, tau / 2)
-    ctx.arc(x + radius, y + radius, radius, tau / 2, 3 * tau / 4)
-    ctx.close_path()
-
-
 def _text_layout(
     ctx: cairo.Context[CairoSomeSurface],
     size: float,
@@ -137,39 +121,29 @@ def _show_text_at_baseline(
 
 
 def _draw_container(
-    ctx: cairo.Context[CairoSomeSurface], width: float, height: float, fill: Color
+    ctx: cairo.Context[CairoSomeSurface], size: Size, fill: Color
 ) -> None:
-    # Approximate the blurred drop shadow with a few fading rings
-    ring_count = int(SHADOW_BLUR)
-    ctx.set_line_width(1.0)
-    for ring in range(ring_count):
-        offset = ring + 0.5
-        alpha = SHADOW_ALPHA * (1 - offset / SHADOW_BLUR) / 2
-        ctx.set_source_rgba(0, 0, 0, alpha)
-        _rounded_rect_path(
-            ctx,
-            -offset,
-            -offset,
-            width + 2 * offset,
-            height + 2 * offset,
-            BORDER_RADIUS + offset,
-        )
-        ctx.stroke()
+    # Shadow. Doing blurred shadow is hard, so this is a two-layer drop shadow instead
+    rounded_rect_shadow(ctx, size, BORDER_RADIUS, SHADOW_ALPHA / 8, spread=SHADOW_BLUR)
+    rounded_rect_shadow(
+        ctx, size, BORDER_RADIUS, SHADOW_ALPHA / 4, spread=SHADOW_BLUR / 2
+    )
 
-    _rounded_rect_path(ctx, 0, 0, width, height, BORDER_RADIUS)
+    rounded_rect(ctx, size, BORDER_RADIUS)
     ctx.set_source_rgb(*fill)
     ctx.fill()
 
+    # The border is drawn inside the box
     half_bw = BORDER_WIDTH / 2
-    ctx.set_line_width(BORDER_WIDTH)
-    _rounded_rect_path(
+    ctx.save()
+    ctx.translate(half_bw, half_bw)
+    rounded_rect(
         ctx,
-        half_bw,
-        half_bw,
-        width - BORDER_WIDTH,
-        height - BORDER_WIDTH,
+        Size(size.width - BORDER_WIDTH, size.height - BORDER_WIDTH),
         BORDER_RADIUS - half_bw,
     )
+    ctx.restore()
+    ctx.set_line_width(BORDER_WIDTH)
     ctx.set_source_rgb(*BORDER_COLOR)
     ctx.stroke()
 
@@ -281,7 +255,7 @@ def finalize_poll(
     height = shape.size.height
     color = V2_COLORS.get(shape.style.color, V2_COLORS[ColorStyle.BLACK])
 
-    _draw_container(ctx, width, height, color.semi)
+    _draw_container(ctx, shape.size, color.semi)
 
     # The content box sits inside the border and clips its children
     ctx.save()
