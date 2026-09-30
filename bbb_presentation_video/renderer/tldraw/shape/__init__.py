@@ -592,6 +592,7 @@ class LineShape(LabelledShapeProto):
 class PollShapeAnswer:
     key: str
     numVotes: int
+    isCorrectAnswer: bool = False
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
@@ -624,7 +625,11 @@ class PollShape(RotatableShapeProto):
                 self.questionText = props["questionText"]
             if "answers" in props:
                 self.answers = [
-                    PollShapeAnswer(key=answer["key"], numVotes=answer["numVotes"])
+                    PollShapeAnswer(
+                        key=answer["key"],
+                        numVotes=answer["numVotes"],
+                        isCorrectAnswer=bool(answer.get("isCorrectAnswer", False)),
+                    )
                     for answer in props["answers"]
                 ]
 
