@@ -1,23 +1,4 @@
-from bbb_presentation_video.renderer.tldraw.shape import PollShapeAnswer
-from bbb_presentation_video.renderer.tldraw.shape.poll import (
-    merge_answers,
-    truncate_label,
-)
-
-
-def test_merge_answers_is_case_insensitive() -> None:
-    answers = [
-        PollShapeAnswer(key="Yes", numVotes=1),
-        PollShapeAnswer(key="yes", numVotes=2, isCorrectAnswer=True),
-        PollShapeAnswer(key="No", numVotes=1),
-        PollShapeAnswer(key="NO", numVotes=1),
-    ]
-    assert merge_answers(answers) == [
-        PollShapeAnswer(key="yes", numVotes=3, isCorrectAnswer=True),
-        PollShapeAnswer(key="No", numVotes=2),
-    ]
-    # The input is left untouched
-    assert answers[0] == PollShapeAnswer(key="Yes", numVotes=1)
+from bbb_presentation_video.renderer.tldraw.shape.poll import truncate_label
 
 
 def test_truncate_label() -> None:

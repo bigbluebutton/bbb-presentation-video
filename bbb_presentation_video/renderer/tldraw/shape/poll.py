@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from decimal import Decimal
 from math import tau
-from typing import List, Sequence, TypeVar
+from typing import TypeVar
 
 import cairo
 from gi.repository import Pango, PangoCairo
@@ -25,7 +25,6 @@ from bbb_presentation_video.events.helpers import Color
 from bbb_presentation_video.renderer.tldraw.recharts_scale import get_nice_tick_values
 from bbb_presentation_video.renderer.tldraw.shape import (
     PollShape,
-    PollShapeAnswer,
     apply_shape_rotation,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
@@ -74,29 +73,6 @@ LABEL_MEASURE_FONT_SIZE = 10.0
 # The client prefixes correct quiz answers with an emoji check mark; use a
 # glyph that the fonts shipped with this package can render
 CORRECT_ANSWER_MARK = "✔ "
-
-
-def merge_answers(answers: Sequence[PollShapeAnswer]) -> List[PollShapeAnswer]:
-    """Combine answers whose keys differ only by case.
-
-    Mirrors ``caseInsensitiveReducer`` in poll-content.tsx: the votes are added
-    up and the spelling of the answer with more votes wins.
-    """
-    merged: List[PollShapeAnswer] = []
-    for answer in answers:
-        for index, existing in enumerate(merged):
-            if existing.key.lower() != answer.key.lower():
-                continue
-            winner = existing if existing.numVotes >= answer.numVotes else answer
-            merged[index] = PollShapeAnswer(
-                key=winner.key,
-                numVotes=existing.numVotes + answer.numVotes,
-                isCorrectAnswer=winner.isCorrectAnswer,
-            )
-            break
-        else:
-            merged.append(answer)
-    return merged
 
 
 def truncate_label(label: str, axis_width: float, char_width: float) -> str:
@@ -201,7 +177,6 @@ def _draw_container(
 def _draw_chart(
     ctx: cairo.Context[CairoSomeSurface],
     shape: PollShape,
-    answers: Sequence[PollShapeAnswer],
     x: float,
     y: float,
     width: float,
@@ -217,6 +192,7 @@ def _draw_chart(
     if plot_right <= plot_left or plot_bottom <= plot_top:
         return
 
+    answers = shape.answers
     max_votes = max(answer.numVotes for answer in answers)
     ticks = get_nice_tick_values(
         (0, max_votes), X_AXIS_TICK_COUNT, allow_decimals=False
@@ -334,7 +310,6 @@ def finalize_poll(
         _draw_chart(
             ctx,
             shape,
-            merge_answers(shape.answers),
             x=0,
             y=chart_top,
             width=width * CHART_WIDTH_RATIO,
