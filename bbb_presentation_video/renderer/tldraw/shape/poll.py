@@ -16,12 +16,13 @@ from __future__ import annotations
 import math
 from decimal import Decimal
 from math import tau
-from typing import List, Sequence, Tuple, TypeVar
+from typing import List, Sequence, TypeVar
 
 import cairo
 from gi.repository import Pango, PangoCairo
 
 from bbb_presentation_video.events.helpers import Color
+from bbb_presentation_video.renderer.tldraw.recharts_scale import get_nice_tick_values
 from bbb_presentation_video.renderer.tldraw.shape import (
     PollShape,
     PollShapeAnswer,
@@ -73,102 +74,6 @@ LABEL_MEASURE_FONT_SIZE = 10.0
 # The client prefixes correct quiz answers with an emoji check mark; use a
 # glyph that the fonts shipped with this package can render
 CORRECT_ANSWER_MARK = "✔ "
-
-
-def _digit_count(value: float) -> int:
-    if value == 0:
-        return 1
-    return math.floor(math.log10(abs(value))) + 1
-
-
-def _format_step(
-    rough_step: Decimal, allow_decimals: bool, correction_factor: int
-) -> Decimal:
-    if rough_step <= 0:
-        return Decimal(0)
-    digit_count = _digit_count(float(rough_step))
-    digit_count_value = Decimal(10) ** digit_count
-    step_ratio = rough_step / digit_count_value
-    step_ratio_scale = Decimal("0.05") if digit_count != 1 else Decimal("0.1")
-    amend_step_ratio = (
-        Decimal(math.ceil(step_ratio / step_ratio_scale)) + correction_factor
-    ) * step_ratio_scale
-    format_step = amend_step_ratio * digit_count_value
-    return format_step if allow_decimals else Decimal(math.ceil(format_step))
-
-
-def _ticks_of_single_value(
-    value: float, tick_count: int, allow_decimals: bool
-) -> List[Decimal]:
-    step = Decimal(1)
-    middle = Decimal(value)
-    if middle != middle.to_integral_value() and allow_decimals:
-        abs_value = abs(value)
-        if abs_value < 1:
-            step = Decimal(10) ** (_digit_count(value) - 1)
-            middle = Decimal(math.floor(middle / step)) * step
-        elif abs_value > 1:
-            middle = Decimal(math.floor(value))
-    elif value == 0:
-        middle = Decimal(math.floor((tick_count - 1) / 2))
-    elif not allow_decimals:
-        middle = Decimal(math.floor(value))
-    middle_index = math.floor((tick_count - 1) / 2)
-    return [middle + (n - middle_index) * step for n in range(tick_count)]
-
-
-def _calculate_step(
-    minimum: float,
-    maximum: float,
-    tick_count: int,
-    allow_decimals: bool,
-    correction_factor: int = 0,
-) -> Tuple[Decimal, Decimal, Decimal]:
-    rough_step = (Decimal(maximum) - Decimal(minimum)) / (tick_count - 1)
-    step = _format_step(rough_step, allow_decimals, correction_factor)
-    if minimum <= 0 <= maximum:
-        middle = Decimal(0)
-    else:
-        middle = (Decimal(minimum) + Decimal(maximum)) / 2
-        middle = middle - middle % step
-    below_count = math.ceil((middle - Decimal(minimum)) / step)
-    up_count = math.ceil((Decimal(maximum) - middle) / step)
-    scale_count = below_count + up_count + 1
-    if scale_count > tick_count:
-        return _calculate_step(
-            minimum, maximum, tick_count, allow_decimals, correction_factor + 1
-        )
-    if scale_count < tick_count:
-        if maximum > 0:
-            up_count += tick_count - scale_count
-        else:
-            below_count += tick_count - scale_count
-    return step, middle - below_count * step, middle + up_count * step
-
-
-def nice_tick_values(
-    domain: Tuple[float, float], tick_count: int = 6, allow_decimals: bool = True
-) -> List[Decimal]:
-    """Port of ``getNiceTickValues`` from recharts-scale.
-
-    recharts uses it to pick the ticks of a numeric axis with an automatic
-    domain, and then extends the axis domain to cover the ticks.
-    """
-    count = max(tick_count, 2)
-    minimum, maximum = sorted(domain)
-    if minimum == maximum:
-        values = _ticks_of_single_value(minimum, tick_count, allow_decimals)
-    else:
-        step, tick_min, tick_max = _calculate_step(
-            minimum, maximum, count, allow_decimals
-        )
-        values = []
-        value = tick_min
-        end = tick_max + Decimal("0.1") * step
-        while value < end:
-            values.append(value)
-            value += step
-    return values if domain[0] <= domain[1] else list(reversed(values))
 
 
 def merge_answers(answers: Sequence[PollShapeAnswer]) -> List[PollShapeAnswer]:
@@ -313,7 +218,9 @@ def _draw_chart(
         return
 
     max_votes = max(answer.numVotes for answer in answers)
-    ticks = nice_tick_values((0, max_votes), X_AXIS_TICK_COUNT, allow_decimals=False)
+    ticks = get_nice_tick_values(
+        (0, max_votes), X_AXIS_TICK_COUNT, allow_decimals=False
+    )
     domain_min = min(ticks)
     domain_max = max(ticks)
 
