@@ -51,8 +51,6 @@ TITLE_FONT_SIZE = 20.0  # 1.25rem
 TITLE_MARGIN_TOP = 8.0  # 0.5rem
 TITLE_MARGIN_BOTTOM = 8.0  # 0.5rem
 TITLE_MARGIN_LEFT = 44.0  # 2.75rem
-# PollShapeUtil.tsx: adjustedHeight = height - 75 when there is a question
-TITLE_RESERVED_HEIGHT = 75.0
 
 # Chart: poll-content.tsx and recharts defaults
 CHART_WIDTH_RATIO = 0.9  # <ResponsiveContainer width="90%">
@@ -74,6 +72,17 @@ LABEL_MEASURE_FONT_SIZE = 10.0
 # The client prefixes correct quiz answers with an emoji check mark; use a
 # glyph that the fonts shipped with this package can render
 CORRECT_ANSWER_MARK = "✔ "
+
+
+def chart_height_under_question(shape_height: float, title_height: float) -> float:
+    """Height left for the chart once the question is laid out above it.
+
+    The client used to reserve a fixed 75 px for the question
+    (PollShapeUtil.tsx, adjustedHeight = height - 75), which clips the last
+    bars of a long question. @bigbluebutton/tldraw now lays the question and
+    the chart out in a column, so the chart gets whatever the question leaves.
+    """
+    return shape_height - TITLE_MARGIN_TOP - title_height - TITLE_MARGIN_BOTTOM
 
 
 def truncate_label(label: str, axis_width: float, char_width: float) -> str:
@@ -256,7 +265,7 @@ def finalize_poll(
         ctx.set_source_rgb(*V2_TEXT_COLOR)
         PangoCairo.show_layout(ctx, title_layout)
         chart_top = content_top + title_height + TITLE_MARGIN_BOTTOM
-        chart_height = height - TITLE_RESERVED_HEIGHT
+        chart_height = chart_height_under_question(height, title_height)
     else:
         chart_top = content_top
         chart_height = height
