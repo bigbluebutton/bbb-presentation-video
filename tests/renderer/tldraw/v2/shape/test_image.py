@@ -2,6 +2,11 @@ import struct
 from pathlib import Path
 
 import cairo
+import gi
+
+gi.require_version("GdkPixbuf", "2.0")
+
+from gi.repository import GdkPixbuf
 
 from bbb_presentation_video.events.helpers import Size
 from bbb_presentation_video.renderer.tldraw.shape import ImageShape
@@ -14,7 +19,7 @@ from bbb_presentation_video.renderer.tldraw.v2.shape.image import (
 
 
 def test_upload_filename_accepts_supported_types() -> None:
-    for extension in ["png", "PNG", "jpg", "jpeg", "gif"]:
+    for extension in ["png", "PNG", "jpg", "jpeg", "gif", "webp", "WEBP"]:
         src = f"/bigbluebutton/fileUpload/meeting-id/44c71706.{extension}"
         assert upload_filename(src) == f"44c71706.{extension}"
 
@@ -23,11 +28,6 @@ def test_upload_filename_rejects_unsupported_types() -> None:
     assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706.svg") is None
     assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706") is None
     assert upload_filename("") is None
-
-
-def test_upload_filename_rejects_webp() -> None:
-    """There is no webp loader to decode it with, so it is not accepted."""
-    assert upload_filename("/bigbluebutton/fileUpload/meeting-id/44c71706.webp") is None
 
 
 def test_upload_filename_strips_directories() -> None:
@@ -142,3 +142,35 @@ def test_load_pixbuf_with_excessive_dimensions(tmp_path: Path) -> None:
 
     assert load_pixbuf(shape, str(tmp_path)) is None
     assert shape.pixbuf is None
+
+
+def test_finalize_image_draws_a_webp_upload(tmp_path: Path) -> None:
+    """The whiteboard accepts webp, so a pasted webp has to draw like any other.
+
+    Decoding it relies on the webp loader for gdk-pixbuf, which the package
+    declares as a dependency.
+    """
+    file_uploads = tmp_path / "file-uploads"
+    file_uploads.mkdir()
+    # Written rather than committed, since the repository keeps no binary
+    # fixtures. The webp encoder is lossy, so the colour is compared with a
+    # tolerance below.
+    upload = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, 16, 16)
+    upload.fill(0xFF0000FF)
+    upload.savev(str(file_uploads / "44c71706.webp"), "webp", ["quality"], ["100"])
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    shape = ImageShape()
+    shape.src = "/bigbluebutton/fileUpload/meeting-id/44c71706.webp"
+    shape.size = Size(10, 10)
+
+    finalize_image(cairo.Context(surface), "shape:test", shape, str(tmp_path))
+    surface.flush()
+
+    assert shape.pixbuf is not None
+    centre = 5 * surface.get_stride() + 5 * 4
+    (pixel,) = struct.unpack_from("=I", bytes(surface.get_data()), centre)
+    alpha, red, green, blue = pixel.to_bytes(4, "big")
+    assert alpha == 0xFF, "expected an opaque pixel"
+    assert red >= 0xF0, f"expected red, got {pixel:08x}"
+    assert green <= 0x10 and blue <= 0x10, f"expected red, got {pixel:08x}"

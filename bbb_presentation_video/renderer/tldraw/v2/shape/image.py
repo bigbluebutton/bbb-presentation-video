@@ -20,13 +20,12 @@ from bbb_presentation_video.renderer.tldraw.shape import ImageShape
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
-IMAGE_EXTENSIONS = frozenset(("gif", "jpeg", "jpg", "png"))
+IMAGE_EXTENSIONS = frozenset(("gif", "jpeg", "jpg", "png", "webp"))
 """Image types that can be pasted onto the whiteboard and that this renderer can
 decode.
 
-The whiteboard also accepts webp, but gdk-pixbuf carries no webp loader and the
-package does not depend on one, so a pasted webp is reported and left undrawn
-rather than failing halfway through a recording.
+gdk-pixbuf has no built-in webp support; webp is decoded by the gdk-pixbuf webp
+loader, which the package depends on.
 """
 
 MAX_IMAGE_PIXELS = 4096 * 4096
