@@ -100,9 +100,6 @@ def load_pixbuf(shape: ImageShape, directory: str) -> Optional[GdkPixbuf.Pixbuf]
         print(f"\tTldraw: image has an unsupported source: {shape.src}")
         return None
 
-    # The file-uploads directory name is part of the recording format.
-    # Must match bbb-file-upload, bbb-shared-notes-server, the bbb-file-upload
-    # nginx template, the record-and-playback scripts and bbb-playback.
     filepath = path.join(directory, "file-uploads", filename)
     if filepath not in _PIXBUF_CACHE:
         _PIXBUF_CACHE[filepath] = read_pixbuf(filepath)
@@ -127,23 +124,13 @@ def finalize_image(
         print(f"\tTldraw: ignoring image with a degenerate size: {id}")
         return
 
-    style = shape.style
-
     ctx.rotate(shape.rotation)
 
-    ctx.push_group()
-
-    # Draw at the image's own resolution and let cairo scale it to the size the
-    # shape was given, so that zooming in does not resample twice.
     ctx.save()
     ctx.scale(
         shape.size.width / pixbuf.get_width(),
         shape.size.height / pixbuf.get_height(),
     )
     Gdk.cairo_set_source_pixbuf(ctx, pixbuf, 0, 0)
-    ctx.rectangle(0, 0, pixbuf.get_width(), pixbuf.get_height())
-    ctx.fill()
+    ctx.paint_with_alpha(shape.style.opacity)
     ctx.restore()
-
-    ctx.pop_group_to_source()
-    ctx.paint_with_alpha(style.opacity)
