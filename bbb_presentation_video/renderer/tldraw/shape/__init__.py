@@ -92,11 +92,8 @@ class SizedShapeProto(BaseShapeProto, Protocol):
         if "props" in data:
             props = data["props"]
 
-            if "w" in props and "h" in props:
-                w, h = props["w"], props["h"]
-            else:
-                w, h = self.size.width, self.size.height
-
+            w = props["w"] if "w" in props else self.size.width
+            h = props["h"] if "h" in props else self.size.height
             grow_y = props["growY"] if "growY" in props else 0.0
             self.size = Size(w, h + grow_y)
 
