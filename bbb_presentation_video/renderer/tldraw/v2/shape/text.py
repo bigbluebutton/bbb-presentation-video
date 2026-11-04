@@ -122,7 +122,7 @@ def finalize_label(
     layout.set_text(shape.label, -1)
 
     label_size = get_layout_size(layout, padding=LABEL_PADDING, line_height=LINE_HEIGHT)
-    bounds = shape.size
+    bounds = shape.size_with_growth()
 
     if offset is None:
         offset = shape.label_offset()
@@ -228,11 +228,12 @@ def finalize_sticky_text(
         layout, padding=STICKY_PADDING, line_height=LINE_HEIGHT
     )
     x, y = ctx.get_current_point()
+    bounds = shape.size_with_growth()
 
     if shape.verticalAlign is AlignStyle.MIDDLE:
-        y = (shape.size.height - text_height) / 2
+        y = (bounds.height - text_height) / 2
     elif shape.verticalAlign is AlignStyle.END:
-        y = shape.size.height - text_height
+        y = bounds.height - text_height
     ctx.translate(x, y)
 
     ctx.set_source_rgb(*COLORS[ColorStyle.BLACK])

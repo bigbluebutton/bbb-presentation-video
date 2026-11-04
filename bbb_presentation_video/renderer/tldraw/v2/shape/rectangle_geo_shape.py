@@ -39,8 +39,9 @@ def rectangle_stroke_points(
     sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     # Corners
     variation = sw * 0.75
@@ -142,8 +143,9 @@ def dash_rectangle(
 ) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     points = [Position(0, 0), Position(w, 0), Position(w, h), Position(0, h)]
 

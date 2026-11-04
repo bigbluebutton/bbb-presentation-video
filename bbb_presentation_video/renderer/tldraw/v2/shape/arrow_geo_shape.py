@@ -36,8 +36,9 @@ def arrow_geo_stroke_points(
     sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     variation = sw * 0.75
 
@@ -242,8 +243,9 @@ def draw_geo_arrow(
 def dash_geo_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowGeoShape) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     if shape.geo == GeoShape.ARROW_DOWN or shape.geo == GeoShape.ARROW_UP:
         ox = w * 0.16

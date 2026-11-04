@@ -35,7 +35,7 @@ def triangle_centroid(size: Size) -> Position:
 
 def triangle_stroke_points(id: str, shape: TriangleGeoShape) -> List[StrokePoint]:
     random = Random(id)
-    size = shape.size
+    size = shape.size_with_growth()
     stroke_width = STROKE_SIZES[shape.style.size]
 
     # Corners with random offsets
@@ -117,8 +117,9 @@ def dash_triangle(
 ) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     points = [
         Position(w / 2, 0),
@@ -136,7 +137,7 @@ def finalize_geo_triangle(
     print(f"\tTldraw: Finalizing Triangle (geo): {id}")
 
     style = shape.style
-    size = shape.size
+    size = shape.size_with_growth()
 
     ctx.push_group()
 

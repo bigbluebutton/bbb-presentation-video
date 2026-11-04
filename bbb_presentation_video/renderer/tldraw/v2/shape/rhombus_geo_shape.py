@@ -30,7 +30,7 @@ from bbb_presentation_video.renderer.tldraw.v2.utils import (
 
 def rhombus_stroke_points(id: str, shape: RhombusGeoShape) -> List[StrokePoint]:
     random = Random(id)
-    size = shape.size
+    size = shape.size_with_growth()
 
     width = size.width
     height = size.height
@@ -113,8 +113,9 @@ def draw_rhombus(
 
 def dash_rhombus(ctx: cairo.Context[CairoSomeSurface], shape: RhombusGeoShape) -> None:
     style = shape.style
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     # Internal angle between adjacent sides varies with width and height
     x_offset = min(width * 0.38, height * 0.38)

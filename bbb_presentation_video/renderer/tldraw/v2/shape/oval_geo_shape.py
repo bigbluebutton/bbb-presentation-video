@@ -46,8 +46,9 @@ def oval_points(w: float, h: float, n_vertices: int = 25) -> List[Position]:
 def dash_oval(ctx: cairo.Context[CairoSomeSurface], shape: OvalGeoShape) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     n_vertices = 50
     points = oval_points(w, h, n_vertices)

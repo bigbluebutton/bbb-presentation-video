@@ -34,8 +34,9 @@ def overlay_x_cross(ctx: cairo.Context[CairoSomeSurface], shape: XBoxGeoShape) -
     sw = STROKE_SIZES[shape.style.size]
 
     # Dimensions
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     # The cross doesn't touch the vertices of the box to
     # prevent opacities from adding up
@@ -94,8 +95,9 @@ def draw_x_box(
 def dash_x_box(ctx: cairo.Context[CairoSomeSurface], shape: XBoxGeoShape) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     points = [
         Position(0, 0),
