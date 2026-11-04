@@ -74,17 +74,6 @@ LABEL_MEASURE_FONT_SIZE = 10.0
 CORRECT_ANSWER_MARK = "✔ "
 
 
-def chart_height_under_question(shape_height: float, title_height: float) -> float:
-    """Height left for the chart once the question is laid out above it.
-
-    The client used to reserve a fixed 75 px for the question
-    (PollShapeUtil.tsx, adjustedHeight = height - 75), which clips the last
-    bars of a long question. @bigbluebutton/tldraw now lays the question and
-    the chart out in a column, so the chart gets whatever the question leaves.
-    """
-    return shape_height - TITLE_MARGIN_TOP - title_height - TITLE_MARGIN_BOTTOM
-
-
 def truncate_label(label: str, axis_width: float, char_width: float) -> str:
     """Shorten a category label the way CustomizedAxisTick.tsx does."""
     max_chars = math.floor((axis_width - TICK_SIZE) / char_width)
@@ -265,7 +254,7 @@ def finalize_poll(
         ctx.set_source_rgb(*V2_TEXT_COLOR)
         PangoCairo.show_layout(ctx, title_layout)
         chart_top = content_top + title_height + TITLE_MARGIN_BOTTOM
-        chart_height = chart_height_under_question(height, title_height)
+        chart_height = height - TITLE_MARGIN_TOP - title_height - TITLE_MARGIN_BOTTOM
     else:
         chart_top = content_top
         chart_height = height
