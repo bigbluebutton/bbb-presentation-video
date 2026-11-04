@@ -215,6 +215,11 @@ class DrawShape(RotatableShapeProto):
 
 
 @attr.s(order=False, slots=True, auto_attribs=True)
+class DrawShapeV2(DrawShape):
+    pass
+
+
+@attr.s(order=False, slots=True, auto_attribs=True)
 class HighlighterShape(RotatableShapeProto):
     points: DrawPoints = []
     """List of input points from the drawing tool."""
@@ -637,6 +642,7 @@ Shape = Union[
     CloudGeoShape,
     DiamondGeoShape,
     DrawShape,
+    DrawShapeV2,
     EllipseGeoShape,
     EllipseShape,
     FrameShape,
@@ -666,7 +672,10 @@ def parse_shape_from_data(data: ShapeData, bbb_version: Version) -> Optional[Sha
     is_tldraw_v2 = bbb_version >= Version("3.0.0")
 
     if type == "draw":
-        return DrawShape.from_data(data)
+        if is_tldraw_v2:
+            return DrawShapeV2.from_data(data)
+        else:
+            return DrawShape.from_data(data)
     elif type == "rectangle":
         return RectangleShape.from_data(data)
     elif type == "ellipse":
