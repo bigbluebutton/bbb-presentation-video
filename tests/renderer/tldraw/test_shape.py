@@ -8,7 +8,6 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     StickyShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
-    HIGHLIGHT_COLORS,
     AlignStyle,
     ColorStyle,
     DashStyle,

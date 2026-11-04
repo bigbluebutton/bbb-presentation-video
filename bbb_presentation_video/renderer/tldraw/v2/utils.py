@@ -129,10 +129,13 @@ def apply_palette_overrides(bbb_version: Version) -> None:
     """Apply the changes BigBlueButton makes to the tldraw color palette.
 
     Since BigBlueButton 3.1 (released as 4.0), the client replaces the tldraw yellow
-    with a more vibrant one (setupColorThemePaletteOverrides in the whiteboard).
+    and the black and yellow highlighter colors with a more vibrant yellow
+    (setupColorThemePaletteOverrides in the whiteboard).
     """
     if bbb_version >= Version("3.1"):
         COLORS[ColorStyle.YELLOW] = Color.from_int(0xFFFF00)
+        HIGHLIGHT_COLORS[ColorStyle.BLACK] = Color.from_int(0xFFFF00)
+        HIGHLIGHT_COLORS[ColorStyle.YELLOW] = Color.from_int(0xFFFF00)
 
 
 def pattern_fill(color: ColorStyle) -> cairo.SurfacePattern:
