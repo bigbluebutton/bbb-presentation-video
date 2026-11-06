@@ -120,6 +120,7 @@ FRAME_HEADING_PADDING: float = 8  # var(--space3)
 FRAME_HEADING_BORDER_RADIUS: float = 4  # var(--radius-1)
 
 NOTE_BORDER_RADIUS: float = 6  # var(--radius-2)
+NOTE_SCRIM_OPACITY: float = 0.28  # .tl-note__scrim
 
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
