@@ -50,15 +50,15 @@ def get_star_points(w: float, h: float, n: int) -> List[Position]:
 
 
 def star_stroke_points(id: str, shape: StarGeoShape) -> List[StrokePoint]:
-    size = shape.size
+    size = shape.size_with_growth()
 
     width = size.width
     height = size.height
 
     stroke_width = STROKE_SIZES[shape.style.size]
 
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     vertices = 5
 
@@ -115,8 +115,9 @@ def draw_star(
 
 def dash_star(ctx: cairo.Context[CairoSomeSurface], shape: StarGeoShape) -> None:
     style = shape.style
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     vertices = 5
     points = get_star_points(width, height, vertices)

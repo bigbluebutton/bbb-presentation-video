@@ -5,6 +5,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     DrawShape,
     HighlighterShape,
     LineShape,
+    RectangleGeoShape,
     StickyShapeV2,
     TextShapeV2,
 )
@@ -318,8 +319,62 @@ def test_sticky_v2_from_data_grown() -> None:
     # Regression: growY must be applied exactly once, on top of the base height.
     # The bug both collapsed width to 0 and double-counted growY (200,320 -> 0,240).
     sticky = StickyShapeV2.from_data(_note_data(grow_y=120))
-    assert sticky.size == Size(200, 320)
+    assert sticky.size == Size(200, 200)
+    assert sticky.size_with_growth() == Size(200, 320)
     assert sticky.verticalAlign == AlignStyle.START
+
+
+def test_sticky_v2_update_grown() -> None:
+    # Regression: every update carries the full props, so growY must not be
+    # added again on top of the previous size.
+    sticky = StickyShapeV2.from_data(_note_data(grow_y=120))
+    sticky.update_from_data(_note_data(grow_y=120))
+    assert sticky.size_with_growth() == Size(200, 320)
+    sticky.update_from_data(_note_data(grow_y=60))
+    assert sticky.size_with_growth() == Size(200, 260)
+    sticky.update_from_data(_note_data(grow_y=0))
+    assert sticky.size_with_growth() == Size(200, 200)
+
+
+def _geo_data(grow_y: float) -> ShapeData:
+    # A tldraw v2 "geo" shape whose label is taller than its h prop, so the
+    # shape grows vertically by growY.
+    return {
+        "x": 30,
+        "y": 40,
+        "rotation": 0,
+        "typeName": "shape",
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a1",
+        "id": "shape:geoExample",
+        "type": "geo",
+        "props": {
+            "geo": "rectangle",
+            "w": 160,
+            "h": 70,
+            "growY": grow_y,
+            "color": "light-blue",
+            "fill": "solid",
+            "dash": "draw",
+            "size": "s",
+            "font": "draw",
+            "text": "A label long enough to overflow the shape height",
+            "align": "start",
+            "verticalAlign": "start",
+            "url": "",
+        },
+    }
+
+
+def test_geo_v2_update_grown() -> None:
+    # growY is kept apart from the w/h props and only added for drawing.
+    geo = RectangleGeoShape.from_data(_geo_data(grow_y=59.1875))
+    geo.update_from_data(_geo_data(grow_y=59.1875))
+    assert geo.size == Size(160, 70)
+    assert geo.size_with_growth() == Size(160, 129.1875)
+    geo.update_from_data(_geo_data(grow_y=0))
+    assert geo.size_with_growth() == Size(160, 70)
 
 
 def test_text_v2_from_data() -> None:

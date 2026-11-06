@@ -28,15 +28,15 @@ from bbb_presentation_video.renderer.tldraw.v2.utils import (
 
 
 def hexagon_stroke_points(id: str, shape: HexagonGeoShape) -> List[StrokePoint]:
-    size = shape.size
+    size = shape.size_with_growth()
 
     width = size.width
     height = size.height
 
     stroke_width = STROKE_SIZES[shape.style.size]
 
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     sides = 6
 
@@ -85,8 +85,9 @@ def draw_hexagon(
 
 def dash_hexagon(ctx: cairo.Context[CairoSomeSurface], shape: HexagonGeoShape) -> None:
     style = shape.style
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     sides = 6
 
