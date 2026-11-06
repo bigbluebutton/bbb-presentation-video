@@ -61,7 +61,8 @@ def finalize_text(
 
     width = None
     if not shape.auto_size and shape.size.width > 0:
-        width = shape.size.width
+        # The w prop is the width before the shape's scale is applied
+        width = shape.size.width * style.scale
 
     layout = create_pango_layout(
         ctx,

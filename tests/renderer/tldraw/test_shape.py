@@ -6,6 +6,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     HighlighterShape,
     LineShape,
     StickyShapeV2,
+    TextShapeV2,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     HIGHLIGHT_COLORS,
@@ -319,6 +320,37 @@ def test_sticky_v2_from_data_grown() -> None:
     sticky = StickyShapeV2.from_data(_note_data(grow_y=120))
     assert sticky.size == Size(200, 320)
     assert sticky.verticalAlign == AlignStyle.START
+
+
+def test_text_v2_from_data() -> None:
+    # Regression: tldraw 2 text shapes have a w prop but no h prop, and w is
+    # needed for wrapping when autoSize is off.
+    data: ShapeData = {
+        "x": 129,
+        "y": 87,
+        "rotation": 0,
+        "typeName": "shape",
+        "opacity": 1,
+        "parentId": "page:1",
+        "index": "a1",
+        "id": "shape:textExample",
+        "type": "text",
+        "props": {
+            "color": "black",
+            "size": "m",
+            "w": 100.5,
+            "text": "Hello",
+            "font": "draw",
+            "align": "start",
+            "autoSize": False,
+            "scale": 1,
+        },
+    }
+    text = TextShapeV2.from_data(data)
+    assert text.text == "Hello"
+    assert text.align == AlignStyle.START
+    assert text.auto_size is False
+    assert text.size == Size(100.5, 0)
 
 
 def test_highlight_from_data() -> None:
