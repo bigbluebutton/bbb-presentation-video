@@ -21,12 +21,12 @@ from bbb_presentation_video.renderer.tldraw.shape.arrow import (
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
-    STROKES,
     Decoration,
     circle_from_three_points,
     get_arc_length,
     get_perfect_dash_props,
 )
+from bbb_presentation_video.renderer.tldraw.v2.utils import COLORS
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -44,7 +44,7 @@ def straight_arrow(ctx: cairo.Context[CairoSomeSurface], shape: ArrowShapeV2) ->
     stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
 
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     # Path between start and end points
     ctx.save()
@@ -116,7 +116,7 @@ def curved_arrow(
     # Calculate a path as a segment of a circle passing through the three points start, bend, and end
     center, radius = circle_from_three_points(start, bend, end)
     length = get_arc_length(center, radius, start, end)
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     ctx.save()
 

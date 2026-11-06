@@ -105,6 +105,7 @@ from bbb_presentation_video.renderer.tldraw.v2.shape.triangle_geo_shape import (
 from bbb_presentation_video.renderer.tldraw.v2.shape.xbox_geo_shape import (
     finalize_x_box,
 )
+from bbb_presentation_video.renderer.tldraw.v2.utils import apply_palette_overrides
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -155,6 +156,7 @@ class TldrawRenderer(Generic[CairoSomeSurface]):
         self.bbb_version = bbb_version
 
         add_fontconfig_app_font_dir()
+        apply_palette_overrides(bbb_version)
 
     def ensure_shape_structure(self, presentation: str, slide: int) -> None:
         """Create the nested dict entries for storing shapes per presentation and slide."""
