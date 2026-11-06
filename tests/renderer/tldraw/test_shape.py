@@ -4,6 +4,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
     ArrowShape,
     DrawShape,
     HighlighterShape,
+    ImageShape,
     LineShape,
     StickyShapeV2,
     TextShapeV2,
@@ -381,3 +382,60 @@ def test_highlight_from_data() -> None:
 
     assert highlight.point == Position(354, 140)
     assert highlight.rotation == 0
+
+
+def test_image_from_data() -> None:
+    data: ShapeData = {
+        "x": 519.9955039238482,
+        "isLocked": False,
+        "y": 254.99172313253888,
+        "rotation": 0,
+        "typeName": "shape",
+        "isModerator": True,
+        "opacity": 1,
+        "parentId": "page:4",
+        "index": "a1",
+        "id": "shape:iOJgFnCJFdyC0-Hk0mp77",
+        "meta": {
+            "bbbImageSrc": "/bigbluebutton/fileUpload/986a45d2a620695c3a0bdca939a8ad4ca6a9e2b9-1785814812863/44c71706-8566-4c79-a303-79f6862affb0.png",
+            "createdBy": "w_scve2tey3vli",
+        },
+        "type": "image",
+        "props": {
+            "w": 400,
+            "h": 300,
+        },
+    }
+
+    image = ImageShape.from_data(data)
+
+    assert (
+        image.src
+        == "/bigbluebutton/fileUpload/986a45d2a620695c3a0bdca939a8ad4ca6a9e2b9-1785814812863/44c71706-8566-4c79-a303-79f6862affb0.png"
+    )
+    assert image.size == Size(400, 300)
+    assert image.point == Position(519.9955039238482, 254.99172313253888)
+    assert image.rotation == 0
+    assert image.pixbuf is None
+    assert image.pixbuf_loaded == False
+
+
+def test_image_update_keeps_the_decoded_image_unless_the_source_changes() -> None:
+    data: ShapeData = {
+        "type": "image",
+        "meta": {"bbbImageSrc": "/bigbluebutton/fileUpload/meeting-id/a.png"},
+        "props": {"w": 400, "h": 300},
+    }
+    image = ImageShape.from_data(data)
+    image.pixbuf_loaded = True
+
+    # Moving or resizing the shape must not discard the decoded image
+    image.update_from_data({"props": {"w": 200, "h": 150}})
+    assert image.pixbuf_loaded == True
+
+    # A different source must
+    image.update_from_data(
+        {"meta": {"bbbImageSrc": "/bigbluebutton/fileUpload/meeting-id/b.png"}}
+    )
+    assert image.pixbuf_loaded == False
+    assert image.src == "/bigbluebutton/fileUpload/meeting-id/b.png"
