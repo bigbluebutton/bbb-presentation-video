@@ -8,11 +8,11 @@ from typing import TypeVar
 
 import cairo
 
-from bbb_presentation_video.events.helpers import Size
 from bbb_presentation_video.renderer.tldraw.shape import StickyShapeV2
 from bbb_presentation_video.renderer.tldraw.utils import (
     ColorStyle,
     rounded_rect,
+    rounded_rect_shadow,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_sticky_text
 from bbb_presentation_video.renderer.tldraw.v2.utils import COLORS, NOTE_BORDER_RADIUS
@@ -31,21 +31,10 @@ def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) 
     ctx.push_group()
 
     # Shadow. Doing blurred shadow is hard, so this is a two-layer drop shadow instead
-    ctx.save()
-    ctx.translate(-1.0, 0.0)
-    rounded_rect(
-        ctx, Size(shape.size.width + 2, shape.size.height + 2), NOTE_BORDER_RADIUS + 1
+    rounded_rect_shadow(
+        ctx, shape.size, NOTE_BORDER_RADIUS, 0.09, spread=1.0, offset=(0.0, 1.0)
     )
-    ctx.set_source_rgba(0, 0, 0, 0.09)
-    ctx.fill()
-    ctx.restore()
-
-    ctx.save()
-    ctx.translate(0.0, 0.5)
-    rounded_rect(ctx, shape.size, NOTE_BORDER_RADIUS)
-    ctx.set_source_rgba(0, 0, 0, 0.25)
-    ctx.fill()
-    ctx.restore()
+    rounded_rect_shadow(ctx, shape.size, NOTE_BORDER_RADIUS, 0.25, offset=(0.0, 0.5))
 
     # And fill with sticky note background color
     rounded_rect(ctx, shape.size, NOTE_BORDER_RADIUS)
