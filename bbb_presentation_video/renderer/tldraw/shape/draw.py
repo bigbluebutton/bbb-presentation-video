@@ -12,7 +12,11 @@ import perfect_freehand
 
 from bbb_presentation_video.renderer.tldraw import vec
 from bbb_presentation_video.renderer.tldraw.easings import ease_in_quad, ease_out_sine
-from bbb_presentation_video.renderer.tldraw.shape import DrawShape, apply_shape_rotation
+from bbb_presentation_video.renderer.tldraw.shape import (
+    DrawShape,
+    DrawShapeV2,
+    apply_shape_rotation,
+)
 from bbb_presentation_video.renderer.tldraw.utils import (
     COLORS,
     FILLS,
@@ -25,6 +29,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     draw_smooth_stroke_point_path,
     draw_stroke_points,
 )
+from bbb_presentation_video.renderer.tldraw.v2 import utils as v2_utils
 from bbb_presentation_video.renderer.tldraw.v2.utils import pattern_fill
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
@@ -40,8 +45,14 @@ def finalize_draw(
     points = shape.points
     style = shape.style
     is_complete = shape.isComplete
-    stroke = STROKES[style.color]
-    fill = FILLS[style.color]
+    if isinstance(shape, DrawShapeV2):
+        stroke = v2_utils.COLORS[style.color]
+        fill = v2_utils.SEMI_COLORS[style.color]
+        semi_fill = v2_utils.SOLID_COLOR
+    else:
+        stroke = STROKES[style.color]
+        fill = FILLS[style.color]
+        semi_fill = COLORS[ColorStyle.SEMI]
     stroke_width = STROKE_WIDTHS[style.size]
 
     # For very short lines, draw a point instead of a line
@@ -72,8 +83,7 @@ def finalize_draw(
         draw_smooth_stroke_point_path(ctx, stroke_points, closed=False)
 
         if style.fill is FillStyle.SEMI:
-            fill = COLORS[ColorStyle.SEMI]
-            ctx.set_source_rgba(fill.r, fill.g, fill.b, style.opacity)
+            ctx.set_source_rgba(semi_fill.r, semi_fill.g, semi_fill.b, style.opacity)
         elif style.fill is FillStyle.PATTERN:
             pattern = pattern_fill(style.color)
             ctx.set_source(pattern)
