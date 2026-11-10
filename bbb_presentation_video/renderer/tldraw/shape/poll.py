@@ -29,6 +29,7 @@ from bbb_presentation_video.renderer.tldraw.shape import (
 from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
+    BoxShadow,
     ColorStyle,
     rounded_rect,
     rounded_rect_shadow,
@@ -43,8 +44,7 @@ BORDER_COLOR = Color.from_int(0x8B9AA8)
 BORDER_WIDTH = 1.0
 BORDER_RADIUS = 4.0
 # box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.20)
-SHADOW_BLUR = 4.0
-SHADOW_ALPHA = 0.2
+SHADOW = BoxShadow(0, 0, 4, 0.2)
 
 # Question text: styles.ts PollText
 TITLE_FONT_SIZE = 20.0  # 1.25rem
@@ -101,11 +101,7 @@ def text_layout(
 def draw_container(
     ctx: cairo.Context[CairoSomeSurface], size: Size, fill: Color
 ) -> None:
-    # Shadow. Doing blurred shadow is hard, so this is a two-layer drop shadow instead
-    rounded_rect_shadow(ctx, size, BORDER_RADIUS, SHADOW_ALPHA / 8, spread=SHADOW_BLUR)
-    rounded_rect_shadow(
-        ctx, size, BORDER_RADIUS, SHADOW_ALPHA / 4, spread=SHADOW_BLUR / 2
-    )
+    rounded_rect_shadow(ctx, size, BORDER_RADIUS, [SHADOW])
 
     rounded_rect(ctx, size, BORDER_RADIUS)
     ctx.set_source_rgb(*fill)

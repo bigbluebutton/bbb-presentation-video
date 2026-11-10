@@ -10,6 +10,7 @@ import cairo
 
 from bbb_presentation_video.renderer.tldraw.shape import StickyShapeV2
 from bbb_presentation_video.renderer.tldraw.utils import (
+    BoxShadow,
     ColorStyle,
     rounded_rect,
     rounded_rect_shadow,
@@ -18,6 +19,9 @@ from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_sticky
 from bbb_presentation_video.renderer.tldraw.v2.utils import COLORS, NOTE_BORDER_RADIUS
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
+
+# .tl-note__container box-shadow: var(--shadow-1)
+NOTE_SHADOW = (BoxShadow(0, 1, 2, 0.25), BoxShadow(0, 1, 3, 0.09))
 
 
 def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) -> None:
@@ -30,11 +34,7 @@ def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) 
 
     ctx.push_group()
 
-    # Shadow. Doing blurred shadow is hard, so this is a two-layer drop shadow instead
-    rounded_rect_shadow(
-        ctx, shape.size, NOTE_BORDER_RADIUS, 0.09, spread=1.0, offset=(0.0, 1.0)
-    )
-    rounded_rect_shadow(ctx, shape.size, NOTE_BORDER_RADIUS, 0.25, offset=(0.0, 0.5))
+    rounded_rect_shadow(ctx, shape.size, NOTE_BORDER_RADIUS, NOTE_SHADOW)
 
     # And fill with sticky note background color
     rounded_rect(ctx, shape.size, NOTE_BORDER_RADIUS)
