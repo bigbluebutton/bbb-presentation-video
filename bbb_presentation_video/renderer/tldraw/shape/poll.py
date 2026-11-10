@@ -67,21 +67,9 @@ TICK_LABEL_DY = 0.71  # recharts puts bottom tick labels at dy="0.71em"
 AXIS_COLOR = Color.from_int(0x666666)
 BAR_COLOR = Color.from_int(0x0C57A7)
 BAR_CATEGORY_GAP = 0.1  # recharts default barCategoryGap "10%"
-LABEL_ELLIPSIS = "..."
-# CustomizedAxisTick.tsx measures "0" on a canvas whose font assignment is not
-# a valid CSS font shorthand, so the browser default canvas font (10px) applies
-LABEL_MEASURE_FONT_SIZE = 10.0
 # The client prefixes correct quiz answers with an emoji check mark; use a
 # glyph that the fonts shipped with this package can render
 CORRECT_ANSWER_MARK = "✔ "
-
-
-def truncate_label(label: str, axis_width: float, char_width: float) -> str:
-    """Shorten a category label the way CustomizedAxisTick.tsx does."""
-    max_chars = math.floor((axis_width - TICK_SIZE) / char_width)
-    if len(label) <= max_chars:
-        return label
-    return label[: max(max_chars - len(LABEL_ELLIPSIS), 0)] + LABEL_ELLIPSIS
 
 
 def text_layout(
@@ -188,16 +176,18 @@ def draw_chart(
         )
         PangoCairo.show_layout(ctx, tick_layout)
 
-    # Category labels, ending at their tick; the client's tick component ignores
-    # verticalAnchor, so the baseline sits on the band center
-    measure_layout = text_layout(ctx, LABEL_MEASURE_FONT_SIZE)
-    measure_layout.set_text("0", -1)
-    char_width = measure_layout.get_size()[0] / Pango.SCALE or 6.0
+    # Category labels, ending at their tick and ellipsized to the label column
+    # (the client cuts them to an estimated character count instead); the
+    # client's tick component ignores verticalAnchor, so the baseline sits on
+    # the band center
+    label_width = y_axis_width - TICK_SIZE - TICK_MARGIN
     label_layout = text_layout(ctx, TICK_FONT_SIZE)
+    label_layout.set_width(int(label_width * Pango.SCALE))
+    label_layout.set_alignment(Pango.Alignment.RIGHT)
+    label_layout.set_ellipsize(Pango.EllipsizeMode.END)
     for index, answer in enumerate(answers):
         label = (CORRECT_ANSWER_MARK if answer.isCorrectAnswer else "") + answer.key
-        label_layout.set_text(truncate_label(label, y_axis_width, char_width), -1)
-        label_width, _ = label_layout.get_pixel_size()
+        label_layout.set_text(label, -1)
         ctx.move_to(
             plot_left - TICK_SIZE - TICK_MARGIN - label_width,
             plot_top + band * (index + 0.5) - label_layout.get_baseline() / Pango.SCALE,
