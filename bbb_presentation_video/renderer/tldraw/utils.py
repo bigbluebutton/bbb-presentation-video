@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from math import cos, floor, hypot, pi, sin, sqrt, tau
+from math import ceil, cos, erfc, floor, hypot, pi, sin, sqrt, tau
 from random import Random
-from typing import Dict, List, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, NamedTuple, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo
@@ -526,6 +526,57 @@ def rounded_rect(
     ctx.arc(radius, size.height - radius, radius, tau / 4, tau / 2)
     ctx.arc(radius, radius, radius, tau / 2, -tau / 4)
     ctx.close_path()
+
+
+class BoxShadow(NamedTuple):
+    """One layer of a CSS box-shadow: its offset, blur radius and black alpha."""
+
+    offset_x: float
+    offset_y: float
+    blur: float
+    alpha: float
+
+
+def rounded_rect_shadow(
+    ctx: cairo.Context[CairoSomeSurface],
+    size: Size,
+    radius: float,
+    shadows: Sequence[BoxShadow],
+) -> None:
+    """Draw the drop shadow of a rounded rectangle the way CSS box-shadow does.
+
+    Every shadow is the rectangle moved by its offset and blurred with a
+    Gaussian whose standard deviation is half the blur radius. Cairo has no
+    blur, so the blurred edge is drawn as one pixel wide rings, reaching the
+    blur radius outside and inside the rectangle, each with the alpha the
+    Gaussian gives at that distance from the edge, around a solid core. Call
+    this before filling the rectangle.
+    """
+    for shadow in shadows:
+        sigma = shadow.blur / 2
+        rings = ceil(2 * shadow.blur)
+        step = 2 * shadow.blur / rings if rings else 0
+        for index in range(rings + 1):
+            if index < rings:
+                # The ring is centered on this distance from the edge
+                expand = shadow.blur - step * (index + 0.5)
+                coverage = erfc(expand / (sigma * sqrt(2))) / 2
+            else:
+                expand = -shadow.blur
+                coverage = 1.0
+            layer = Size(size.width + 2 * expand, size.height + 2 * expand)
+            if layer.width <= 0 or layer.height <= 0:
+                continue
+            ctx.save()
+            ctx.translate(shadow.offset_x - expand, shadow.offset_y - expand)
+            rounded_rect(ctx, layer, max(radius + expand, 0))
+            ctx.restore()
+            ctx.set_source_rgba(0, 0, 0, shadow.alpha * coverage)
+            if index < rings:
+                ctx.set_line_width(step)
+                ctx.stroke()
+            else:
+                ctx.fill()
 
 
 def draw_smooth_path(
