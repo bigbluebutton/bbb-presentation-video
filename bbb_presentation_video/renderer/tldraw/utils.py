@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from math import ceil, cos, erfc, floor, hypot, pi, sin, sqrt, tau
+from math import cos, floor, hypot, pi, sin, sqrt, tau
 from random import Random
 from typing import Dict, List, NamedTuple, Sequence, Tuple, TypeVar, Union
 
@@ -537,46 +537,42 @@ class BoxShadow(NamedTuple):
     alpha: float
 
 
+# Number of flat layers that rounded_rect_shadow() stacks to fake a blur
+SHADOW_LAYERS = 4
+
+
 def rounded_rect_shadow(
     ctx: cairo.Context[CairoSomeSurface],
     size: Size,
     radius: float,
     shadows: Sequence[BoxShadow],
 ) -> None:
-    """Draw the drop shadow of a rounded rectangle the way CSS box-shadow does.
+    """Draw an approximation of the CSS box-shadow of a rounded rectangle.
 
-    Every shadow is the rectangle moved by its offset and blurred with a
-    Gaussian whose standard deviation is half the blur radius. Cairo has no
-    blur, so the blurred edge is drawn as one pixel wide rings, reaching the
-    blur radius outside and inside the rectangle, each with the alpha the
-    Gaussian gives at that distance from the edge, around a solid core. Call
-    this before filling the rectangle.
+    Doing blurred shadow is hard, so every shadow is a stack of flat layers
+    instead. A blur softens the edge of a shadow by the blur radius in both
+    directions, so the layers start out larger than the rectangle and end up
+    smaller, each one a step darker than the one below it. Call this before
+    filling the rectangle.
     """
     for shadow in shadows:
-        sigma = shadow.blur / 2
-        rings = ceil(2 * shadow.blur)
-        step = 2 * shadow.blur / rings if rings else 0
-        for index in range(rings + 1):
-            if index < rings:
-                # The ring is centered on this distance from the edge
-                expand = shadow.blur - step * (index + 0.5)
-                coverage = erfc(expand / (sigma * sqrt(2))) / 2
-            else:
-                expand = -shadow.blur
-                coverage = 1.0
-            layer = Size(size.width + 2 * expand, size.height + 2 * expand)
-            if layer.width <= 0 or layer.height <= 0:
-                continue
+        painted = 0.0
+        for layer in range(SHADOW_LAYERS):
+            # The largest layer comes first; the edges are spaced evenly
+            spread = shadow.blur * (1 - (2 * layer + 1) / SHADOW_LAYERS)
+            alpha = shadow.alpha * (layer + 1) / SHADOW_LAYERS
             ctx.save()
-            ctx.translate(shadow.offset_x - expand, shadow.offset_y - expand)
-            rounded_rect(ctx, layer, max(radius + expand, 0))
+            ctx.translate(shadow.offset_x - spread, shadow.offset_y - spread)
+            rounded_rect(
+                ctx,
+                Size(size.width + 2 * spread, size.height + 2 * spread),
+                max(radius + spread, 0),
+            )
+            # Painted over the layers below, this adds up to alpha
+            ctx.set_source_rgba(0, 0, 0, (alpha - painted) / (1 - painted))
+            ctx.fill()
             ctx.restore()
-            ctx.set_source_rgba(0, 0, 0, shadow.alpha * coverage)
-            if index < rings:
-                ctx.set_line_width(step)
-                ctx.stroke()
-            else:
-                ctx.fill()
+            painted = alpha
 
 
 def draw_smooth_path(
