@@ -112,6 +112,15 @@ def test_right_to_left_labels_end_at_their_tick() -> None:
     assert not has_text(range(int(CHART_MARGIN), 75))
 
 
+def test_question_white_space_is_collapsed() -> None:
+    # Like HTML does: the client shows a question typed on several lines as
+    # running text
+    answers = [("True", 2), ("False", 3)]
+    typed = Rendering(poll(" Which one\nis it?\t\tThis\r\n  one? ", "TF", answers))
+    collapsed = Rendering(poll("Which one is it? This one?", "TF", answers))
+    assert typed.data == collapsed.data
+
+
 def test_opacity_fades_the_whole_shape() -> None:
     shape = poll("Which one is it?", "R-", [("One", 3), ("Other", 1)])
     # A column through the question, both bars and the axis

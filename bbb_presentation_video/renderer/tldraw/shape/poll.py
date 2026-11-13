@@ -14,6 +14,7 @@ format shows the same chart as the live session and the presentation format.
 from __future__ import annotations
 
 import math
+import re
 from decimal import Decimal
 from typing import TypeVar
 
@@ -243,7 +244,9 @@ def finalize_poll(
         title_layout = text_layout(ctx, TITLE_FONT_SIZE, Pango.Weight.MEDIUM)
         title_layout.set_width(int((width - TITLE_MARGIN_LEFT) * Pango.SCALE))
         title_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
-        title_layout.set_text(shape.questionText, -1)
+        # HTML collapses white space, line breaks included, to a single space
+        question = re.sub(r"[ \t\n\r\f]+", " ", shape.questionText).strip(" ")
+        title_layout.set_text(question, -1)
         _, title_height = title_layout.get_pixel_size()
         ctx.move_to(TITLE_MARGIN_LEFT, content_top)
         ctx.set_source_rgb(*V2_TEXT_COLOR)
