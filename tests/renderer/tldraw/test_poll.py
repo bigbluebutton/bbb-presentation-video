@@ -1,3 +1,4 @@
+from math import pi
 from typing import List, Tuple
 
 import cairo
@@ -135,6 +136,19 @@ def test_text_measures_the_same_at_every_scale() -> None:
         widths.append(layout.get_size()[0])
     # In Pango units, 1024 to the pixel
     assert max(widths) - min(widths) < 1024
+
+
+def test_rotation_is_around_the_shape_origin() -> None:
+    # tldraw 2 rotates a shape around its origin, the top left corner: turned
+    # a quarter clockwise, the 300x200 box covers x -200..0, y 0..300
+    shape = poll("", "TF", [("True", 2), ("False", 3)])
+    shape.rotation = pi / 2
+    rendering = Rendering(shape, origin=(220, 10), size=(560, 330))
+    assert rendering.pixel(-100, 150)[3] == 255
+    assert rendering.pixel(-190, 290)[3] == 255
+    # ...and none of the area it would cover if turned around its center
+    assert rendering.pixel(100, 100)[3] == 0
+    assert rendering.pixel(240, 100)[3] == 0
 
 
 def test_opacity_fades_the_whole_shape() -> None:

@@ -23,10 +23,7 @@ from gi.repository import Pango, PangoCairo
 
 from bbb_presentation_video.events.helpers import Color, Size
 from bbb_presentation_video.renderer.tldraw.recharts_scale import get_nice_tick_values
-from bbb_presentation_video.renderer.tldraw.shape import (
-    PollShape,
-    apply_shape_rotation,
-)
+from bbb_presentation_video.renderer.tldraw.shape import PollShape
 from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
@@ -231,7 +228,7 @@ def finalize_poll(
 
     ctx.push_group()
 
-    apply_shape_rotation(ctx, shape)
+    ctx.rotate(shape.rotation)
 
     width = shape.size.width
     height = shape.size.height
