@@ -8,6 +8,8 @@ from bbb_presentation_video.renderer.tldraw.shape import PollShape, PollShapeAns
 from bbb_presentation_video.renderer.tldraw.shape.poll import (
     BORDER_WIDTH,
     CHART_MARGIN,
+    TICK_MARGIN,
+    TICK_SIZE,
     finalize_poll,
 )
 
@@ -61,6 +63,28 @@ def test_long_labels_stay_in_the_label_column() -> None:
         for x in range(int(CHART_MARGIN), width // 2 - 10)
         for y in rows
     )
+
+
+def test_right_to_left_labels_end_at_their_tick() -> None:
+    shape = typed_poll()
+    shape.questionText = ""
+    shape.answers = [
+        PollShapeAnswer(key="\u05d0\u05d1", numVotes=1, isCorrectAnswer=False)
+    ]
+    width, height = int(shape.size.width), int(shape.size.height)
+    pixel = render(shape)
+    background = pixel(int(BORDER_WIDTH) + 1, height // 2)
+
+    def has_text(columns: range) -> bool:
+        return any(
+            pixel(x, y) != background for x in columns for y in range(10, height - 10)
+        )
+
+    # The label column of a typed poll spans half of the shape; a short label
+    # sits at the end of it, next to its tick, and not at the start
+    label_end = width // 2 + int(CHART_MARGIN - TICK_SIZE - TICK_MARGIN)
+    assert has_text(range(label_end - 20, label_end))
+    assert not has_text(range(int(CHART_MARGIN), width // 4))
 
 
 def test_opacity_fades_the_whole_shape() -> None:

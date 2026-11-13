@@ -81,7 +81,12 @@ def text_layout(
     font.set_family(FONT_FAMILY)
     font.set_absolute_size(int(size * Pango.SCALE))
     font.set_weight(weight)
-    layout = Pango.Layout(PangoCairo.create_context(ctx))
+    # The client lays the shape out left to right, also when the text is not:
+    # without this, Pango swaps left and right alignment for right-to-left text
+    context = PangoCairo.create_context(ctx)
+    context.set_base_dir(Pango.Direction.LTR)
+    layout = Pango.Layout(context)
+    layout.set_auto_dir(False)
     layout.set_font_description(font)
     return layout
 
