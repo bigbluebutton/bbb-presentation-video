@@ -10,6 +10,9 @@ from recharts-scale 0.4.5 (``src/getNiceTickValues.js`` and
 ``src/util/arithmetic.js`` in https://github.com/recharts/recharts-scale).
 recharts uses it to pick the ticks of a numeric axis with an automatic domain,
 and then extends the axis domain to cover the ticks.
+
+Numbers are converted with ``Decimal(str(number))``: like decimal.js, that
+reads a float by its shortest decimal form (0.1) and not by its binary value.
 """
 
 import math
@@ -48,7 +51,7 @@ def get_tick_of_single_value(
     """Calculate the ticks when the minimum value equals to the maximum value"""
     step = Decimal(1)
     # Calculate the middle value of ticks
-    middle = Decimal(value)
+    middle = Decimal(str(value))
     if middle != middle.to_integral_value() and allow_decimals:
         abs_value = abs(value)
         if abs_value < 1:
@@ -76,16 +79,16 @@ def calculate_step(
 ) -> Tuple[Decimal, Decimal, Decimal]:
     """Calculate the step, the minimum value of ticks and the maximum value of ticks"""
     # The step which is easy to understand between two ticks
-    rough_step = (Decimal(maximum) - Decimal(minimum)) / (tick_count - 1)
+    rough_step = (Decimal(str(maximum)) - Decimal(str(minimum))) / (tick_count - 1)
     step = get_format_step(rough_step, allow_decimals, correction_factor)
     if minimum <= 0 <= maximum:
         # When 0 is inside the interval, 0 should be a tick
         middle = Decimal(0)
     else:
-        middle = (Decimal(minimum) + Decimal(maximum)) / 2
+        middle = (Decimal(str(minimum)) + Decimal(str(maximum))) / 2
         middle = middle - middle % step
-    below_count = math.ceil((middle - Decimal(minimum)) / step)
-    up_count = math.ceil((Decimal(maximum) - middle) / step)
+    below_count = math.ceil((middle - Decimal(str(minimum))) / step)
+    up_count = math.ceil((Decimal(str(maximum)) - middle) / step)
     scale_count = below_count + up_count + 1
     if scale_count > tick_count:
         # When more ticks need to cover the interval, step should be bigger.

@@ -36,3 +36,17 @@ def test_get_nice_tick_values_match_recharts() -> None:
         assert get_nice_tick_values((0, maximum), 5, allow_decimals=False) == [
             Decimal(tick) for tick in ticks
         ]
+
+
+def test_get_nice_tick_values_with_decimals() -> None:
+    # The same version, with decimals allowed and domains that are not integers:
+    # a float is read by its shortest decimal form, as decimal.js does
+    expected = {
+        (0, 0.1): ["0", "0.025", "0.05", "0.075", "0.1"],
+        (0, 0.7): ["0", "0.2", "0.4", "0.6", "0.8"],
+        (0.3, 2.5): ["0", "0.65", "1.3", "1.95", "2.6"],
+        (0, 12.34): ["0", "4", "8", "12", "16"],
+        (1.5, 0.2): ["1.6", "1.2", "0.8", "0.4", "0"],
+    }
+    for domain, ticks in expected.items():
+        assert get_nice_tick_values(domain, 5) == [Decimal(tick) for tick in ticks]
