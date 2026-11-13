@@ -86,9 +86,16 @@ def text_layout(
     # without this, Pango swaps left and right alignment for right-to-left text
     context = PangoCairo.create_context(ctx)
     context.set_base_dir(Pango.Direction.LTR)
+    # Shapes are drawn again at every zoom level: without rounding to device
+    # pixels, the text measures and so wraps the same at each of them
+    context.set_round_glyph_positions(False)
     layout = Pango.Layout(context)
     layout.set_auto_dir(False)
     layout.set_font_description(font)
+    # CSS adds no hyphen where it breaks a long word
+    attrs = Pango.AttrList()
+    attrs.insert(Pango.attr_insert_hyphens_new(insert_hyphens=False))
+    layout.set_attributes(attrs)
     return layout
 
 

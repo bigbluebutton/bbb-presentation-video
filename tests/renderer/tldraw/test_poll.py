@@ -11,7 +11,9 @@ from bbb_presentation_video.renderer.tldraw.shape.poll import (
     CHART_MARGIN,
     TICK_MARGIN,
     TICK_SIZE,
+    TITLE_FONT_SIZE,
     finalize_poll,
+    text_layout,
 )
 
 # A bar as it is stored in a cairo ARGB32 surface
@@ -119,6 +121,20 @@ def test_question_white_space_is_collapsed() -> None:
     typed = Rendering(poll(" Which one\nis it?\t\tThis\r\n  one? ", "TF", answers))
     collapsed = Rendering(poll("Which one is it? This one?", "TF", answers))
     assert typed.data == collapsed.data
+
+
+def test_text_measures_the_same_at_every_scale() -> None:
+    # Shapes are drawn again whenever the zoom changes, and the question must
+    # not wrap differently when they are
+    widths = []
+    for scale in (0.5, 1.0, 1.1, 1.25, 1.5, 2.0, 3.0):
+        ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
+        ctx.scale(scale, scale)
+        layout = text_layout(ctx, TITLE_FONT_SIZE)
+        layout.set_text("What is the capital of France?", -1)
+        widths.append(layout.get_size()[0])
+    # In Pango units, 1024 to the pixel
+    assert max(widths) - min(widths) < 1024
 
 
 def test_opacity_fades_the_whole_shape() -> None:
