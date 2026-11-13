@@ -216,6 +216,8 @@ def finalize_poll(
     if len(shape.answers) == 0:
         return
 
+    ctx.push_group()
+
     apply_shape_rotation(ctx, shape)
 
     width = shape.size.width
@@ -259,3 +261,6 @@ def finalize_poll(
         )
 
     ctx.restore()
+
+    ctx.pop_group_to_source()
+    ctx.paint_with_alpha(shape.style.opacity)
