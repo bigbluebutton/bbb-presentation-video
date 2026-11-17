@@ -30,7 +30,7 @@ from bbb_presentation_video.renderer.tldraw.v2.utils import (
 
 def trapezoid_stroke_points(id: str, shape: TrapezoidGeoShape) -> List[StrokePoint]:
     random = Random(id)
-    size = shape.size
+    size = shape.size_with_growth()
 
     width = size.width
     height = size.height
@@ -124,8 +124,9 @@ def dash_trapezoid(
     ctx: cairo.Context[CairoSomeSurface], shape: TrapezoidGeoShape
 ) -> None:
     style = shape.style
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    width = max(0, size.width)
+    height = max(0, size.height)
 
     top_width = width * 0.6
     x_offset = (width - top_width) / 2

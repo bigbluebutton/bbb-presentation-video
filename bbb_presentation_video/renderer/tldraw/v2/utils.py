@@ -120,6 +120,9 @@ FRAME_HEADING_BORDER_RADIUS: float = 4  # var(--radius-1)
 
 NOTE_BORDER_RADIUS: float = 6  # var(--radius-2)
 
+# From tldraw shapes/note/NoteShapeUtil.mjs (16px padding inside a 1px border)
+NOTE_PADDING: float = 17
+
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 

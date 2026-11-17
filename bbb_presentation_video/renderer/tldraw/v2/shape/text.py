@@ -21,7 +21,6 @@ from bbb_presentation_video.renderer.tldraw.shape.text import (
     show_layout_by_lines,
 )
 from bbb_presentation_video.renderer.tldraw.utils import (
-    STICKY_PADDING,
     AlignStyle,
     ColorStyle,
     FontStyle,
@@ -37,6 +36,7 @@ from bbb_presentation_video.renderer.tldraw.v2.utils import (
     FRAME_HEADING_PADDING,
     LABEL_FONT_SIZES,
     LINE_HEIGHT,
+    NOTE_PADDING,
     TEXT_COLOR,
 )
 
@@ -122,7 +122,7 @@ def finalize_label(
     layout.set_text(shape.label, -1)
 
     label_size = get_layout_size(layout, padding=LABEL_PADDING, line_height=LINE_HEIGHT)
-    bounds = shape.size
+    bounds = shape.size_with_growth()
 
     if offset is None:
         offset = shape.label_offset()
@@ -218,22 +218,24 @@ def finalize_sticky_text(
         FONT_FAMILIES[style.font],
         LABEL_FONT_SIZES[style.size],
         width=shape.size.width,
-        padding=STICKY_PADDING,
+        padding=NOTE_PADDING,
         align=shape.align,
+        letter_spacing=None,
     )
     layout.set_text(shape.text, -1)
 
     # Calculate vertical position to center the text
     _, text_height = get_layout_size(
-        layout, padding=STICKY_PADDING, line_height=LINE_HEIGHT
+        layout, padding=NOTE_PADDING, line_height=LINE_HEIGHT
     )
     x, y = ctx.get_current_point()
+    bounds = shape.size_with_growth()
 
     if shape.verticalAlign is AlignStyle.MIDDLE:
-        y = (shape.size.height - text_height) / 2
+        y = (bounds.height - text_height) / 2
     elif shape.verticalAlign is AlignStyle.END:
-        y = shape.size.height - text_height
+        y = bounds.height - text_height
     ctx.translate(x, y)
 
     ctx.set_source_rgb(*COLORS[ColorStyle.BLACK])
-    show_layout_by_lines(ctx, layout, padding=STICKY_PADDING, line_height=LINE_HEIGHT)
+    show_layout_by_lines(ctx, layout, padding=NOTE_PADDING, line_height=LINE_HEIGHT)

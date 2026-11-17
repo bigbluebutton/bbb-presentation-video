@@ -59,8 +59,9 @@ def overlay_checkmark(
     sw = STROKE_SIZES[shape.style.size]
 
     # Calculate dimensions
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     # Get checkmark lines based on the dimensions
     lines = get_check_box_lines(w, h)
@@ -122,8 +123,9 @@ def dash_checkbox(
 ) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     points = [
         Position(0, 0),

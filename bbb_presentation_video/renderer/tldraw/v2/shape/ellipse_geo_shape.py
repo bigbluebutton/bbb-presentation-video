@@ -25,7 +25,8 @@ CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
 
 def dash_ellipse(ctx: cairo.Context[CairoSomeSurface], shape: EllipseGeoShape) -> None:
-    radius = (shape.size.width / 2, shape.size.height / 2)
+    size = shape.size_with_growth()
+    radius = (size.width / 2, size.height / 2)
     style = shape.style
     stroke = COLORS[style.color]
     stroke_width = STROKE_SIZES[style.size]

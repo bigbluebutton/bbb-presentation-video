@@ -30,7 +30,7 @@ from bbb_presentation_video.renderer.tldraw.v2.utils import (
 
 def diamond_stroke_points(id: str, shape: DiamondGeoShape) -> List[StrokePoint]:
     random = Random(id)
-    size = shape.size
+    size = shape.size_with_growth()
 
     width = size.width
     height = size.height
@@ -115,8 +115,9 @@ def draw_diamond(
 def dash_diamond(ctx: cairo.Context[CairoSomeSurface], shape: DiamondGeoShape) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     half_width = w / 2
     half_height = h / 2
