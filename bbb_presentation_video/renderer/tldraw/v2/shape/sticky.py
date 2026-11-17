@@ -15,7 +15,12 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     rounded_rect,
 )
 from bbb_presentation_video.renderer.tldraw.v2.shape.text import finalize_sticky_text
-from bbb_presentation_video.renderer.tldraw.v2.utils import COLORS, NOTE_BORDER_RADIUS
+from bbb_presentation_video.renderer.tldraw.v2.utils import (
+    BACKGROUND_COLOR,
+    COLORS,
+    NOTE_BORDER_RADIUS,
+    NOTE_SCRIM_OPACITY,
+)
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -49,6 +54,11 @@ def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) 
     # And fill with sticky note background color
     rounded_rect(ctx, size, NOTE_BORDER_RADIUS)
     ctx.set_source_rgb(*COLORS[style.color])
+    ctx.fill_preserve()
+
+    # tldraw lightens the note color with a scrim of the background color
+    scrim = BACKGROUND_COLOR
+    ctx.set_source_rgba(scrim.r, scrim.g, scrim.b, NOTE_SCRIM_OPACITY)
     ctx.fill()
 
     finalize_sticky_text(ctx, shape)

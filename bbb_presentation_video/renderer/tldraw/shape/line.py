@@ -19,7 +19,6 @@ from bbb_presentation_video.renderer.tldraw.shape import LineShape, apply_shape_
 from bbb_presentation_video.renderer.tldraw.shape.text import finalize_label
 from bbb_presentation_video.renderer.tldraw.utils import (
     STROKE_WIDTHS,
-    STROKES,
     DashStyle,
     SplineType,
     Style,
@@ -29,6 +28,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
     lerp_angles,
     rounded_rect,
 )
+from bbb_presentation_video.renderer.tldraw.v2.utils import COLORS
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
@@ -106,7 +106,7 @@ def straight_line(
     stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
 
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     # Path between start and end points
     ctx.save()
@@ -159,7 +159,7 @@ def bent_line(ctx: cairo.Context[CairoSomeSurface], id: str, shape: LineShape) -
 
     stroke_width = STROKE_WIDTHS[style.size]
     sw = 1 + stroke_width * 1.618
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     ctx.save()
     ctx.set_line_width(sw)
@@ -229,7 +229,7 @@ def curved_line(
 
     # Get the length of the curve
     length = bezier_length(start, controlPoint, end)
-    stroke = STROKES[style.color]
+    stroke = COLORS[style.color]
 
     ctx.save()
 
