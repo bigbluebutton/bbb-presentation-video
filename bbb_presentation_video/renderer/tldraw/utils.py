@@ -112,21 +112,6 @@ COLORS: Dict[ColorStyle, Color] = {
     ColorStyle.SEMI: Color.from_int(0xF5F9F7),
 }
 
-HIGHLIGHT_COLORS: Dict[ColorStyle, Color] = {
-    ColorStyle.BLACK: Color.from_int(0xFFF4A1),
-    ColorStyle.GREY: Color.from_int(0xEDF7FA),
-    ColorStyle.LIGHT_VIOLET: Color.from_int(0xFFD7FF),
-    ColorStyle.VIOLET: Color.from_int(0xECD3FF),
-    ColorStyle.BLUE: Color.from_int(0xB4E2FF),
-    ColorStyle.LIGHT_BLUE: Color.from_int(0xA2FCFF),
-    ColorStyle.YELLOW: Color.from_int(0xFFF4A1),
-    ColorStyle.ORANGE: Color.from_int(0xFFE2B5),
-    ColorStyle.GREEN: Color.from_int(0xA2FFEC),
-    ColorStyle.LIGHT_GREEN: Color.from_int(0xCCFCC1),
-    ColorStyle.LIGHT_RED: Color.from_int(0xFFD3DF),
-    ColorStyle.RED: Color.from_int(0xFFCACD),
-}
-
 
 STICKY_FILLS: Dict[ColorStyle, Color] = dict(
     [
