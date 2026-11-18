@@ -26,6 +26,7 @@ NOTE_SHADOW = (BoxShadow(0, 1, 2, 0.25), BoxShadow(0, 1, 3, 0.09))
 
 def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) -> None:
     style = shape.style
+    size = shape.size_with_growth()
 
     if style.color is ColorStyle.BLACK:
         style.color = ColorStyle.YELLOW
@@ -34,10 +35,10 @@ def finalize_sticky(ctx: cairo.Context[CairoSomeSurface], shape: StickyShapeV2) 
 
     ctx.push_group()
 
-    rounded_rect_shadow(ctx, shape.size, NOTE_BORDER_RADIUS, NOTE_SHADOW)
+    rounded_rect_shadow(ctx, size, NOTE_BORDER_RADIUS, NOTE_SHADOW)
 
     # And fill with sticky note background color
-    rounded_rect(ctx, shape.size, NOTE_BORDER_RADIUS)
+    rounded_rect(ctx, size, NOTE_BORDER_RADIUS)
     ctx.set_source_rgb(*COLORS[style.color])
     ctx.fill()
 

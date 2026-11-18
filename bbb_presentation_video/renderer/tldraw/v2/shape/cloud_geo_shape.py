@@ -290,8 +290,9 @@ def dash_cloud(
 ) -> None:
     style = shape.style
 
-    w = max(0, shape.size.width)
-    h = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    w = max(0, size.width)
+    h = max(0, size.height)
 
     stroke_width = STROKE_SIZES[style.size]
     sw = 1 + stroke_width * 1.618
@@ -365,8 +366,9 @@ def draw_cloud(
     mut_multiplier = size_multipliers.get(shape.style.size, 1.0)
     mut = lambda n: n + random.random() * mut_multiplier * 2
 
-    width = max(0, shape.size.width)
-    height = max(0, shape.size.height)
+    size = shape.size_with_growth()
+    width = max(0, size.width)
+    height = max(0, size.height)
     arcs = get_cloud_arcs(width, height, id, shape.style.size)
     avg_arc_length = sum(
         math.sqrt(
