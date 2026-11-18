@@ -63,24 +63,41 @@ class Rendering:
         return self.data[offset : offset + 4]
 
 
+def bar_rows(rendering: Rendering, x: int) -> List[int]:
+    return [y for y in range(200) if rendering.pixel(x, y) == BAR]
+
+
+def bar_columns(rendering: Rendering, y: int) -> List[int]:
+    return [x for x in range(300) if rendering.pixel(x, y) == BAR]
+
+
 def test_chart_geometry() -> None:
-    # Without a question the chart starts 9px down (the border and the margin
-    # of the empty title) and takes the height of the shape. recharts gives it
-    # 90% of the width, keeps 5px free on every side, 80px for the labels and
-    # 30px for the axis: the bars are drawn in x 85..265, y 14..174.
+    # Without a question the chart starts 17px down (the border and both
+    # margins of the empty title) and ends at the bottom border, 182px further.
+    # recharts gives it 90% of the width, keeps 5px free on every side, 80px
+    # for the labels and 30px for the axis: the bars are drawn in x 85..265,
+    # y 22..164.
     rendering = Rendering(poll("", "TF", [("True", 2), ("False", 3)]))
 
-    def bar_columns(y: int) -> List[int]:
-        return [x for x in range(300) if rendering.pixel(x, y) == BAR]
-
-    def bar_rows(x: int) -> List[int]:
-        return [y for y in range(200) if rendering.pixel(x, y) == BAR]
-
-    # Each answer gets a band of 80px, and its bar the middle 80% of it
-    assert bar_rows(100) == [*range(22, 86), *range(102, 166)]
+    # Each answer gets a band of 71px, and its bar the middle 80% of it:
+    # y 29.1..85.9 and 100.1..156.9
+    assert bar_rows(rendering, 100) == [*range(30, 85), *range(101, 156)]
     # The ticks are 0 to 4: 2 votes reach half of the 180px, 3 votes three quarters
-    assert bar_columns(54) == [*range(85, 175)]
-    assert bar_columns(134) == [*range(85, 220)]
+    assert bar_columns(rendering, 54) == [*range(85, 175)]
+    assert bar_columns(rendering, 134) == [*range(85, 220)]
+
+
+def test_chart_starts_below_the_question() -> None:
+    # A question on one line is 23px high and has a margin of 8px above and
+    # below: the chart starts 40px down and is 159px high, with the bars in
+    # y 45..164. The bands are 59.5px: y 50.95..98.55 and 110.45..158.05.
+    answers = [("True", 2), ("False", 3)]
+    rendering = Rendering(poll("Which one?", "TF", answers))
+    assert bar_rows(rendering, 100) == [*range(51, 98), *range(111, 158)]
+
+    # A question of nothing but white space takes no room, as in HTML
+    blank = Rendering(poll(" \n\t", "TF", answers))
+    assert blank.data == Rendering(poll("", "TF", answers)).data
 
 
 def test_long_labels_stay_in_the_label_column() -> None:

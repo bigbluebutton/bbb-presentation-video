@@ -253,27 +253,27 @@ def finalize_poll(
     ctx.rectangle(0, BORDER_WIDTH, width, height - 2 * BORDER_WIDTH)
     ctx.clip()
 
-    # The title's top margin collapses through its wrapper, so the content
-    # starts one margin below the border even when there is no question
-    content_top = BORDER_WIDTH + TITLE_MARGIN_TOP
-    if shape.questionText != "":
+    # HTML collapses white space, line breaks included, to a single space
+    question = re.sub(r"[ \t\n\r\f]+", " ", shape.questionText).strip(" ")
+    title_top = BORDER_WIDTH + TITLE_MARGIN_TOP
+    title_height = 0.0
+    if question != "":
         title_layout = poll_layout(
             ctx, shape, TITLE_FONT, TITLE_FONT_SIZE, width=width - TITLE_MARGIN_LEFT
         )
-        # HTML collapses white space, line breaks included, to a single space
-        question = re.sub(r"[ \t\n\r\f]+", " ", shape.questionText).strip(" ")
         title_layout.set_text(question, -1)
         _, title_height = get_layout_size(title_layout, line_height=TITLE_LINE_HEIGHT)
         ctx.save()
-        ctx.translate(TITLE_MARGIN_LEFT, content_top)
+        ctx.translate(TITLE_MARGIN_LEFT, title_top)
         ctx.set_source_rgb(*V2_TEXT_COLOR)
         show_layout_by_lines(ctx, title_layout, line_height=TITLE_LINE_HEIGHT)
         ctx.restore()
-        chart_top = content_top + title_height + TITLE_MARGIN_BOTTOM
-        chart_height = height - TITLE_MARGIN_TOP - title_height - TITLE_MARGIN_BOTTOM
-    else:
-        chart_top = content_top
-        chart_height = height
+
+    # The title is a flex item, so its margins do not collapse: the chart
+    # starts below both of them even when there is no question. It takes the
+    # rest of the box, down to the bottom border.
+    chart_top = title_top + title_height + TITLE_MARGIN_BOTTOM
+    chart_height = height - BORDER_WIDTH - chart_top
 
     if chart_height > 0:
         draw_chart(
