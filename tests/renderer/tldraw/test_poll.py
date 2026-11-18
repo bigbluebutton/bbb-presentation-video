@@ -10,11 +10,15 @@ from bbb_presentation_video.renderer.tldraw.shape.poll import (
     BAR_COLOR,
     BORDER_WIDTH,
     CHART_MARGIN,
+    CORRECT_ANSWER_MARK,
+    FONT,
+    TICK_FONT_SIZE,
     TICK_MARGIN,
     TICK_SIZE,
+    TITLE_FONT,
     TITLE_FONT_SIZE,
     finalize_poll,
-    text_layout,
+    poll_layout,
 )
 
 # A bar as it is stored in a cairo ARGB32 surface
@@ -115,6 +119,17 @@ def test_right_to_left_labels_end_at_their_tick() -> None:
     assert not has_text(range(int(CHART_MARGIN), 75))
 
 
+def test_correct_answer_mark_stays_in_front_of_a_right_to_left_label() -> None:
+    # The client draws the poll in a left-to-right page, so the direction of a
+    # line does not follow its text as it does in the text shapes
+    ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
+    layout = poll_layout(ctx, poll("", "R-", [("אב", 1)]), FONT, TICK_FONT_SIZE)
+    layout.set_text(CORRECT_ANSWER_MARK + "אב", -1)
+    mark = layout.index_to_pos(0)
+    letter = layout.index_to_pos(len(CORRECT_ANSWER_MARK.encode()))
+    assert mark.x < letter.x
+
+
 def test_question_white_space_is_collapsed() -> None:
     # Like HTML does: the client shows a question typed on several lines as
     # running text
@@ -127,12 +142,13 @@ def test_question_white_space_is_collapsed() -> None:
 def test_text_measures_the_same_at_every_scale() -> None:
     # Shapes are drawn again whenever the zoom changes, and the question must
     # not wrap differently when they are
+    shape = poll("What is the capital of France?", "TF", [("True", 2)])
     widths = []
     for scale in (0.5, 1.0, 1.1, 1.25, 1.5, 2.0, 3.0):
         ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
         ctx.scale(scale, scale)
-        layout = text_layout(ctx, TITLE_FONT_SIZE)
-        layout.set_text("What is the capital of France?", -1)
+        layout = poll_layout(ctx, shape, TITLE_FONT, TITLE_FONT_SIZE)
+        layout.set_text(shape.questionText, -1)
         widths.append(layout.get_size()[0])
     # In Pango units, 1024 to the pixel
     assert max(widths) - min(widths) < 1024

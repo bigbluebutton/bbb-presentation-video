@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import re
 from decimal import Decimal
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 import cairo
 from gi.repository import Pango, PangoCairo
@@ -24,9 +24,15 @@ from gi.repository import Pango, PangoCairo
 from bbb_presentation_video.events.helpers import Color, Size
 from bbb_presentation_video.renderer.tldraw.recharts_scale import get_nice_tick_values
 from bbb_presentation_video.renderer.tldraw.shape import PollShape
+from bbb_presentation_video.renderer.tldraw.shape.text import (
+    create_pango_layout,
+    get_layout_size,
+    show_layout_by_lines,
+)
 from bbb_presentation_video.renderer.tldraw.utils import (
     V2_COLORS,
     V2_TEXT_COLOR,
+    AlignStyle,
     BoxShadow,
     ColorStyle,
     rounded_rect,
@@ -35,7 +41,7 @@ from bbb_presentation_video.renderer.tldraw.utils import (
 
 CairoSomeSurface = TypeVar("CairoSomeSurface", bound=cairo.Surface)
 
-FONT_FAMILY = "Arial"
+FONT = "Arial"
 
 # Shape container: PollShapeUtil.tsx <HTMLContainer style={...}>
 BORDER_COLOR = Color.from_int(0x8B9AA8)
@@ -45,7 +51,9 @@ BORDER_RADIUS = 4.0
 SHADOW = BoxShadow(0, 0, 4, 0.2)
 
 # Question text: styles.ts PollText
+TITLE_FONT = "Arial Medium"  # font-weight: 500
 TITLE_FONT_SIZE = 20.0  # 1.25rem
+TITLE_LINE_HEIGHT = 1.15  # line-height: normal, 23px for Arial at this size
 TITLE_MARGIN_TOP = 8.0  # 0.5rem
 TITLE_MARGIN_BOTTOM = 8.0  # 0.5rem
 TITLE_MARGIN_LEFT = 44.0  # 2.75rem
@@ -68,29 +76,30 @@ BAR_CATEGORY_GAP = 0.1  # recharts default barCategoryGap "10%"
 CORRECT_ANSWER_MARK = "✔ "
 
 
-def text_layout(
+def poll_layout(
     ctx: cairo.Context[CairoSomeSurface],
-    size: float,
-    weight: Pango.Weight = Pango.Weight.NORMAL,
+    shape: PollShape,
+    font: str,
+    font_size: float,
+    *,
+    width: Optional[float] = None,
+    align: AlignStyle = AlignStyle.START,
+    wrap: bool = True,
 ) -> Pango.Layout:
-    font = Pango.FontDescription()
-    font.set_family(FONT_FAMILY)
-    font.set_absolute_size(int(size * Pango.SCALE))
-    font.set_weight(weight)
-    # The client lays the shape out left to right, also when the text is not:
-    # without this, Pango swaps left and right alignment for right-to-left text
-    context = PangoCairo.create_context(ctx)
-    context.set_base_dir(Pango.Direction.LTR)
-    # Shapes are drawn again at every zoom level: without rounding to device
-    # pixels, the text measures and so wraps the same at each of them
-    context.set_round_glyph_positions(False)
-    layout = Pango.Layout(context)
-    layout.set_auto_dir(False)
-    layout.set_font_description(font)
-    # CSS adds no hyphen where it breaks a long word
-    attrs = Pango.AttrList()
-    attrs.insert(Pango.attr_insert_hyphens_new(insert_hyphens=False))
-    layout.set_attributes(attrs)
+    layout = create_pango_layout(
+        ctx,
+        shape.style,
+        font,
+        font_size,
+        width=width,
+        align=align,
+        wrap=wrap,
+        letter_spacing=None,
+    )
+    # Unlike the text shapes, the poll does not take its direction from its
+    # text: the client draws it in a left-to-right page
+    layout.get_context().set_base_dir(Pango.Direction.LTR)
+    layout.context_changed()
     return layout
 
 
@@ -171,7 +180,7 @@ def draw_chart(
 
     # Tick labels on the numeric axis, centered on their tick. Like the SVG text
     # elements of the client, the labels are positioned by their baseline.
-    tick_layout = text_layout(ctx, TICK_FONT_SIZE)
+    tick_layout = poll_layout(ctx, shape, FONT, TICK_FONT_SIZE)
     tick_baseline = (
         plot_bottom + TICK_SIZE + TICK_MARGIN + TICK_LABEL_DY * TICK_FONT_SIZE
     )
@@ -189,10 +198,15 @@ def draw_chart(
     # client's tick component ignores verticalAnchor, so the baseline sits on
     # the band center
     label_width = y_axis_width - TICK_SIZE - TICK_MARGIN
-    label_layout = text_layout(ctx, TICK_FONT_SIZE)
-    label_layout.set_width(int(label_width * Pango.SCALE))
-    label_layout.set_alignment(Pango.Alignment.RIGHT)
-    label_layout.set_ellipsize(Pango.EllipsizeMode.END)
+    label_layout = poll_layout(
+        ctx,
+        shape,
+        FONT,
+        TICK_FONT_SIZE,
+        width=label_width,
+        align=AlignStyle.END,
+        wrap=False,
+    )
     for index, answer in enumerate(answers):
         label = (CORRECT_ANSWER_MARK if answer.isCorrectAnswer else "") + answer.key
         label_layout.set_text(label, -1)
@@ -243,16 +257,18 @@ def finalize_poll(
     # starts one margin below the border even when there is no question
     content_top = BORDER_WIDTH + TITLE_MARGIN_TOP
     if shape.questionText != "":
-        title_layout = text_layout(ctx, TITLE_FONT_SIZE, Pango.Weight.MEDIUM)
-        title_layout.set_width(int((width - TITLE_MARGIN_LEFT) * Pango.SCALE))
-        title_layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+        title_layout = poll_layout(
+            ctx, shape, TITLE_FONT, TITLE_FONT_SIZE, width=width - TITLE_MARGIN_LEFT
+        )
         # HTML collapses white space, line breaks included, to a single space
         question = re.sub(r"[ \t\n\r\f]+", " ", shape.questionText).strip(" ")
         title_layout.set_text(question, -1)
-        _, title_height = title_layout.get_pixel_size()
-        ctx.move_to(TITLE_MARGIN_LEFT, content_top)
+        _, title_height = get_layout_size(title_layout, line_height=TITLE_LINE_HEIGHT)
+        ctx.save()
+        ctx.translate(TITLE_MARGIN_LEFT, content_top)
         ctx.set_source_rgb(*V2_TEXT_COLOR)
-        PangoCairo.show_layout(ctx, title_layout)
+        show_layout_by_lines(ctx, title_layout, line_height=TITLE_LINE_HEIGHT)
+        ctx.restore()
         chart_top = content_top + title_height + TITLE_MARGIN_BOTTOM
         chart_height = height - TITLE_MARGIN_TOP - title_height - TITLE_MARGIN_BOTTOM
     else:
