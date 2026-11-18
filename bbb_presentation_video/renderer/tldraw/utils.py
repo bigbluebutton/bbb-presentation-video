@@ -8,7 +8,7 @@ import math
 from enum import Enum
 from math import cos, floor, hypot, pi, sin, sqrt, tau
 from random import Random
-from typing import Dict, List, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, NamedTuple, Sequence, Tuple, TypeVar, Union
 
 import attr
 import cairo
@@ -526,6 +526,53 @@ def rounded_rect(
     ctx.arc(radius, size.height - radius, radius, tau / 4, tau / 2)
     ctx.arc(radius, radius, radius, tau / 2, -tau / 4)
     ctx.close_path()
+
+
+class BoxShadow(NamedTuple):
+    """One layer of a CSS box-shadow: its offset, blur radius and black alpha."""
+
+    offset_x: float
+    offset_y: float
+    blur: float
+    alpha: float
+
+
+# Number of flat layers that rounded_rect_shadow() stacks to fake a blur
+SHADOW_LAYERS = 4
+
+
+def rounded_rect_shadow(
+    ctx: cairo.Context[CairoSomeSurface],
+    size: Size,
+    radius: float,
+    shadows: Sequence[BoxShadow],
+) -> None:
+    """Draw an approximation of the CSS box-shadow of a rounded rectangle.
+
+    Doing blurred shadow is hard, so every shadow is a stack of flat layers
+    instead. A blur softens the edge of a shadow by the blur radius in both
+    directions, so the layers start out larger than the rectangle and end up
+    smaller, each one a step darker than the one below it. Call this before
+    filling the rectangle.
+    """
+    for shadow in shadows:
+        painted = 0.0
+        for layer in range(SHADOW_LAYERS):
+            # The largest layer comes first; the edges are spaced evenly
+            spread = shadow.blur * (1 - (2 * layer + 1) / SHADOW_LAYERS)
+            alpha = shadow.alpha * (layer + 1) / SHADOW_LAYERS
+            ctx.save()
+            ctx.translate(shadow.offset_x - spread, shadow.offset_y - spread)
+            rounded_rect(
+                ctx,
+                Size(size.width + 2 * spread, size.height + 2 * spread),
+                max(radius + spread, 0),
+            )
+            # Painted over the layers below, this adds up to alpha
+            ctx.set_source_rgba(0, 0, 0, (alpha - painted) / (1 - painted))
+            ctx.fill()
+            ctx.restore()
+            painted = alpha
 
 
 def draw_smooth_path(

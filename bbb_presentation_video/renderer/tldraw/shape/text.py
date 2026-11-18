@@ -78,7 +78,8 @@ def create_pango_layout(
 
     layout = Pango.Layout(pctx)
     PangoCairo.context_set_resolution(pctx, DPI)
-    layout.set_auto_dir(True)
+    # Like CSS text-align, keep left and right as they are for right-to-left text
+    layout.set_auto_dir(False)
     layout.set_attributes(attrs)
     layout.set_font_description(font)
 
