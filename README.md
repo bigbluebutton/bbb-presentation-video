@@ -20,6 +20,9 @@ The corresponding ubuntu packages to get these bindings are:
   - gir1.2-gdkpixbuf-2.0
   - gir1.2-pango-1.0
 
+Images in the webp format, which can be pasted onto the whiteboard, are decoded
+by the gdk-pixbuf webp loader from the `webp-pixbuf-loader` package.
+
 You'll need ffmpeg for the video encoding to operate correctly. The version
 included with the current BigBlueButton release is sufficient.
 
